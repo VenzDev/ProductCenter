@@ -1,0 +1,7 @@
+name: ""
+image: ""
+port: 80
+env: []
+metrics:
+  enabled: false
+  path: /metrics

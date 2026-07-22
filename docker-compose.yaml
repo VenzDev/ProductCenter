@@ -1,0 +1,33 @@
+services:
+  ai:
+    build:
+      context: ./services/ai
+      target: dev
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./services/ai/app:/app/app
+
+  payment:
+    build:
+      context: ./services/payment
+      target: dev
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./services/payment:/app
+
+  backend:
+    build:
+      context: ./services/backend
+      target: dev
+    environment:
+      SERVER_NAME: ":80"
+    ports:
+      - "8081:80"
+    volumes:
+      - ./services/backend:/app
+      - backend_vendor:/app/vendor
+
+volumes:
+  backend_vendor:

@@ -1,0 +1,13 @@
+name: backend
+image: 222634367938.dkr.ecr.eu-central-1.amazonaws.com/backend:latest
+port: 80
+env:
+  - name: SERVER_NAME
+    value: ":80"
+  - name: APP_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: app-key
+metrics:
+  enabled: true

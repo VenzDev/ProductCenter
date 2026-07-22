@@ -1,0 +1,4 @@
+apiVersion: v2
+name: service
+description: Reusable chart for product-center microservices (Deployment + Service)
+version: 0.1.0
