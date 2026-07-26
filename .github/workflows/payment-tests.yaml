@@ -1,0 +1,24 @@
+name: payment tests
+
+on:
+  push:
+    paths:
+      - "services/payment/**"
+  pull_request:
+    paths:
+      - "services/payment/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/payment
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: services/payment/go.mod
+
+      - run: go test ./...

@@ -40,7 +40,7 @@ func metricsMiddleware(c *gin.Context) {
 	httpRequestDuration.WithLabelValues(c.Request.Method, path).Observe(time.Since(start).Seconds())
 }
 
-func main() {
+func setupRouter() *gin.Engine {
 	r := gin.Default()
 	r.Use(metricsMiddleware)
 
@@ -54,5 +54,9 @@ func main() {
 		c.JSON(200, gin.H{"message": "hello world"})
 	})
 
-	r.Run(":8080")
+	return r
+}
+
+func main() {
+	setupRouter().Run(":8080")
 }
