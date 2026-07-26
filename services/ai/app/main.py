@@ -12,3 +12,8 @@ def health():
 @app.get("/")
 def hello():
     return {"message": "hello world"}
+
+
+@app.get("/hello")
+def hello_endpoint():
+    return {"message": "hello world"}

@@ -7,6 +7,7 @@ services:
       - "8000:8000"
     volumes:
       - ./services/ai/app:/app/app
+      - ./services/ai/tests:/app/tests
 
   payment:
     build:
