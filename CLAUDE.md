@@ -11,6 +11,8 @@ This is an **educational project** for learning microservice system design and d
 
 When making changes, prefer the smallest change that satisfies the current ask, and explain *what* and *why* rather than silently doing more.
 
+When creating git commits, keep the message concise — 1-2 sentences, focused on why.
+
 The user's experience level differs per stack — calibrate explanations accordingly:
 
 | Stack | Level |

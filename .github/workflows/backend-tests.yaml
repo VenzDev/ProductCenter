@@ -24,6 +24,8 @@ jobs:
           ini-values: apc.enable_cli=1
           coverage: none
 
+      - run: cp .env.example .env
+
       - run: composer install --no-interaction --prefer-dist
 
       - run: ./vendor/bin/pest
