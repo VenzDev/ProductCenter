@@ -1,0 +1,31 @@
+name: backend tests
+
+on:
+  push:
+    paths:
+      - "services/backend/**"
+  pull_request:
+    paths:
+      - "services/backend/**"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: services/backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.5"
+          extensions: apcu
+          ini-values: apc.enable_cli=1
+          coverage: none
+
+      - run: composer install --no-interaction --prefer-dist
+
+      - run: ./vendor/bin/pest
+
+      - run: ./vendor/bin/phpstan analyse --memory-limit=512M
