@@ -9,7 +9,8 @@
         "php": "^8.3",
         "laravel/framework": "^13.8",
         "laravel/tinker": "^3.0",
-        "promphp/prometheus_client_php": "^2.15"
+        "promphp/prometheus_client_php": "^2.15",
+        "spatie/laravel-translatable": "^6.14"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

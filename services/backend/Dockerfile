@@ -2,7 +2,7 @@ FROM dunglas/frankenphp:latest AS base
 
 RUN apt-get update && apt-get install --no-install-recommends -y unzip \
     && rm -rf /var/lib/apt/lists/* \
-    && install-php-extensions apcu \
+    && install-php-extensions apcu pdo_pgsql \
     && echo "apc.enable_cli=1" > /usr/local/etc/php/conf.d/apcu-cli.ini
 
 COPY --from=composer:2 /usr/bin/composer /usr/bin/composer
