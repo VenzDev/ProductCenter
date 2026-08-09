@@ -16,6 +16,7 @@ k8s/chart/
     serviceaccount.yaml # opcjonalny (serviceAccount.create) — potrzebny pod IRSA
     servicemonitor.yaml # opcjonalny (metrics.enabled) — scrape dla Prometheusa
     migrate-job.yaml    # opcjonalny (migrate.enabled) — Helm hook, patrz błąd #10
+    ingress.yaml        # opcjonalny (ingress.enabled) — ALB przez AWS Load Balancer Controller
   values/
     ai.yaml
     payment.yaml
@@ -55,10 +56,8 @@ terraform output rds_endpoint
 #    w Secrets Manager), trzeba je stworzyć od nowa po każdym świeżym klastrze.
 #    azure-client-id/tenant-id/client-secret to te same wartości co lokalnie w .env
 #    (AZURE_OPENID_*) — osobna rejestracja aplikacji w Entra, nie generowane tutaj.
-#    UWAGA: azure-redirect-uri wymaga publicznego, HTTPS URL-a backendu — którego
-#    na razie NIE MA (Service to plain ClusterIP, bez Ingress/LoadBalancer/DNS).
-#    Bez tego admin SSO login przez Microsoft nie zadziała, niezależnie od tego, że
-#    sekret jest poprawnie wpięty.
+#    azure-redirect-uri wymaga publicznego, HTTPS URL-a backendu — od kroku 6a niżej
+#    to https://admin.bechta.pl/auth/microsoft/callback.
 DB_PASSWORD=$(aws secretsmanager get-secret-value \
   --secret-id "$(terraform output -raw rds_master_user_secret_arn)" \
   --query SecretString --output text | jq -r .password)
@@ -69,9 +68,9 @@ kubectl create secret generic backend-secrets \
   --from-literal=azure-client-id="<z Azure App Registration>" \
   --from-literal=azure-tenant-id="<z Azure App Registration>" \
   --from-literal=azure-client-secret="<z Azure App Registration>" \
-  --from-literal=azure-redirect-uri="<publiczny URL backendu>/auth/microsoft/callback"
+  --from-literal=azure-redirect-uri="https://admin.bechta.pl/auth/microsoft/callback"
 
-# 6. Monitoring: Prometheus + Grafana. Musi być PRZED krokiem 7 — każdy serwis ma
+# 6. Monitoring: Prometheus + Grafana. Musi być PRZED krokiem 8 — każdy serwis ma
 #    metrics.enabled: true domyślnie (values/<serwis>.yaml), czyli renderuje
 #    ServiceMonitor; bez wcześniej zainstalowanego kube-prometheus-stack (które
 #    dostarcza ten CRD) `helm install` serwisu od razu się wywali. Więcej w monitoring.md.
@@ -84,10 +83,54 @@ kubectl wait --for=condition=Ready pods --all -n monitoring --timeout=300s
 # Nasz dashboard (Request rate / Error rate / Latency p95, per serwis)
 kubectl apply -f k8s/monitoring/dashboard-services.yaml -n monitoring
 
-# 7. Zainstaluj serwisy (jeden reużywalny Helm chart, różne values per serwis)
+# 7. AWS Load Balancer Controller — cluster-wide kontroler, który zamienia Ingress
+#    backendu (k8s/chart/templates/ingress.yaml) w prawdziwy ALB. Rola IRSA i jej
+#    uprawnienia są zarządzane przez Terraform (infrastructure/eks/iam.tf), sam
+#    kontroler instalowany tak samo imperatywnie jak kube-prometheus-stack.
+helm repo add eks https://aws.github.io/eks-charts
+helm repo update eks
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=product-center \
+  --set region=eu-central-1 \
+  --set vpcId=$(terraform output -raw vpc_id) \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$(terraform output -raw aws_load_balancer_controller_irsa_role_arn)
+kubectl wait --for=condition=Available deployment/aws-load-balancer-controller -n kube-system --timeout=120s
+
+# Wypełnij placeholder `<TERRAFORM_OUTPUT:acm_certificate_arn>` w
+# k8s/chart/values/backend.yaml (ARN certu ACM znany dopiero po walidacji DNS,
+# tak jak rds_endpoint w kroku 4 — nie da się przewidzieć przed apply)
+terraform output acm_certificate_arn
+
+# 8. Zainstaluj serwisy (jeden reużywalny Helm chart, różne values per serwis)
 helm install ai      k8s/chart -f k8s/chart/values/ai.yaml
 helm install payment k8s/chart -f k8s/chart/values/payment.yaml
 helm install backend k8s/chart -f k8s/chart/values/backend.yaml
+
+# 9. admin.bechta.pl → ALB. AWS Load Balancer Controller tworzy ALB dopiero z Ingressu
+#    backendu (krok 8), więc jego DNS name nie jest znany Terraformowi — rekord Route53
+#    jest tworzony tu, imperatywnie, tak jak backend-secrets w kroku 5.
+kubectl wait --for=jsonpath='{.status.loadBalancer.ingress[0].hostname}' ingress/backend --timeout=180s
+ALB_DNS=$(kubectl get ingress backend -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+ALB_ZONE_ID=$(aws elbv2 describe-load-balancers \
+  --query "LoadBalancers[?DNSName=='$ALB_DNS'].CanonicalHostedZoneId" --output text)
+
+aws route53 change-resource-record-sets \
+  --hosted-zone-id "$(terraform output -raw route53_zone_id)" \
+  --change-batch '{
+    "Changes": [{
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "admin.bechta.pl",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "'"$ALB_ZONE_ID"'",
+          "DNSName": "'"$ALB_DNS"'",
+          "EvaluateTargetHealth": false
+        }
+      }
+    }]
+  }'
 ```
 
 Przy zmianie w templatce/values (bez nowego klastra): `helm upgrade <nazwa> k8s/chart -f k8s/chart/values/<nazwa>.yaml`. Renderowanie manifestów do podglądu bez dotykania klastra: `helm template <nazwa> k8s/chart -f k8s/chart/values/<nazwa>.yaml`.
@@ -164,3 +207,4 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 - **Obrazy w ECR** — repozytoria (`ai`, `payment`, `backend`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
 - **Pliki w S3** (`product-files`) — bucket ma `force_destroy = true`, więc `terraform destroy` kasuje go razem z zawartością (uploadowane zdjęcia produktów). Nie ma osobnego backupu.
 - **Baza RDS** (`skip_final_snapshot = true`) i jej hasło w Secrets Manager (`manage_master_user_password`, zarządzane przez `aws_db_instance`) — obie znikają bez śladu przy `destroy`, żadnego snapshotu na wyjściu.
+- **Rekord Route53 `admin.bechta.pl`** — tworzony imperatywnie (krok 9), nie przez Terraform, więc `terraform destroy` go nie usuwa; wskazuje na ALB, który zniknie razem z klastrem, więc zostaje jako martwy alias dopóki nie zrobi się `aws route53 change-resource-record-sets` z `"Action": "DELETE"` ręcznie.

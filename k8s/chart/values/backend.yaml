@@ -11,6 +11,12 @@ serviceAccount:
     eks.amazonaws.com/role-arn: "arn:aws:iam::222634367938:role/product-center-backend-s3"
 migrate:
   enabled: true
+ingress:
+  enabled: true
+  host: admin.bechta.pl
+  # ACM cert is DNS-validated (see infrastructure/eks/dns.tf), so its ARN isn't
+  # predictable in advance the same way the S3 role ARN above is.
+  certificateArn: "<TERRAFORM_OUTPUT:acm_certificate_arn>"
 env:
   - name: SERVER_NAME
     value: ":80"

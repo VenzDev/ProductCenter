@@ -8,6 +8,10 @@ serviceAccount:
   annotations: {}
 migrate:
   enabled: false
+ingress:
+  enabled: false
+  host: ""
+  certificateArn: ""
 metrics:
   enabled: false
   path: /metrics

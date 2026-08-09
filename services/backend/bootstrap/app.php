@@ -14,6 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
+        // ALB terminates TLS and forwards plain HTTP to the pod — without trusting its
+        // X-Forwarded-Proto, Request::isSecure() is false and Filament emits http:// asset
+        // URLs, which browsers block as mixed content on an https:// page. ALB's IP isn't
+        // fixed (dynamically provisioned per Ingress, see docs/runbook.md step 9), hence '*'.
+        $middleware->trustProxies(at: '*');
         $middleware->append(PrometheusMetrics::class);
         // /admin is a real (Blade) page, so a guest gets sent through the Microsoft
         // login flow. Everything else (the JSON api/* auth) has no login page to
