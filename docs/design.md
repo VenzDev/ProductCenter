@@ -103,7 +103,7 @@ CREATE TABLE products (
     price_cents  INTEGER NOT NULL,        -- cena w najmniejszej jednostce waluty
     currency     CHAR(3) NOT NULL DEFAULT 'PLN',
     attributes   JSONB,                   -- dynamiczne cechy: {"weight_kg": 1.2, "width_cm": 30, "height_cm": 15}
-    image_path   VARCHAR(255),            -- klucz S3 zdjęcia głównego
+    main_image   VARCHAR(255),            -- klucz S3 zdjęcia głównego
     created_at   TIMESTAMP NOT NULL DEFAULT now(),
     updated_at   TIMESTAMP NOT NULL DEFAULT now()
 );

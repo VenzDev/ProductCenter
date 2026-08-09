@@ -40,7 +40,7 @@ k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
 docker-compose.yaml  local dev environment for all services
 ```
 
-Target cloud is AWS. AWS services in the design (DynamoDB, S3, SQS) are simulated locally via LocalStack — not yet wired into `docker-compose.yaml`.
+Target cloud is AWS. AWS services in the design (DynamoDB, S3, SQS) are simulated locally via LocalStack. S3 (product images, via the backend's `s3` filesystem disk) is wired into `docker-compose.yaml`; DynamoDB/SQS are not yet.
 
 Inter-service communication is deliberately mixed: **REST** for request/response paths (e.g. frontend → backend), **SQS** for inherently event-driven flows (e.g. payment-related processes).
 
@@ -48,15 +48,16 @@ Read `docs/design.md` first for architecture/rationale, `docs/runbook.md` for th
 
 ## Local development
 
-Each service has `dev` and `prod` Docker build targets. `docker-compose.yaml` runs all three implemented services in `dev` mode with source bind-mounts (live reload):
+Each service has `dev` and `prod` Docker build targets. `docker-compose.yaml` runs all three implemented services in `dev` mode with source bind-mounts (live reload), plus `postgres` and `localstack`:
 
 ```bash
-docker compose up          # ai:8000, payment:8080, backend:8081(→80)
+docker compose up          # ai:8000, payment:8080, backend:8081(→80), localstack:4566
 docker compose up ai       # single service
 ```
 
 - **ai**: `uvicorn --reload`, source mounted at `./services/ai/app`.
 - **payment**: `air` (hot reload via `.air.toml`), full source mounted.
+- **localstack**: simulates S3 locally; the `product-files` bucket is created automatically on every start via `services/backend/docker/localstack-init-s3.sh` (mounted into LocalStack's init hooks — there's no persistent volume, so it needs recreating each time).
 - **backend**: FrankenPHP dev entrypoint (`docker/dev-entrypoint.sh`) runs `php artisan migrate --force` then starts the server; full source + a named `backend_vendor` volume mounted so container-installed vendor deps aren't clobbered by the host bind mount.
 
 Every service exposes `GET /health` (liveness/readiness) and `GET /metrics` (Prometheus text format) — both are load-bearing conventions used by the Helm chart's probes and `ServiceMonitor`, so any new service must implement both before it can be deployed with the shared chart.

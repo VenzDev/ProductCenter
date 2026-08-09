@@ -5,6 +5,8 @@ use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Models\Admin;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 test('an admin can list products', function () {
@@ -107,4 +109,29 @@ test('viewing a product shows the name/description for both locales', function (
     $response->assertOk()
         ->assertSee('Widget')->assertSee('Gadżet')
         ->assertSee('A fine widget')->assertSee('Świetny gadżet');
+});
+
+test('an admin can upload a product image to the s3 disk', function () {
+    Storage::fake('s3');
+
+    $admin = Admin::factory()->create();
+    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+    $this->actingAs($admin, 'admin');
+    $image = UploadedFile::fake()->image('product.jpg');
+
+    Livewire::test(CreateProduct::class)
+        ->fillForm([
+            'category_id' => $category->id,
+            'name.en' => 'Widget',
+            'price_cents' => 1999,
+            'currency' => 'PLN',
+            'main_image' => $image,
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $product = Product::first();
+    expect($product->main_image)->not->toBeNull();
+    expect($product->main_image)->toStartWith('products/');
+    Storage::disk('s3')->assertExists($product->main_image);
 });

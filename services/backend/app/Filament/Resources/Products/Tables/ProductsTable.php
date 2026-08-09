@@ -6,6 +6,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Tables\Columns\ImageColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -24,7 +25,9 @@ class ProductsTable
                     ->sortable(),
                 TextColumn::make('currency')
                     ->searchable(),
-                TextColumn::make('image_path'),
+                ImageColumn::make('main_image')
+                    ->disk('s3')
+                    ->visibility('public'),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

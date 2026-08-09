@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Spatie\Translatable\Attributes\Translatable;
 use Spatie\Translatable\HasTranslations;
 
-#[Fillable(['category_id', 'name', 'description', 'price_cents', 'currency', 'attributes', 'image_path'])]
+#[Fillable(['category_id', 'name', 'description', 'price_cents', 'currency', 'attributes', 'main_image'])]
 #[Translatable(['name', 'description'])]
 class Product extends Model
 {

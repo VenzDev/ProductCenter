@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -47,7 +48,11 @@ class ProductForm
                     ->required()
                     ->default('PLN'),
                 KeyValue::make('attributes'),
-                TextInput::make('image_path'),
+                FileUpload::make('main_image')
+                    ->image()
+                    ->disk('s3')
+                    ->directory('products')
+                    ->visibility('public'),
             ]);
     }
 }

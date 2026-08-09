@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Models\Product;
+use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Tabs;
@@ -47,7 +48,9 @@ class ProductInfolist
                 TextEntry::make('currency'),
                 KeyValueEntry::make('attributes')
                     ->placeholder('-'),
-                TextEntry::make('image_path')
+                ImageEntry::make('main_image')
+                    ->disk('s3')
+                    ->visibility('public')
                     ->placeholder('-'),
                 TextEntry::make('created_at')
                     ->dateTime()

@@ -20,7 +20,7 @@ return new class extends Migration
             $table->integer('price_cents');
             $table->char('currency', 3)->default('PLN');
             $table->jsonb('attributes')->nullable();
-            $table->string('image_path')->nullable();
+            $table->string('main_image')->nullable();
             $table->timestamps();
 
             $table->index('category_id');
