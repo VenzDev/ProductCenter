@@ -13,7 +13,7 @@ test('a logged in admin can access the admin page', function () {
 
     $response = $this->actingAs($admin, 'admin')->get('/admin');
 
-    $response->assertOk()->assertSee($admin->email);
+    $response->assertOk();
 });
 
 test('an admin can log out', function () {

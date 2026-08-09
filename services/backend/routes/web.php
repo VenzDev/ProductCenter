@@ -1,6 +1,5 @@
 <?php
 
-use App\Http\Controllers\Admin\DashboardController;
 use App\Http\Controllers\Auth\MicrosoftAuthController;
 use Illuminate\Support\Facades\Route;
 use Prometheus\CollectorRegistry;
@@ -14,9 +13,12 @@ Route::get('/', function () {
 Route::get('/auth/microsoft/redirect', [MicrosoftAuthController::class, 'redirect']);
 Route::get('/auth/microsoft/callback', [MicrosoftAuthController::class, 'callback']);
 
+// The dashboard itself (/admin) is now served by the Filament panel (AdminPanelProvider),
+// which reuses this same 'admin' guard — see app/Providers/Filament/AdminPanelProvider.php.
+// Named filament.admin.auth.logout so Filament's own UI (which looks up that route name
+// for its logout link) resolves to our controller instead of registering a conflicting one.
 Route::middleware('auth:admin')->group(function () {
-    Route::get('/admin', [DashboardController::class, 'index']);
-    Route::post('/admin/logout', [MicrosoftAuthController::class, 'logout']);
+    Route::post('/admin/logout', [MicrosoftAuthController::class, 'logout'])->name('filament.admin.auth.logout');
 });
 
 Route::get('/health', function () {
