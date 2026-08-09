@@ -16,7 +16,7 @@ class PrometheusMetrics
 
         $response = $next($request);
 
-        $registry = new CollectorRegistry(new APC());
+        $registry = new CollectorRegistry(new APC);
         $method = $request->method();
         $path = '/'.ltrim($request->route()?->uri() ?? 'unmatched', '/');
 

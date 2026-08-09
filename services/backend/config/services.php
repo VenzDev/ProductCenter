@@ -35,4 +35,12 @@ return [
         ],
     ],
 
+    // Admin login via Microsoft Entra ID (OpenID Connect), see docs/design.md.
+    'microsoft' => [
+        'client_id' => env('AZURE_OPENID_CLIENT_ID'),
+        'client_secret' => env('AZURE_OPENID_CLIENT_SECRET_VALUE'),
+        'redirect' => env('AZURE_OPENID_REDIRECT_URI'),
+        'tenant' => env('AZURE_OPENID_TENANT_ID'),
+    ],
+
 ];

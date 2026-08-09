@@ -9,14 +9,20 @@ use Illuminate\Http\Request;
 return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
         commands: __DIR__.'/../routes/console.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(PrometheusMetrics::class);
+        // /admin is a real (Blade) page, so a guest gets sent through the Microsoft
+        // login flow. Everything else (the JSON api/* auth) has no login page to
+        // redirect to, so it stays a plain 401.
+        $middleware->redirectGuestsTo(
+            fn (Request $request) => $request->is('admin*') ? '/auth/microsoft/redirect' : null
+        );
     })
     ->withExceptions(function (Exceptions $exceptions): void {
-        $exceptions->shouldRenderJsonWhen(
-            fn (Request $request) => $request->is('api/*'),
-        );
+        // Everything except /admin is JSON-only — no Blade error views exist for it.
+        $exceptions->shouldRenderJsonWhen(fn (Request $request) => ! $request->is('admin*'));
     })->create();
