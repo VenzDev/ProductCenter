@@ -13,6 +13,8 @@ When making changes, prefer the smallest change that satisfies the current ask, 
 
 When creating git commits, keep the message concise — 1-2 sentences, focused on why.
 
+After changing any service, run its tests and static analysis (whatever tooling that service currently has — see Per-service commands below) before considering the change done. This applies to every service.
+
 The user's experience level differs per stack — calibrate explanations accordingly:
 
 | Stack | Level |
