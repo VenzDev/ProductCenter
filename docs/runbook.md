@@ -13,6 +13,9 @@ k8s/chart/
   templates/
     deployment.yaml    # wspólny szablon Deployment
     service.yaml       # wspólny szablon Service
+    serviceaccount.yaml # opcjonalny (serviceAccount.create) — potrzebny pod IRSA
+    servicemonitor.yaml # opcjonalny (metrics.enabled) — scrape dla Prometheusa
+    migrate-job.yaml    # opcjonalny (migrate.enabled) — Helm hook, patrz błąd #10
   values/
     ai.yaml
     payment.yaml
@@ -26,7 +29,7 @@ Różnice między serwisami (nazwa, obraz, port, zmienne env) żyją tylko w `va
 ```bash
 cd infrastructure/eks
 
-# 1. Infrastruktura (VPC, EKS, node group, addony, ECR)
+# 1. Infrastruktura (VPC, EKS, node group, addony, ECR, S3, RDS, rola IRSA)
 terraform apply
 
 # 2. Podłącz kubectl do nowego klastra (to też przełącza current-context na EKS)
@@ -43,29 +46,35 @@ docker build --platform linux/amd64 --target prod \
   services/<serwis>
 docker push 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest
 
-# 4. Sekret backendu — NIE jest zarządzany przez Terraform,
-#    trzeba go stworzyć od nowa po każdym świeżym klastrze
+# 4. Wypełnij placeholder `<TERRAFORM_OUTPUT:rds_endpoint>` w k8s/chart/values/backend.yaml
+#    (host RDS jest generowany przez AWS, nie da się przewidzieć przed apply — nazwa
+#    bucketu S3 i ARN roli IRSA są deterministyczne, więc są już wpisane na sztywno)
+terraform output rds_endpoint
+
+# 5. Sekrety backendu — NIE są zarządzane przez Terraform (poza samym hasłem RDS
+#    w Secrets Manager), trzeba je stworzyć od nowa po każdym świeżym klastrze.
+#    azure-client-id/tenant-id/client-secret to te same wartości co lokalnie w .env
+#    (AZURE_OPENID_*) — osobna rejestracja aplikacji w Entra, nie generowane tutaj.
+#    UWAGA: azure-redirect-uri wymaga publicznego, HTTPS URL-a backendu — którego
+#    na razie NIE MA (Service to plain ClusterIP, bez Ingress/LoadBalancer/DNS).
+#    Bez tego admin SSO login przez Microsoft nie zadziała, niezależnie od tego, że
+#    sekret jest poprawnie wpięty.
+DB_PASSWORD=$(aws secretsmanager get-secret-value \
+  --secret-id "$(terraform output -raw rds_master_user_secret_arn)" \
+  --query SecretString --output text | jq -r .password)
+
 kubectl create secret generic backend-secrets \
-  --from-literal=app-key="base64:$(openssl rand -base64 32)"
+  --from-literal=app-key="base64:$(openssl rand -base64 32)" \
+  --from-literal=db-password="$DB_PASSWORD" \
+  --from-literal=azure-client-id="<z Azure App Registration>" \
+  --from-literal=azure-tenant-id="<z Azure App Registration>" \
+  --from-literal=azure-client-secret="<z Azure App Registration>" \
+  --from-literal=azure-redirect-uri="<publiczny URL backendu>/auth/microsoft/callback"
 
-# 5. Zainstaluj serwisy (jeden reużywalny Helm chart, różne values per serwis)
-helm install ai      k8s/chart -f k8s/chart/values/ai.yaml
-helm install payment k8s/chart -f k8s/chart/values/payment.yaml
-helm install backend k8s/chart -f k8s/chart/values/backend.yaml
-```
-
-Przy zmianie w templatce/values (bez nowego klastra): `helm upgrade <nazwa> k8s/chart -f k8s/chart/values/<nazwa>.yaml`. Renderowanie manifestów do podglądu bez dotykania klastra: `helm template <nazwa> k8s/chart -f k8s/chart/values/<nazwa>.yaml`.
-
-**Uwaga:** `--platform linux/amd64` jest obowiązkowe przy buildzie na Macu z Apple Silicon — node'y EKS to x86_64 (`ami_type = AL2023_x86_64_STANDARD`).
-
-## 1a. Monitoring: Prometheus + Grafana (opcjonalnie, po kroku 1)
-
-Szczegóły i debugowanie w `monitoring.md` — tu tylko sekwencja komend.
-
-**Zanim odpalisz `terraform apply` w sekcji 1:** domyślny node group (`t3.medium`, `desired_size: 1`) nie pomieści obok siebie 3 serwisów i całego `kube-prometheus-stack`. Podnieś zasoby: `terraform apply -var node_instance_type=t3.large`.
-
-```bash
-# Stack (Prometheus, Grafana, Alertmanager, kube-state-metrics, node-exporter)
+# 6. Monitoring: Prometheus + Grafana. Musi być PRZED krokiem 7 — każdy serwis ma
+#    metrics.enabled: true domyślnie (values/<serwis>.yaml), czyli renderuje
+#    ServiceMonitor; bez wcześniej zainstalowanego kube-prometheus-stack (które
+#    dostarcza ten CRD) `helm install` serwisu od razu się wywali. Więcej w monitoring.md.
 helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
 helm repo update prometheus-community
 kubectl create namespace monitoring
@@ -75,7 +84,19 @@ kubectl wait --for=condition=Ready pods --all -n monitoring --timeout=300s
 # Nasz dashboard (Request rate / Error rate / Latency p95, per serwis)
 kubectl apply -f k8s/monitoring/dashboard-services.yaml -n monitoring
 
-# Dostęp do Grafany
+# 7. Zainstaluj serwisy (jeden reużywalny Helm chart, różne values per serwis)
+helm install ai      k8s/chart -f k8s/chart/values/ai.yaml
+helm install payment k8s/chart -f k8s/chart/values/payment.yaml
+helm install backend k8s/chart -f k8s/chart/values/backend.yaml
+```
+
+Przy zmianie w templatce/values (bez nowego klastra): `helm upgrade <nazwa> k8s/chart -f k8s/chart/values/<nazwa>.yaml`. Renderowanie manifestów do podglądu bez dotykania klastra: `helm template <nazwa> k8s/chart -f k8s/chart/values/<nazwa>.yaml`.
+
+**Uwaga:** `--platform linux/amd64` jest obowiązkowe przy buildzie na Macu z Apple Silicon — node'y EKS to x86_64 (`ami_type = AL2023_x86_64_STANDARD`). Domyślny `node_instance_type` (`t3.large`) mieści oba stacki naraz bez zmian.
+
+Dostęp do Grafany:
+
+```bash
 kubectl get secret --namespace monitoring kube-prometheus-stack-grafana \
   -o jsonpath="{.data.admin-password}" | base64 --decode; echo
 kubectl port-forward -n monitoring svc/kube-prometheus-stack-grafana 3000:80
@@ -129,12 +150,17 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 | 4 | `ImagePullBackOff`, event: `no match for platform in manifest` | Obraz zbudowany na Macu (arm64) bez `--platform`, node x86_64 | Zawsze `docker build --platform linux/amd64 ...` | komenda buildu (patrz sekcja 1) |
 | 5 | `backend` restart w pętli, `Readiness probe failed: ... tls: internal error` | FrankenPHP bez `SERVER_NAME` domyślnie włącza auto-HTTPS z self-signed certem; port 80 tylko przekierowuje na HTTPS, sonda idzie za redirectem i wpada na zły cert | env `SERVER_NAME: ":80"` | `k8s/chart/values/backend.yaml` |
 | 6 | `backend` HTTP 500, log: `Class "Laravel\Pail\PailServiceProvider" not found` (czasem ukryte pod wtórnym błędem `Target class [translator] does not exist`) | Stary lokalny cache `bootstrap/cache/packages.php` (wygenerowany gdy były zainstalowane dev-deps z Pailem) trafiał do obrazu prod przez `COPY . .`; `composer install --no-scripts --no-dev` w prod stage go nie odświeża | Dodać `bootstrap/cache/*.php` do `.dockerignore` | `services/backend/.dockerignore` |
-| 7 | `backend` HTTP 500 (po naprawieniu #6) | Brak `APP_KEY` — `.env` celowo poza obrazem (`.dockerignore`), Laravel wywala się na `EncryptCookies` | Kubernetes Secret `backend-secrets` (imperatywnie, nigdy nie commitować realnej wartości do gita), referencja przez `secretKeyRef` | `k8s/chart/values/backend.yaml` + krok 4 w sekcji 1 |
+| 7 | `backend` HTTP 500 (po naprawieniu #6) | Brak `APP_KEY` — `.env` celowo poza obrazem (`.dockerignore`), Laravel wywala się na `EncryptCookies` | Kubernetes Secret `backend-secrets` (imperatywnie, nigdy nie commitować realnej wartości do gita), referencja przez `secretKeyRef` | `k8s/chart/values/backend.yaml` + krok 5 w sekcji 1 |
 | 8 | `terraform destroy` odmawia usunąć repozytoria ECR | Repozytoria zawierają obrazy, domyślnie `force_delete = false` | `force_delete = true` na `aws_ecr_repository` | `infrastructure/eks/ecr.tf` |
 | 9 | Kubernetes 1.33 zbliżało się do końca standard support (koszt x6 na extended support) | — | Wersja `1.35` | `infrastructure/eks/eks.tf` |
+| 10 | `backend` restart w pętli na świeżym RDS, `HTTP probe failed with statuscode: 500` na `/health` mimo że handler nic nie robi z DB | Obraz `prod` nigdy nie uruchamia migracji (tylko `dev-entrypoint.sh` to robi, i to tylko w `dev`) — świeża baza nie ma tabeli `sessions`, a domyślna grupa middleware `web` (którą dostaje KAŻDA trasa, łącznie z `/health`) startuje sesję, więc wywala się na każdym requeście | Helm hook `pre-install,pre-upgrade` (`Job` uruchamiający `php artisan migrate --force` przed rollout Deployment) | `k8s/chart/templates/migrate-job.yaml` |
+| 11 | (przy naprawianiu #10) Świeży `helm install` wisi, `job-controller` event: `serviceaccount "backend" not found` | Hooki (`pre-install`) wykonują się PRZED zwykłymi zasobami release'u — `ServiceAccount` (`serviceaccount.yaml`, zwykły szablon, nie hook) jeszcze nie istnieje, gdy Job próbuje go użyć | Job migracji nie ustawia `serviceAccountName` — używa domyślnego SA namespace'u; i tak nie potrzebuje uprawnień S3/IRSA, tylko łączności z DB | `k8s/chart/templates/migrate-job.yaml` |
+| 12 | `helm install ai/payment/backend` wywala się od razu: `no matches for kind "ServiceMonitor" in version "monitoring.coreos.com/v1"` | Każdy serwis ma `metrics.enabled: true` domyślnie, czyli zawsze renderuje `ServiceMonitor` — ten CRD dostarcza dopiero `kube-prometheus-stack` | Monitoring instalowany PRZED serwisami w kolejności runbooka (krok 6 przed 7), nie jako osobny opcjonalny dodatek na końcu | `docs/runbook.md` |
 
 ## 5. Rzeczy, które NIE przetrwają `terraform destroy`
 
 - **Wszystko w klastrze** (pody, Service'y, Secrets) — Kubernetes żyje tylko wewnątrz klastra, destroy usuwa cały klaster.
-- **`backend-secrets`** — musi być stworzony ręcznie na nowo po każdym świeżym `terraform apply` (krok 4 w sekcji 1). Nie jest zarządzany przez Terraform ani przez pliki w `k8s/`.
+- **`backend-secrets`** — musi być stworzony ręcznie na nowo po każdym świeżym `terraform apply` (krok 5 w sekcji 1). Nie jest zarządzany przez Terraform ani przez pliki w `k8s/`.
 - **Obrazy w ECR** — repozytoria (`ai`, `payment`, `backend`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
+- **Pliki w S3** (`product-files`) — bucket ma `force_destroy = true`, więc `terraform destroy` kasuje go razem z zawartością (uploadowane zdjęcia produktów). Nie ma osobnego backupu.
+- **Baza RDS** (`skip_final_snapshot = true`) i jej hasło w Secrets Manager (`manage_master_user_password`, zarządzane przez `aws_db_instance`) — obie znikają bez śladu przy `destroy`, żadnego snapshotu na wyjściu.

@@ -1,6 +1,16 @@
 name: backend
 image: 222634367938.dkr.ecr.eu-central-1.amazonaws.com/backend:latest
 port: 80
+# IRSA — lets this pod's ServiceAccount assume the IAM role Terraform creates for S3
+# access, no static AWS keys anywhere. Role name/account are deterministic (see
+# infrastructure/eks/iam.tf), so this doesn't need filling in after apply.
+serviceAccount:
+  create: true
+  name: backend
+  annotations:
+    eks.amazonaws.com/role-arn: "arn:aws:iam::222634367938:role/product-center-backend-s3"
+migrate:
+  enabled: true
 env:
   - name: SERVER_NAME
     value: ":80"
@@ -9,5 +19,47 @@ env:
       secretKeyRef:
         name: backend-secrets
         key: app-key
+  - name: DB_CONNECTION
+    value: pgsql
+  - name: DB_HOST
+    # AWS-generated hostname, only known after `terraform apply` — unlike the bucket
+    # name/role ARN below, this can't be predicted in advance. Fill in from
+    # `terraform output rds_endpoint` (infrastructure/eks).
+    value: "<TERRAFORM_OUTPUT:rds_endpoint>"
+  - name: DB_PORT
+    value: "5432"
+  - name: DB_DATABASE
+    value: backend
+  - name: DB_USERNAME
+    value: backend
+  - name: DB_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: db-password
+  - name: AWS_BUCKET
+    value: "product-center-product-files"
+  - name: AWS_DEFAULT_REGION
+    value: eu-central-1
+  - name: AZURE_OPENID_CLIENT_ID
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: azure-client-id
+  - name: AZURE_OPENID_TENANT_ID
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: azure-tenant-id
+  - name: AZURE_OPENID_CLIENT_SECRET_VALUE
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: azure-client-secret
+  - name: AZURE_OPENID_REDIRECT_URI
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: azure-redirect-uri
 metrics:
   enabled: true

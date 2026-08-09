@@ -12,6 +12,9 @@ spec:
       labels:
         app: {{ .Values.name }}
     spec:
+      {{- if .Values.serviceAccount.create }}
+      serviceAccountName: {{ .Values.serviceAccount.name | default .Values.name }}
+      {{- end }}
       containers:
         - name: {{ .Values.name }}
           image: {{ .Values.image }}

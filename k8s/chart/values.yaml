@@ -2,6 +2,12 @@ name: ""
 image: ""
 port: 80
 env: []
+serviceAccount:
+  create: false
+  name: ""
+  annotations: {}
+migrate:
+  enabled: false
 metrics:
   enabled: false
   path: /metrics

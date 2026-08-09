@@ -15,3 +15,9 @@ variable "node_instance_type" {
   type        = string
   default     = "t3.large"
 }
+
+variable "rds_instance_class" {
+  description = "RDS instance class for the Postgres database"
+  type        = string
+  default     = "db.t3.micro"
+}
