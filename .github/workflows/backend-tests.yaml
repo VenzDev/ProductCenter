@@ -28,6 +28,10 @@ jobs:
 
       - run: composer install --no-interaction --prefer-dist
 
+      # phpstan boots the real app to resolve facade methods (e.g. JWTAuth::fromUser),
+      # which needs a real secret — unlike pest, this doesn't use phpunit.xml's env.
+      - run: php artisan jwt:secret --force
+
       - run: ./vendor/bin/pest
 
       - run: ./vendor/bin/phpstan analyse --memory-limit=512M
