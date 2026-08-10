@@ -42,7 +42,7 @@ Projekt to sklep e-commerce. System ma dwóch typów użytkowników: `user` (kli
 
 - Logowanie — dwie role: `user`, `admin`, każda z innym mechanizmem uwierzytelniania:
   - **User** — standardowa rejestracja i logowanie (email/hasło).
-  - **Admin** — logowanie przez **OpenID Connect (Microsoft / Entra ID)**, SSO bez lokalnego hasła; brak publicznej rejestracji — konta administratorów zakładane ręcznie. W Laravelu naturalny wybór to `Laravel Socialite` z providerem Microsoft/Azure.
+  - **Admin** — logowanie przez **OpenID Connect (Microsoft / Entra ID)**, SSO bez lokalnego hasła; brak publicznej rejestracji — konto zakładane ręcznie albo automatycznie (JIT) przy pierwszym logowaniu, jeśli e-mail należy do skonfigurowanej domeny tenantu. W Laravelu naturalny wybór to `Laravel Socialite` z providerem Microsoft/Azure.
 - **User** — przegląda i kupuje produkty (typowy e-commerce).
 - **Admin** — CRUD produktów: nazwa, opis, cena (podstawowy pricing w MVP), dynamiczne cechy (np. waga, szerokość, wysokość), zdjęcie główne, załączniki (np. instrukcje obsługi w PDF), przypisanie do kategorii.
 - System dwujęzyczny (PL/EN) z możliwością rozszerzenia o kolejne języki bez migracji schematu.

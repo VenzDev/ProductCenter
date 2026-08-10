@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\Admin;
+use App\Services\Auth\MicrosoftAdminResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse as LaravelRedirectResponse;
 use Illuminate\Http\Request;
@@ -14,6 +14,8 @@ use Symfony\Component\HttpFoundation\RedirectResponse;
 
 class MicrosoftAuthController extends Controller
 {
+    public function __construct(private readonly MicrosoftAdminResolver $resolver) {}
+
     public function redirect(): RedirectResponse
     {
         /** @var AbstractProvider $provider */
@@ -26,12 +28,8 @@ class MicrosoftAuthController extends Controller
 
     public function callback(): JsonResponse|LaravelRedirectResponse
     {
-        $microsoftUser = Socialite::driver('microsoft')->user();
+        $admin = $this->resolver->resolve(Socialite::driver('microsoft')->user());
 
-        // Matched by Microsoft's object id (oid), not email: OIDC only guarantees a stable
-        // subject identifier, the email claim can be null (e.g. a personal account used as
-        // the tenant owner has no `mail` attribute).
-        $admin = Admin::where('microsoft_id', $microsoftUser->getId())->first();
         if (! $admin) {
             return response()->json(['message' => 'No admin account found for this Microsoft account.'], 403);
         }

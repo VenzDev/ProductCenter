@@ -17,8 +17,9 @@ class Admin extends Authenticatable implements FilamentUser
     /** @use HasFactory<AdminFactory> */
     use HasFactory;
 
-    // Every row in `admins` is a manually-provisioned Microsoft Entra admin (see the
-    // migration) — no further per-admin authorization exists yet, so access is unconditional.
+    // Rows are either manually provisioned or JIT-created on first login for the allowed
+    // tenant domain (see MicrosoftAuthController::provisionAdmin) — no further per-admin
+    // authorization exists yet, so access is unconditional.
     public function canAccessPanel(Panel $panel): bool
     {
         return true;

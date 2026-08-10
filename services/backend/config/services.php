@@ -41,6 +41,9 @@ return [
         'client_secret' => env('AZURE_OPENID_CLIENT_SECRET_VALUE'),
         'redirect' => env('AZURE_OPENID_REDIRECT_URI'),
         'tenant' => env('AZURE_OPENID_TENANT_ID'),
+        // Email domain allowed to self-provision an Admin on first login (see
+        // MicrosoftAuthController::provisionAdmin).
+        'allowed_domain' => env('AZURE_OPENID_ALLOWED_DOMAIN'),
     ],
 
 ];
