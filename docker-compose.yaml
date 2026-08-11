@@ -38,11 +38,12 @@ services:
   localstack:
     image: localstack/localstack:4
     environment:
-      SERVICES: s3
+      SERVICES: s3,sqs
     ports:
       - "4566:4566"
     volumes:
       - ./services/backend/docker/localstack-init-s3.sh:/etc/localstack/init/ready.d/init-s3.sh
+      - ./services/backend/docker/localstack-init-sqs.sh:/etc/localstack/init/ready.d/init-sqs.sh
     healthcheck:
       test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
       interval: 5s

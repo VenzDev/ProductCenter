@@ -46,4 +46,17 @@ return [
         'allowed_domain' => env('AZURE_OPENID_ALLOWED_DOMAIN'),
     ],
 
+    // SQS event publishing (LocalStack locally, real SQS in AWS), see docs/design.md.
+    // Add one entry per queue here (and a matching case in App\Services\Sqs\SqsQueue) as
+    // new async events are introduced — the client config above is shared by all of them.
+    'sqs' => [
+        'key' => env('AWS_ACCESS_KEY_ID'),
+        'secret' => env('AWS_SECRET_ACCESS_KEY'),
+        'region' => env('AWS_DEFAULT_REGION', 'us-east-1'),
+        'endpoint' => env('AWS_ENDPOINT'),
+        'queues' => [
+            'product_description_requested' => env('SQS_PRODUCT_DESCRIPTION_QUEUE', 'product-description-requested'),
+        ],
+    ],
+
 ];
