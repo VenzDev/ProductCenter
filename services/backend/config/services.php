@@ -56,6 +56,7 @@ return [
         'endpoint' => env('AWS_ENDPOINT'),
         'queues' => [
             'product_description_requested' => env('SQS_PRODUCT_DESCRIPTION_QUEUE', 'product-description-requested'),
+            'product_description_generated' => env('SQS_PRODUCT_DESCRIPTION_GENERATED_QUEUE', 'product-description-generated'),
         ],
     ],
 

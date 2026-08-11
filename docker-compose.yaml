@@ -35,6 +35,23 @@ services:
       localstack:
         condition: service_healthy
 
+  backend-worker:
+    build:
+      context: ./services/backend
+      target: dev
+    # dev-entrypoint.sh always execs frankenphp, ignoring any command — bypass it entirely
+    # since this container doesn't serve HTTP and migrations/filament:assets are already
+    # handled by the backend service.
+    entrypoint: ["php", "artisan", "sqs:consume-product-descriptions"]
+    volumes:
+      - ./services/backend:/app
+      - backend_vendor:/app/vendor
+    depends_on:
+      postgres:
+        condition: service_healthy
+      localstack:
+        condition: service_healthy
+
   localstack:
     image: localstack/localstack:4
     environment:

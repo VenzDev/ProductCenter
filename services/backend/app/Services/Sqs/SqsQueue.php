@@ -9,6 +9,7 @@ namespace App\Services\Sqs;
 enum SqsQueue: string
 {
     case ProductDescriptionRequested = 'product_description_requested';
+    case ProductDescriptionGenerated = 'product_description_generated';
 
     public function queueName(): string
     {
@@ -19,6 +20,7 @@ enum SqsQueue: string
     {
         return match ($this) {
             self::ProductDescriptionRequested => base_path('contracts/product-description-requested.schema.json'),
+            self::ProductDescriptionGenerated => base_path('contracts/product-description-generated.schema.json'),
         };
     }
 }
