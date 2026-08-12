@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Categories\Schemas;
 
+use App\Enums\Language;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -15,19 +16,14 @@ class CategoryForm
             ->components([
                 Tabs::make('Translations')
                     ->columnSpanFull()
-                    ->tabs([
-                        Tab::make('English')
+                    ->tabs(collect(Language::cases())->map(
+                        fn (Language $language) => Tab::make($language->label())
                             ->schema([
-                                TextInput::make('name.en')
+                                TextInput::make("name.{$language->value}")
                                     ->label('Name')
-                                    ->required(),
-                            ]),
-                        Tab::make('Polski')
-                            ->schema([
-                                TextInput::make('name.pl')
-                                    ->label('Name'),
-                            ]),
-                    ]),
+                                    ->required($language->isFallback()),
+                            ])
+                    )->all()),
                 TextInput::make('slug')
                     ->required(),
             ]);

@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Categories\Schemas;
 
+use App\Enums\Language;
 use App\Models\Category;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Tabs;
@@ -16,21 +17,15 @@ class CategoryInfolist
             ->components([
                 Tabs::make('Translations')
                     ->columnSpanFull()
-                    ->tabs([
-                        Tab::make('English')
+                    ->tabs(collect(Language::cases())->map(
+                        fn (Language $language) => Tab::make($language->label())
                             ->schema([
-                                TextEntry::make('name.en')
+                                TextEntry::make("name.{$language->value}")
                                     ->label('Name')
-                                    ->state(fn (Category $record) => $record->getTranslation('name', 'en', false)),
-                            ]),
-                        Tab::make('Polski')
-                            ->schema([
-                                TextEntry::make('name.pl')
-                                    ->label('Name')
-                                    ->state(fn (Category $record) => $record->getTranslation('name', 'pl', false))
+                                    ->state(fn (Category $record) => $record->getTranslation('name', $language->value, false))
                                     ->placeholder('-'),
-                            ]),
-                    ]),
+                            ])
+                    )->all()),
                 TextEntry::make('slug'),
                 TextEntry::make('created_at')
                     ->dateTime()

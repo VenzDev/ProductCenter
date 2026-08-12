@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Actions;
 
+use App\Enums\Language;
 use App\Models\Product;
 use App\Services\Sqs\Data\ProductDescriptionRequestData;
 use App\Services\Sqs\SqsPublisher;
@@ -20,10 +21,9 @@ class GenerateDescriptionAction
             ->schema([
                 Select::make('locale')
                     ->label('Language')
-                    ->options([
-                        'en' => 'English',
-                        'pl' => 'Polski',
-                    ])
+                    ->options(collect(Language::cases())->mapWithKeys(
+                        fn (Language $language) => [$language->value => $language->label()]
+                    ))
                     ->required(),
             ])
             ->action(function (array $data, Product $record, SqsPublisher $publisher): void {

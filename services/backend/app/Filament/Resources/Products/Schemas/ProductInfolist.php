@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Enums\Language;
 use App\Models\Product;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\KeyValueEntry;
@@ -18,29 +19,19 @@ class ProductInfolist
             ->components([
                 Tabs::make('Translations')
                     ->columnSpanFull()
-                    ->tabs([
-                        Tab::make('English')
+                    ->tabs(collect(Language::cases())->map(
+                        fn (Language $language) => Tab::make($language->label())
                             ->schema([
-                                TextEntry::make('name.en')
+                                TextEntry::make("name.{$language->value}")
                                     ->label('Name')
-                                    ->state(fn (Product $record) => $record->getTranslation('name', 'en', false)),
-                                TextEntry::make('description.en')
+                                    ->state(fn (Product $record) => $record->getTranslation('name', $language->value, false))
+                                    ->placeholder('-'),
+                                TextEntry::make("description.{$language->value}")
                                     ->label('Description')
-                                    ->state(fn (Product $record) => $record->getTranslation('description', 'en', false))
+                                    ->state(fn (Product $record) => $record->getTranslation('description', $language->value, false))
                                     ->placeholder('-'),
-                            ]),
-                        Tab::make('Polski')
-                            ->schema([
-                                TextEntry::make('name.pl')
-                                    ->label('Name')
-                                    ->state(fn (Product $record) => $record->getTranslation('name', 'pl', false))
-                                    ->placeholder('-'),
-                                TextEntry::make('description.pl')
-                                    ->label('Description')
-                                    ->state(fn (Product $record) => $record->getTranslation('description', 'pl', false))
-                                    ->placeholder('-'),
-                            ]),
-                    ]),
+                            ])
+                    )->all()),
                 TextEntry::make('category.name')
                     ->label('Category'),
                 TextEntry::make('price_cents')

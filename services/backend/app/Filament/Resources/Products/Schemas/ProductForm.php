@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources\Products\Schemas;
 
+use App\Enums\Language;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -13,31 +14,24 @@ use Filament\Schemas\Schema;
 
 class ProductForm
 {
-    // Per docs/design.md, translatable columns support PL/EN today (extensible later);
-    // en is the fallback locale (config('app.fallback_locale')), so it's the required one.
+    // Per docs/design.md, translatable columns support the languages in App\Enums\Language;
+    // the fallback locale (config('app.fallback_locale')) is the required one.
     public static function configure(Schema $schema): Schema
     {
         return $schema
             ->components([
                 Tabs::make('Translations')
                     ->columnSpanFull()
-                    ->tabs([
-                        Tab::make('English')
+                    ->tabs(collect(Language::cases())->map(
+                        fn (Language $language) => Tab::make($language->label())
                             ->schema([
-                                TextInput::make('name.en')
+                                TextInput::make("name.{$language->value}")
                                     ->label('Name')
-                                    ->required(),
-                                Textarea::make('description.en')
+                                    ->required($language->isFallback()),
+                                Textarea::make("description.{$language->value}")
                                     ->label('Description'),
-                            ]),
-                        Tab::make('Polski')
-                            ->schema([
-                                TextInput::make('name.pl')
-                                    ->label('Name'),
-                                Textarea::make('description.pl')
-                                    ->label('Description'),
-                            ]),
-                    ]),
+                            ])
+                    )->all()),
                 Select::make('category_id')
                     ->relationship('category', 'name')
                     ->required(),
