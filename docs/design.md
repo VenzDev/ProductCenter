@@ -76,7 +76,7 @@ Założenia:
 - **Kategorie** — płaska lista na MVP (produkt należy do jednej kategorii). Hierarchia kategorii (drzewo, wiele kategorii na produkt) odłożona do momentu, aż będzie faktycznie potrzebna.
 - **Warianty produktu** (np. inny kolor/rozmiar z własną ceną/SKU) — **poza zakresem MVP**, świadomie nie tworzymy tabeli `product_variants` teraz. Zaplanowane rozszerzenie: osobna tabela z FK do `products`, własnym SKU, ceną i podzbiorem `attributes`, gdy będzie na to konkretne zapotrzebowanie.
 - Zdjęcie główne i załączniki to referencje do plików w S3, nie dane binarne w bazie.
-- **Załączniki mogą być per język** (np. osobna instrukcja obsługi PL i EN dla tego samego produktu) — `product_attachments` ma kolumnę `locale`; `NULL` oznacza załącznik niezależny od języka (np. karta gwarancyjna wspólna dla obu wersji).
+- Załączniki (`product_attachments`) nie są tłumaczone per język — jeden zestaw plików wspólny dla produktu, niezależnie od tego, że `name`/`description` są.
 
 ```sql
 CREATE TABLE categories (
@@ -108,11 +108,10 @@ CREATE TABLE product_attachments (
     product_id  BIGINT NOT NULL REFERENCES products(id) ON DELETE CASCADE,
     path        VARCHAR(255) NOT NULL,    -- klucz S3 (np. instrukcja obsługi PDF)
     label       VARCHAR(255),             -- np. "Instrukcja obsługi"
-    locale      VARCHAR(5),               -- np. "pl"/"en"; NULL = załącznik niezależny od języka
     created_at  TIMESTAMP NOT NULL DEFAULT now()
 );
 
-CREATE INDEX product_attachments_product_id_locale_idx ON product_attachments (product_id, locale);
+CREATE INDEX product_attachments_product_id_idx ON product_attachments (product_id);
 
 -- Poza MVP, w planach:
 -- CREATE TABLE product_variants (

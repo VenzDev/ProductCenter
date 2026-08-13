@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-#[Fillable(['product_id', 'path', 'label', 'locale'])]
+#[Fillable(['product_id', 'path', 'label'])]
 class ProductAttachment extends Model
 {
     const UPDATED_AT = null;
