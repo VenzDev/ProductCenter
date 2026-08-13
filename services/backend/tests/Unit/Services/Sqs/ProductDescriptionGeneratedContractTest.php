@@ -5,8 +5,9 @@ use Opis\JsonSchema\Validator;
 
 // Checks contracts/product-description-generated.schema.json against sample payloads —
 // unlike the requested-side contract, this one IS enforced at runtime too (see
-// ProductDescriptionGeneratedConsumer), since the producer (the AI service) isn't a
-// same-repo, fully-typed PHP class the way ProductDescriptionRequestData is.
+// ProductDescriptionGeneratedConsumer), since the producer (the not-yet-built
+// description-generation consumer) isn't a same-repo, fully-typed PHP class the
+// way ProductDescriptionRequestData is.
 function assertMatchesProductDescriptionGeneratedContract(array $payload): bool
 {
     $schema = file_get_contents(SqsQueue::ProductDescriptionGenerated->contractPath());

@@ -22,7 +22,6 @@ The user's experience level differs per stack — calibrate explanations accordi
 | PHP | High (less familiar with Laravel specifically) |
 | Go | Medium |
 | React / TypeScript | Medium |
-| Python / AI | Lowest |
 
 ## Repository structure
 
@@ -30,7 +29,6 @@ Monorepo, one directory per independently deployable service, plus infra:
 
 ```
 services/
-  ai/         Python, FastAPI — AI-related functionality
   backend/    PHP, Laravel (FrankenPHP) — main business logic / API
   frontend/   TypeScript, React — not yet implemented (empty placeholder)
   payment/    Go, Gin — payment handling
@@ -48,14 +46,13 @@ Read `docs/design.md` first for architecture/rationale, `docs/runbook.md` for th
 
 ## Local development
 
-Each service has `dev` and `prod` Docker build targets. `docker-compose.yaml` runs all three implemented services in `dev` mode with source bind-mounts (live reload), plus `postgres` and `localstack`:
+Each service has `dev` and `prod` Docker build targets. `docker-compose.yaml` runs both implemented services in `dev` mode with source bind-mounts (live reload), plus `postgres` and `localstack`:
 
 ```bash
-docker compose up          # ai:8000, payment:8080, backend:8081(→80), localstack:4566
-docker compose up ai       # single service
+docker compose up          # payment:8080, backend:8081(→80), localstack:4566
+docker compose up payment  # single service
 ```
 
-- **ai**: `uvicorn --reload`, source mounted at `./services/ai/app`.
 - **payment**: `air` (hot reload via `.air.toml`), full source mounted.
 - **localstack**: simulates S3 locally; the `product-files` bucket is created automatically on every start via `services/backend/docker/localstack-init-s3.sh` (mounted into LocalStack's init hooks — there's no persistent volume, so it needs recreating each time).
 - **backend**: FrankenPHP dev entrypoint (`docker/dev-entrypoint.sh`) runs `php artisan migrate --force` then starts the server; full source + a named `backend_vendor` volume mounted so container-installed vendor deps aren't clobbered by the host bind mount.
@@ -83,13 +80,6 @@ Test env config lives inline in `phpunit.xml` (sqlite `:memory:`, array drivers)
 docker compose exec payment go run .
 docker compose exec payment go test ./...
 docker compose exec payment go build -o payment .
-```
-
-**ai** (`services/ai`, Python / FastAPI):
-```bash
-docker compose exec ai pip install -r requirements.txt
-docker compose exec ai uvicorn app.main:app --reload
-docker compose exec ai pytest
 ```
 
 **frontend**: not started — empty directory, no scaffolding yet.

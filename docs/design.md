@@ -19,15 +19,13 @@ Punkt odniesienia przy doborze wyjaśnień i tempa pracy nad poszczególnymi ser
 | PHP | Wysoki (mało doświadczenia z Laravel konkretnie) |
 | Go | Średni |
 | React / TypeScript | Średni |
-| Python / AI | Najniższy |
 
 ## Architektura systemu
 
-System składa się z czterech niezależnych mikroserwisów:
+System składa się z trzech niezależnych mikroserwisów:
 
 | Serwis | Technologia | Rola |
 |---|---|---|
-| `ai` | Python, FastAPI | Funkcjonalności związane z AI |
 | `backend` | PHP, Laravel | Główna logika biznesowa / API |
 | `frontend` | TypeScript, React.js | Interfejs użytkownika |
 | `payment` | Go, Gin | Obsługa płatności |
@@ -48,12 +46,7 @@ Projekt to sklep e-commerce. System ma dwóch typów użytkowników: `user` (kli
 - System dwujęzyczny (PL/EN) z możliwością rozszerzenia o kolejne języki bez migracji schematu.
 - Panel admina prawdopodobnie renderowany bezpośrednio w Laravel (nie w React) — sklep dla klientów to osobna aplikacja React.
 - Właściciel danych produktów, użytkowników, zamówień i cen.
-
-### AI (Python, RAG)
-
-- Czyta PDF-y z instrukcjami obsługi powiązanymi z produktami.
-- Generuje opis produktu na podstawie treści PDF-a oraz danych produktu wprowadzonych przez admina.
-- Wywoływane **asynchronicznie przez SQS**: backend publikuje zdarzenie po dodaniu/aktualizacji produktu (z odnośnikiem do PDF-a w S3), AI przetwarza w tle (RAG może potrwać) i zwraca wygenerowany opis do backendu.
+- **Generowanie opisu produktu** — wywoływane asynchronicznie przez SQS: backend publikuje `product-description-requested` po kliknięciu akcji w panelu admina, a wynik wraca przez `product-description-generated`. Wcześniej robił to osobny serwis `ai` (Python, RAG nad PDF-ami instrukcji) — po jego usunięciu odpowiedzialność przechodzi na backend; sama generacja (konsument `product-description-requested` + producent `product-description-generated`, docelowo z RAG nad PDF-ami z S3) to jeszcze niezaimplementowany kolejny krok.
 
 ### Frontend (React)
 
@@ -68,11 +61,10 @@ Projekt to sklep e-commerce. System ma dwóch typów użytkowników: `user` (kli
 
 ### Dane i storage
 
-- **Backend**: PostgreSQL — użytkownicy, produkty, ceny, zamówienia.
-- **AI**: vector store do embeddingów z RAG — konkretna technologia (np. pgvector) do ustalenia przy budowie serwisu.
+- **Backend**: PostgreSQL — użytkownicy, produkty, ceny, zamówienia; docelowo też vector store do embeddingów z RAG (np. pgvector) przy budowie generowania opisu.
 - **Payment**: DynamoDB — rozważane jako storage własny serwisu (np. transakcje, idempotency), decyzja do podjęcia przy jego implementacji.
 - **S3**: pliki — zdjęcia produktów i dokumentacja PDF.
-- **SQS**: zdarzenia async — `product-updated`/PDF → AI (generowanie opisu), `payment-completed` → backend (status zamówienia).
+- **SQS**: zdarzenia async — `product-description-requested`/`product-description-generated` (generowanie opisu, w obrębie backendu), `payment-completed` → backend (status zamówienia).
 
 ### Schemat produktów (PostgreSQL) — plan
 
@@ -190,7 +182,6 @@ Monorepo z podziałem na serwisy:
 
 ```
 services/
-  ai/         # Python, FastAPI
   backend/    # PHP, Laravel
   frontend/   # TypeScript, React
   payment/    # Go, Gin

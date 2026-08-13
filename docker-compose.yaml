@@ -1,14 +1,4 @@
 services:
-  ai:
-    build:
-      context: ./services/ai
-      target: dev
-    ports:
-      - "8000:8000"
-    volumes:
-      - ./services/ai/app:/app/app
-      - ./services/ai/tests:/app/tests
-
   payment:
     build:
       context: ./services/payment
@@ -39,9 +29,6 @@ services:
     build:
       context: ./services/backend
       target: dev
-    # dev-entrypoint.sh always execs frankenphp, ignoring any command — bypass it entirely
-    # since this container doesn't serve HTTP and migrations/filament:assets are already
-    # handled by the backend service.
     entrypoint: ["php", "artisan", "sqs:consume-product-descriptions"]
     volumes:
       - ./services/backend:/app

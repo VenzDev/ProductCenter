@@ -31,7 +31,7 @@ Node Minikube (na Macu z Apple Silicon) jest `arm64`, czyli tej samej architektu
 ```bash
 eval $(minikube docker-env)
 
-for svc in ai payment backend; do
+for svc in payment backend; do
   docker build --target prod -t ${svc}:local services/${svc}
 done
 ```
@@ -54,7 +54,6 @@ kubectl create secret generic backend-secrets -n product-center \
 Ten sam chart co na EKS, ale z nadpisanym `image` (lokalny tag zamiast adresu ECR):
 
 ```bash
-helm install ai      k8s/chart -n product-center -f k8s/chart/values/ai.yaml      --set image=ai:local
 helm install payment k8s/chart -n product-center -f k8s/chart/values/payment.yaml --set image=payment:local
 helm install backend k8s/chart -n product-center -f k8s/chart/values/backend.yaml --set image=backend:local
 ```
@@ -65,7 +64,6 @@ helm install backend k8s/chart -n product-center -f k8s/chart/values/backend.yam
 kubectl get pods -n product-center -o wide
 
 kubectl run curl-test -n product-center --image=curlimages/curl --rm -i --restart=Never -- sh -c '
-  curl -s http://ai:8000/health; echo
   curl -s http://payment:8080/health; echo
   curl -s http://backend:80/health; echo
 '
@@ -75,7 +73,7 @@ kubectl run curl-test -n product-center --image=curlimages/curl --rm -i --restar
 
 ```bash
 # Usunąć tylko nasze release'y i namespace (zostawia resztę Minikube nietkniętą)
-helm uninstall ai payment backend -n product-center
+helm uninstall payment backend -n product-center
 kubectl delete namespace product-center
 
 # Zatrzymać całego Minikube (zwalnia zasoby hosta, zachowuje stan)

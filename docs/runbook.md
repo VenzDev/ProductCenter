@@ -18,7 +18,6 @@ k8s/chart/
     migrate-job.yaml    # opcjonalny (migrate.enabled) — Helm hook, patrz błąd #10
     ingress.yaml        # opcjonalny (ingress.enabled) — ALB przez AWS Load Balancer Controller
   values/
-    ai.yaml
     payment.yaml
     backend.yaml
 ```
@@ -41,7 +40,7 @@ aws eks update-kubeconfig --name product-center --region eu-central-1
 # (np. `minikube start`) po cichu je nadpisze
 kubectl config current-context   # powinno pokazać arn:aws:eks:...:cluster/product-center
 
-# 3. Build + push obrazów (dla każdego serwisu: ai, payment, backend)
+# 3. Build + push obrazów (dla payment i backend)
 docker build --platform linux/amd64 --target prod \
   -t 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest \
   services/<serwis>
@@ -103,7 +102,6 @@ kubectl wait --for=condition=Available deployment/aws-load-balancer-controller -
 terraform output acm_certificate_arn
 
 # 8. Zainstaluj serwisy (jeden reużywalny Helm chart, różne values per serwis)
-helm install ai      k8s/chart -f k8s/chart/values/ai.yaml
 helm install payment k8s/chart -f k8s/chart/values/payment.yaml
 helm install backend k8s/chart -f k8s/chart/values/backend.yaml
 
@@ -175,7 +173,6 @@ kubectl get pods -o wide
 
 # Test /health przez Service (DNS + routing wewnątrz klastra, nie tylko sam pod)
 kubectl run curl-test --image=curlimages/curl --rm -i --restart=Never -- sh -c '
-  curl -s http://ai:8000/health; echo
   curl -s http://payment:8080/health; echo
   curl -s http://backend:80/health; echo
 '
@@ -198,14 +195,14 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 | 9 | Kubernetes 1.33 zbliżało się do końca standard support (koszt x6 na extended support) | — | Wersja `1.35` | `infrastructure/eks/eks.tf` |
 | 10 | `backend` restart w pętli na świeżym RDS, `HTTP probe failed with statuscode: 500` na `/health` mimo że handler nic nie robi z DB | Obraz `prod` nigdy nie uruchamia migracji (tylko `dev-entrypoint.sh` to robi, i to tylko w `dev`) — świeża baza nie ma tabeli `sessions`, a domyślna grupa middleware `web` (którą dostaje KAŻDA trasa, łącznie z `/health`) startuje sesję, więc wywala się na każdym requeście | Helm hook `pre-install,pre-upgrade` (`Job` uruchamiający `php artisan migrate --force` przed rollout Deployment) | `k8s/chart/templates/migrate-job.yaml` |
 | 11 | (przy naprawianiu #10) Świeży `helm install` wisi, `job-controller` event: `serviceaccount "backend" not found` | Hooki (`pre-install`) wykonują się PRZED zwykłymi zasobami release'u — `ServiceAccount` (`serviceaccount.yaml`, zwykły szablon, nie hook) jeszcze nie istnieje, gdy Job próbuje go użyć | Job migracji nie ustawia `serviceAccountName` — używa domyślnego SA namespace'u; i tak nie potrzebuje uprawnień S3/IRSA, tylko łączności z DB | `k8s/chart/templates/migrate-job.yaml` |
-| 12 | `helm install ai/payment/backend` wywala się od razu: `no matches for kind "ServiceMonitor" in version "monitoring.coreos.com/v1"` | Każdy serwis ma `metrics.enabled: true` domyślnie, czyli zawsze renderuje `ServiceMonitor` — ten CRD dostarcza dopiero `kube-prometheus-stack` | Monitoring instalowany PRZED serwisami w kolejności runbooka (krok 6 przed 7), nie jako osobny opcjonalny dodatek na końcu | `docs/runbook.md` |
+| 12 | `helm install payment/backend` wywala się od razu: `no matches for kind "ServiceMonitor" in version "monitoring.coreos.com/v1"` | Każdy serwis ma `metrics.enabled: true` domyślnie, czyli zawsze renderuje `ServiceMonitor` — ten CRD dostarcza dopiero `kube-prometheus-stack` | Monitoring instalowany PRZED serwisami w kolejności runbooka (krok 6 przed 7), nie jako osobny opcjonalny dodatek na końcu | `docs/runbook.md` |
 | 13 | `terraform destroy` wywala się na `DependencyViolation` przy subnetach/IGW i `ResourceInUseException` przy certyfikacie ACM | Klaster (a razem z nim AWS Load Balancer Controller) zniknął, zanim kontroler zdążył usunąć ALB, który sam utworzył dla Ingressu — ALB (z ENI trzymającymi publiczne IP w subnetach publicznych) i jego security groupy nie są zarządzane przez Terraform, więc `destroy` o nich nie wie i nie potrafi ich sprzątnąć | Przed `terraform destroy`: `helm uninstall backend` (albo `kubectl delete ingress backend`), poczekać aż kontroler usunie ALB, dopiero potem `destroy`. Jeśli już się wywaliło: ręcznie `aws elbv2 delete-load-balancer` + `delete-target-group`, poczekać aż znikną ENI, usunąć osierocone security groupy (`aws ec2 delete-security-group`), potem ponowić `terraform destroy` | `docs/runbook.md` |
 
 ## 5. Rzeczy, które NIE przetrwają `terraform destroy`
 
 - **Wszystko w klastrze** (pody, Service'y, Secrets) — Kubernetes żyje tylko wewnątrz klastra, destroy usuwa cały klaster.
 - **`backend-secrets`** — musi być stworzony ręcznie na nowo po każdym świeżym `terraform apply` (krok 5 w sekcji 1). Nie jest zarządzany przez Terraform ani przez pliki w `k8s/`.
-- **Obrazy w ECR** — repozytoria (`ai`, `payment`, `backend`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
+- **Obrazy w ECR** — repozytoria (`payment`, `backend`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
 - **Pliki w S3** (`product-files`) — bucket ma `force_destroy = true`, więc `terraform destroy` kasuje go razem z zawartością (uploadowane zdjęcia produktów). Nie ma osobnego backupu.
 - **Baza RDS** (`skip_final_snapshot = true`) i jej hasło w Secrets Manager (`manage_master_user_password`, zarządzane przez `aws_db_instance`) — obie znikają bez śladu przy `destroy`, żadnego snapshotu na wyjściu.
 - **Rekord Route53 `admin.bechta.pl`** — tworzony imperatywnie (krok 9), nie przez Terraform, więc `terraform destroy` go nie usuwa; wskazuje na ALB, który zniknie razem z klastrem, więc zostaje jako martwy alias dopóki nie zrobi się `aws route53 change-resource-record-sets` z `"Action": "DELETE"` ręcznie.

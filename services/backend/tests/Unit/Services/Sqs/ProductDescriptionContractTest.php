@@ -5,9 +5,9 @@ use App\Services\Sqs\SqsQueue;
 use Opis\JsonSchema\Validator;
 
 // Checks that the DTO's wire format still matches contracts/product-description-requested.schema.json
-// — the spec the AI service will implement against once it exists. Kept as a test rather than
-// runtime validation on the publish path: with a single, fully-typed producer, PHPStan/Pest
-// already guarantee the shape, so a schema check only earns its keep in CI for now.
+// — the spec the description-generation consumer will implement against once it exists. Kept as a
+// test rather than runtime validation on the publish path: with a single, fully-typed producer,
+// PHPStan/Pest already guarantee the shape, so a schema check only earns its keep in CI for now.
 function assertMatchesProductDescriptionContract(ProductDescriptionRequestData $data): void
 {
     $schema = file_get_contents(SqsQueue::ProductDescriptionRequested->contractPath());
