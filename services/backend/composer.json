@@ -12,7 +12,6 @@
         "laravel/socialite": "^5.29",
         "laravel/tinker": "^3.0",
         "league/flysystem-aws-s3-v3": "^3.35",
-        "opis/json-schema": "^2.6",
         "promphp/prometheus_client_php": "^2.15",
         "socialiteproviders/microsoft": "^4.10",
         "spatie/laravel-translatable": "^6.14",

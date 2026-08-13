@@ -46,7 +46,7 @@ Projekt to sklep e-commerce. System ma dwóch typów użytkowników: `user` (kli
 - System dwujęzyczny (PL/EN) z możliwością rozszerzenia o kolejne języki bez migracji schematu.
 - Panel admina prawdopodobnie renderowany bezpośrednio w Laravel (nie w React) — sklep dla klientów to osobna aplikacja React.
 - Właściciel danych produktów, użytkowników, zamówień i cen.
-- **Generowanie opisu produktu** — wywoływane asynchronicznie przez SQS: backend publikuje `product-description-requested` po kliknięciu akcji w panelu admina, a wynik wraca przez `product-description-generated`. Wcześniej robił to osobny serwis `ai` (Python, RAG nad PDF-ami instrukcji) — po jego usunięciu odpowiedzialność przechodzi na backend; sama generacja (konsument `product-description-requested` + producent `product-description-generated`, docelowo z RAG nad PDF-ami z S3) to jeszcze niezaimplementowany kolejny krok.
+- **Generowanie opisu produktu** — wywoływane asynchronicznie przez Laravel queue (sterownik `database`): kliknięcie akcji w panelu admina dispatchuje `GenerateProductDescriptionJob`, przetwarzany przez dedykowany kontener `backend-worker` (`php artisan queue:work`). Wcześniej robił to osobny serwis `ai` (Python, RAG nad PDF-ami instrukcji), a po jego usunięciu — przejściowo — para zdarzeń SQS (`product-description-requested`/`product-description-generated`) w obrębie backendu; skoro cały przepływ jest teraz jednym procesem (ten sam serwis publikuje i konsumuje), SQS okazał się niepotrzebny i zastąpiła go kolejka Laravela. Obecnie job wypełnia opis placeholderem — docelowa generacja z RAG nad PDF-ami z S3 to jeszcze niezaimplementowany kolejny krok.
 
 ### Frontend (React)
 
@@ -64,7 +64,7 @@ Projekt to sklep e-commerce. System ma dwóch typów użytkowników: `user` (kli
 - **Backend**: PostgreSQL — użytkownicy, produkty, ceny, zamówienia; docelowo też vector store do embeddingów z RAG (np. pgvector) przy budowie generowania opisu.
 - **Payment**: DynamoDB — rozważane jako storage własny serwisu (np. transakcje, idempotency), decyzja do podjęcia przy jego implementacji.
 - **S3**: pliki — zdjęcia produktów i dokumentacja PDF.
-- **SQS**: zdarzenia async — `product-description-requested`/`product-description-generated` (generowanie opisu, w obrębie backendu), `payment-completed` → backend (status zamówienia).
+- **SQS**: zdarzenia async między serwisami — `payment-completed` → backend (status zamówienia). Generowanie opisu produktu nie używa SQS (patrz wyżej) — cały przepływ mieści się w backendzie, więc wystarcza kolejka Laravela.
 
 ### Schemat produktów (PostgreSQL) — plan
 
