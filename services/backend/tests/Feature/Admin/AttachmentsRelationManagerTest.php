@@ -2,15 +2,20 @@
 
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\RelationManagers\AttachmentsRelationManager;
+use App\Jobs\GenerateAttachmentEmbeddingsJob;
 use App\Models\Admin;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
 
 test('an admin can upload a product attachment to the s3 disk', function () {
     Storage::fake('s3');
+    // Embedding generation is exercised in GenerateAttachmentEmbeddingsJobTest and
+    // ProductAttachmentTest — faked here so this test only asserts the upload itself.
+    Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
@@ -42,6 +47,7 @@ test('an admin can upload a product attachment to the s3 disk', function () {
 
 test('an admin can download a product attachment', function () {
     Storage::fake('s3');
+    Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);

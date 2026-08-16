@@ -28,6 +28,7 @@ class AttachmentsRelationManager extends RelationManager
                     ->disk('s3')
                     ->directory('products/attachments')
                     ->visibility('public')
+                    ->acceptedFileTypes(['application/pdf'])
                     ->required(),
                 TextInput::make('label'),
             ]);
