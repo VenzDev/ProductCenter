@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Ai\Jobs;
 
 use App\Models\Product;
 use Illuminate\Bus\Queueable;
@@ -10,9 +10,6 @@ use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 
-// Placeholder generation until real description generation (RAG over S3 manual PDFs,
-// see docs/design.md) is built — writes deterministic filler text so the queue plumbing
-// can be exercised end-to-end before that step exists.
 class GenerateProductDescriptionJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;

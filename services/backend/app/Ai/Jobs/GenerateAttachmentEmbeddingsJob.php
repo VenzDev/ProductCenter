@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Jobs;
+namespace App\Ai\Jobs;
 
+use App\Ai\ProductAttachments\ProductAttachmentEmbedderInterface;
 use App\Models\ProductAttachment;
-use App\Services\Ai\ProductManualAiService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -26,9 +26,7 @@ class GenerateAttachmentEmbeddingsJob implements ShouldQueue
         public readonly int $attachmentId,
     ) {}
 
-    // Resolved from the container per-run, not the constructor — constructor
-    // properties get serialized onto the queued job row (see SerializesModels).
-    public function handle(ProductManualAiService $ai): void
+    public function handle(ProductAttachmentEmbedderInterface $ai): void
     {
         $attachment = ProductAttachment::find($this->attachmentId);
 

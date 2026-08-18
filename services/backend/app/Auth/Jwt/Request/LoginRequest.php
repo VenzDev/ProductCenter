@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Requests\Auth;
+namespace App\Auth\Jwt\Request;
 
 use Illuminate\Foundation\Http\FormRequest;
 

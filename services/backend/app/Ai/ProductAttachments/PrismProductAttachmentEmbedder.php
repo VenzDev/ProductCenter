@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Services\Ai;
+namespace App\Ai\ProductAttachments;
 
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Facades\Prism;
@@ -9,7 +9,7 @@ use Prism\Prism\Schema\NumberSchema;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\ValueObjects\Embedding;
 
-class PrismProductManualAiService implements ProductManualAiService
+class PrismProductAttachmentEmbedder implements ProductAttachmentEmbedderInterface
 {
     private const string EMBEDDING_MODEL = 'text-embedding-3-small';
 

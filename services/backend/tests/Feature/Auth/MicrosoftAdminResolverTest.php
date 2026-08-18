@@ -1,7 +1,7 @@
 <?php
 
+use App\Auth\Admin\MicrosoftAdminResolver;
 use App\Models\Admin;
-use App\Services\Auth\MicrosoftAdminResolver;
 use Laravel\Socialite\Two\User as SocialiteUser;
 
 test('resolve returns the existing admin matched by microsoft_id without creating a duplicate', function () {

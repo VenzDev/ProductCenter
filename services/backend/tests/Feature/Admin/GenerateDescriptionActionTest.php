@@ -1,8 +1,8 @@
 <?php
 
+use App\Ai\Jobs\GenerateProductDescriptionJob;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\Pages\ViewProduct;
-use App\Jobs\GenerateProductDescriptionJob;
 use App\Models\Admin;
 use App\Models\Category;
 use App\Models\Product;

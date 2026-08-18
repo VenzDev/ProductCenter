@@ -2,8 +2,8 @@
 
 namespace App\Filament\Resources\Products\Actions;
 
+use App\Ai\Jobs\GenerateProductDescriptionJob;
 use App\Enums\Language;
-use App\Jobs\GenerateProductDescriptionJob;
 use App\Models\Product;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;

@@ -2,8 +2,8 @@
 
 namespace App\Providers;
 
-use App\Services\Ai\PrismProductManualAiService;
-use App\Services\Ai\ProductManualAiService;
+use App\Ai\ProductAttachments\PrismProductAttachmentEmbedder;
+use App\Ai\ProductAttachments\ProductAttachmentEmbedderInterface;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
@@ -16,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->app->bind(ProductManualAiService::class, PrismProductManualAiService::class);
+        $this->app->bind(ProductAttachmentEmbedderInterface::class, PrismProductAttachmentEmbedder::class);
     }
 
     /**

@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Services\Auth;
+namespace App\Auth\Admin;
 
 use App\Models\Admin;
 use Laravel\Socialite\Contracts\User as SocialiteUser;
 
-class MicrosoftAdminResolver
+class MicrosoftAdminResolver implements ResolverInterface
 {
     public function resolve(SocialiteUser $microsoftUser): ?Admin
     {

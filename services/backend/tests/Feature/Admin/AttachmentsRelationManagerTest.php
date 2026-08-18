@@ -1,8 +1,8 @@
 <?php
 
+use App\Ai\Jobs\GenerateAttachmentEmbeddingsJob;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\RelationManagers\AttachmentsRelationManager;
-use App\Jobs\GenerateAttachmentEmbeddingsJob;
 use App\Models\Admin;
 use App\Models\Category;
 use App\Models\Product;

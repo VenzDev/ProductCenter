@@ -1,6 +1,6 @@
 <?php
 
-use App\Jobs\GenerateAttachmentEmbeddingsJob;
+use App\Ai\Jobs\GenerateAttachmentEmbeddingsJob;
 use App\Models\Category;
 use App\Models\Product;
 use Illuminate\Support\Facades\Bus;

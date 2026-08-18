@@ -1,6 +1,6 @@
 <?php
 
-use App\Jobs\GenerateProductDescriptionJob;
+use App\Ai\Jobs\GenerateProductDescriptionJob;
 use App\Models\Category;
 use App\Models\Product;
 

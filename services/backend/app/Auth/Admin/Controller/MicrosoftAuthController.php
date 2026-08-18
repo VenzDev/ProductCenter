@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Http\Controllers\Auth;
+namespace App\Auth\Admin\Controller;
 
+use App\Auth\Admin\MicrosoftAdminResolver;
 use App\Http\Controllers\Controller;
-use App\Services\Auth\MicrosoftAdminResolver;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\RedirectResponse as LaravelRedirectResponse;
 use Illuminate\Http\Request;
@@ -21,8 +21,6 @@ class MicrosoftAuthController extends Controller
         /** @var AbstractProvider $provider */
         $provider = Socialite::driver('microsoft');
 
-        // Without this, Microsoft silently reuses an existing browser SSO session and
-        // skips straight to the callback — no login page or account picker is ever shown.
         return $provider->with(['prompt' => 'select_account'])->redirect();
     }
 

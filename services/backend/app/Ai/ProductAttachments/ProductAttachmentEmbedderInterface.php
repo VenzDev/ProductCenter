@@ -1,13 +1,8 @@
 <?php
 
-namespace App\Services\Ai;
+namespace App\Ai\ProductAttachments;
 
-/**
- * Port for the AI operations the manual RAG pipeline needs (ingestion embedding,
- * question embedding, reranking, answer generation) — kept provider-agnostic so
- * PrismProductManualAiService (or any other adapter) can change without touching callers.
- */
-interface ProductManualAiService
+interface ProductAttachmentEmbedderInterface
 {
     /**
      * @param  array<int, string>  $texts

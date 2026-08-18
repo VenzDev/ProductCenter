@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Ai\Controller;
 
+use App\Ai\ProductAttachments\ProductAttachmentEmbedderInterface;
+use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductAttachmentChunk;
-use App\Services\Ai\ProductManualAiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -13,15 +14,11 @@ use Pgvector\Laravel\Vector;
 
 class AskProductController extends Controller
 {
-    // Cast a wide net with cheap vector search, then let a rerank step (which reads
-    // actual chunk content, not just embeddings) pick the ones that really answer the
-    // question — a chunk mixing several topics can rank just outside the vector top-k
-    // even when it contains the answer (see docs/design.md RAG notes).
     private const CANDIDATE_CHUNKS = 20;
 
     private const ANSWER_CHUNKS = 5;
 
-    public function __construct(private readonly ProductManualAiService $ai) {}
+    public function __construct(private readonly ProductAttachmentEmbedderInterface $ai) {}
 
     public function __invoke(Request $request, Product $product): JsonResponse
     {
@@ -72,11 +69,6 @@ class AskProductController extends Controller
         $excerpts = $candidates->map(fn (ProductAttachmentChunk $chunk) => $chunk->content)->all();
 
         $indices = $this->ai->selectRelevantExcerpts($question, $excerpts, self::ANSWER_CHUNKS);
-
-        // Can't tell "legitimately nothing relevant" apart from a malformed/empty
-        // response, so fall back to the plain vector ranking rather than answering
-        // with zero context either way — the final answer step still declines to
-        // guess if none of these are actually relevant.
         if ($indices === []) {
             return $candidates->take(self::ANSWER_CHUNKS)->values();
         }

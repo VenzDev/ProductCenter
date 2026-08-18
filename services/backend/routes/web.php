@@ -1,6 +1,6 @@
 <?php
 
-use App\Http\Controllers\Auth\MicrosoftAuthController;
+use App\Auth\Admin\Controller\MicrosoftAuthController;
 use Illuminate\Support\Facades\Route;
 use Prometheus\CollectorRegistry;
 use Prometheus\RenderTextFormat;

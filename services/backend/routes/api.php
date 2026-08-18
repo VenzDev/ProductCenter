@@ -1,7 +1,7 @@
 <?php
 
-use App\Http\Controllers\AskProductController;
-use App\Http\Controllers\Auth\AuthController;
+use App\Ai\Controller\AskProductController;
+use App\Auth\Jwt\Controller\AuthController;
 use Illuminate\Support\Facades\Route;
 
 Route::post('/register', [AuthController::class, 'register']);
