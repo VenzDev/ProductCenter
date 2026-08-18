@@ -30,6 +30,9 @@ services:
       context: ./services/backend
       target: dev
     entrypoint: ["php", "artisan", "queue:work"]
+    # A fatal error in one job (e.g. an out-of-memory PDF parse) kills the whole
+    # queue:work process, not just that job — restart so it keeps processing the rest.
+    restart: unless-stopped
     volumes:
       - ./services/backend:/app
       - backend_vendor:/app/vendor
