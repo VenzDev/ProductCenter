@@ -59,7 +59,9 @@ class AskProductController extends Controller
             ->using(Provider::OpenAI, 'gpt-4o-mini')
             ->withSystemPrompt(
                 "Answer the user's question using only the numbered manual excerpts below. ".
-                "If the excerpts don't contain the answer, say so instead of guessing.\n\n{$context}"
+                "If the excerpts don't contain the answer, say so instead of guessing. ".
+                'Reply in plain flowing prose: no line breaks and no bullet/numbered lists — '.
+                "if you need to list multiple items, separate them with commas instead.\n\n{$context}"
             )
             ->withPrompt($data['question'])
             ->asText();
