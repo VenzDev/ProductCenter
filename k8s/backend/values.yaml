@@ -1,18 +1,11 @@
-name: backend
 image: 222634367938.dkr.ecr.eu-central-1.amazonaws.com/backend:latest
 port: 80
 # IRSA — lets this pod's ServiceAccount assume the IAM role Terraform creates for S3
 # access, no static AWS keys anywhere. Role name/account are deterministic (see
 # infrastructure/eks/iam.tf), so this doesn't need filling in after apply.
 serviceAccount:
-  create: true
-  name: backend
-  annotations:
-    eks.amazonaws.com/role-arn: "arn:aws:iam::222634367938:role/product-center-backend-s3"
-migrate:
-  enabled: true
+  roleArn: "arn:aws:iam::222634367938:role/product-center-backend-s3"
 ingress:
-  enabled: true
   host: admin.bechta.pl
   # ACM cert is DNS-validated (see infrastructure/eks/dns.tf), so its ARN isn't
   # predictable in advance the same way the S3 role ARN above is.
@@ -67,5 +60,3 @@ env:
       secretKeyRef:
         name: backend-secrets
         key: azure-redirect-uri
-metrics:
-  enabled: true

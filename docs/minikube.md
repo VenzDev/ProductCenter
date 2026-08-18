@@ -1,6 +1,6 @@
 # Praca z Minikube (lokalny odpowiednik EKS)
 
-Cel: testować `k8s/chart` (i docelowo `kube-prometheus-stack`) bez kosztów AWS i bez czekania na node group. Kontekst: `runbook.md` opisuje to samo dla prawdziwego EKS — Minikube używa dokładnie tego samego chartu, różni się tylko obrazami i sekretami.
+Cel: testować charty w `k8s/` (i docelowo `kube-prometheus-stack`) bez kosztów AWS i bez czekania na node group. Kontekst: `runbook.md` opisuje to samo dla prawdziwego EKS — Minikube używa dokładnie tych samych chartów, różni się tylko obrazami i sekretami.
 
 ## 1. Start klastra
 
@@ -51,11 +51,11 @@ kubectl create secret generic backend-secrets -n product-center \
 
 ## 4. Instalacja serwisów
 
-Ten sam chart co na EKS, ale z nadpisanym `image` (lokalny tag zamiast adresu ECR):
+Te same charty co na EKS, ale z nadpisanym `image` (lokalny tag zamiast adresu ECR):
 
 ```bash
-helm install payment k8s/chart -n product-center -f k8s/chart/values/payment.yaml --set image=payment:local
-helm install backend k8s/chart -n product-center -f k8s/chart/values/backend.yaml --set image=backend:local
+helm install payment k8s/payment -n product-center --set image=payment:local
+helm install backend k8s/backend -n product-center --set image=backend:local
 ```
 
 ## 5. Weryfikacja

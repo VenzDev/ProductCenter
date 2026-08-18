@@ -4,25 +4,29 @@ Praktyczna ściąga: jak postawić klaster, wdrożyć serwisy i sprawdzić, że 
 
 ## 0. Struktura `k8s/`
 
-Jeden reużywalny Helm chart zamiast osobnych manifestów per serwis:
+Osobny Helm chart per serwis — bez wspólnych/warunkowych szablonów, każdy chart ma tylko te zasoby, których faktycznie potrzebuje:
 
 ```
-k8s/chart/
+k8s/backend/
   Chart.yaml
-  values.yaml          # domyślne (puste) wartości
+  values.yaml           # obraz, port, env, ingress host/cert, IRSA role ARN
   templates/
-    deployment.yaml    # wspólny szablon Deployment
-    service.yaml       # wspólny szablon Service
-    serviceaccount.yaml # opcjonalny (serviceAccount.create) — potrzebny pod IRSA
-    servicemonitor.yaml # opcjonalny (metrics.enabled) — scrape dla Prometheusa
-    migrate-job.yaml    # opcjonalny (migrate.enabled) — Helm hook, patrz błąd #10
-    ingress.yaml        # opcjonalny (ingress.enabled) — ALB przez AWS Load Balancer Controller
-  values/
-    payment.yaml
-    backend.yaml
+    deployment.yaml
+    service.yaml
+    serviceaccount.yaml  # IRSA — dostęp do S3
+    servicemonitor.yaml  # scrape dla Prometheusa
+    migrate-job.yaml     # Helm hook, patrz błąd #10
+    ingress.yaml         # ALB przez AWS Load Balancer Controller
+k8s/payment/
+  Chart.yaml
+  values.yaml            # obraz, port
+  templates/
+    deployment.yaml
+    service.yaml
+    servicemonitor.yaml
 ```
 
-Różnice między serwisami (nazwa, obraz, port, zmienne env) żyją tylko w `values/<serwis>.yaml` — nowy serwis to nowy plik values, nie kopiowanie manifestów.
+Nowy serwis to nowy katalog chartu, nie nowy plik values do istniejącego wspólnego szablonu.
 
 ## 1. Kolejność: terraform apply → deploy
 
@@ -46,7 +50,7 @@ docker build --platform linux/amd64 --target prod \
   services/<serwis>
 docker push 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest
 
-# 4. Wypełnij placeholder `<TERRAFORM_OUTPUT:rds_endpoint>` w k8s/chart/values/backend.yaml
+# 4. Wypełnij placeholder `<TERRAFORM_OUTPUT:rds_endpoint>` w k8s/backend/values.yaml
 #    (host RDS jest generowany przez AWS, nie da się przewidzieć przed apply — nazwa
 #    bucketu S3 i ARN roli IRSA są deterministyczne, więc są już wpisane na sztywno)
 terraform output rds_endpoint
@@ -83,7 +87,7 @@ kubectl wait --for=condition=Ready pods --all -n monitoring --timeout=300s
 kubectl apply -f k8s/monitoring/dashboard-services.yaml -n monitoring
 
 # 7. AWS Load Balancer Controller — cluster-wide kontroler, który zamienia Ingress
-#    backendu (k8s/chart/templates/ingress.yaml) w prawdziwy ALB. Rola IRSA i jej
+#    backendu (k8s/backend/templates/ingress.yaml) w prawdziwy ALB. Rola IRSA i jej
 #    uprawnienia są zarządzane przez Terraform (infrastructure/eks/iam.tf), sam
 #    kontroler instalowany tak samo imperatywnie jak kube-prometheus-stack.
 helm repo add eks https://aws.github.io/eks-charts
@@ -97,13 +101,13 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
 kubectl wait --for=condition=Available deployment/aws-load-balancer-controller -n kube-system --timeout=120s
 
 # Wypełnij placeholder `<TERRAFORM_OUTPUT:acm_certificate_arn>` w
-# k8s/chart/values/backend.yaml (ARN certu ACM znany dopiero po walidacji DNS,
+# k8s/backend/values.yaml (ARN certu ACM znany dopiero po walidacji DNS,
 # tak jak rds_endpoint w kroku 4 — nie da się przewidzieć przed apply)
 terraform output acm_certificate_arn
 
-# 8. Zainstaluj serwisy (jeden reużywalny Helm chart, różne values per serwis)
-helm install payment k8s/chart -f k8s/chart/values/payment.yaml
-helm install backend k8s/chart -f k8s/chart/values/backend.yaml
+# 8. Zainstaluj serwisy (osobny chart per serwis)
+helm install payment k8s/payment
+helm install backend k8s/backend
 
 # 9. admin.bechta.pl → ALB. AWS Load Balancer Controller tworzy ALB dopiero z Ingressu
 #    backendu (krok 8), więc jego DNS name nie jest znany Terraformowi — rekord Route53
@@ -131,7 +135,7 @@ aws route53 change-resource-record-sets \
   }'
 ```
 
-Przy zmianie w templatce/values (bez nowego klastra): `helm upgrade <nazwa> k8s/chart -f k8s/chart/values/<nazwa>.yaml`. Renderowanie manifestów do podglądu bez dotykania klastra: `helm template <nazwa> k8s/chart -f k8s/chart/values/<nazwa>.yaml`.
+Przy zmianie w templatce/values (bez nowego klastra): `helm upgrade <nazwa> k8s/<nazwa>`. Renderowanie manifestów do podglądu bez dotykania klastra: `helm template <nazwa> k8s/<nazwa>`.
 
 **Uwaga:** `--platform linux/amd64` jest obowiązkowe przy buildzie na Macu z Apple Silicon — node'y EKS to x86_64 (`ami_type = AL2023_x86_64_STANDARD`). Domyślny `node_instance_type` (`t3.large`) mieści oba stacki naraz bez zmian.
 
@@ -188,14 +192,14 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 | 2 | `terraform apply` wisi 20-30+ min na tworzeniu node group, `aws eks describe-addon vpc-cni` zwraca `ResourceNotFoundException` cały czas | Błędne koło: node group czeka aż node będzie `Ready`, node czeka na `vpc-cni`, `vpc-cni` czeka aż node group się utworzy (domyślny `depends_on` w module) | `before_compute = true` na addonie `vpc-cni` | `infrastructure/eks/eks.tf` |
 | 3 | Node'y bez dostępu do internetu | Brak NAT / `map_public_ip_on_launch` przy node'ach w public subnecie | Private subnety + NAT Gateway (`single_nat_gateway = true`) | `infrastructure/eks/vpc.tf` |
 | 4 | `ImagePullBackOff`, event: `no match for platform in manifest` | Obraz zbudowany na Macu (arm64) bez `--platform`, node x86_64 | Zawsze `docker build --platform linux/amd64 ...` | komenda buildu (patrz sekcja 1) |
-| 5 | `backend` restart w pętli, `Readiness probe failed: ... tls: internal error` | FrankenPHP bez `SERVER_NAME` domyślnie włącza auto-HTTPS z self-signed certem; port 80 tylko przekierowuje na HTTPS, sonda idzie za redirectem i wpada na zły cert | env `SERVER_NAME: ":80"` | `k8s/chart/values/backend.yaml` |
+| 5 | `backend` restart w pętli, `Readiness probe failed: ... tls: internal error` | FrankenPHP bez `SERVER_NAME` domyślnie włącza auto-HTTPS z self-signed certem; port 80 tylko przekierowuje na HTTPS, sonda idzie za redirectem i wpada na zły cert | env `SERVER_NAME: ":80"` | `k8s/backend/values.yaml` |
 | 6 | `backend` HTTP 500, log: `Class "Laravel\Pail\PailServiceProvider" not found` (czasem ukryte pod wtórnym błędem `Target class [translator] does not exist`) | Stary lokalny cache `bootstrap/cache/packages.php` (wygenerowany gdy były zainstalowane dev-deps z Pailem) trafiał do obrazu prod przez `COPY . .`; `composer install --no-scripts --no-dev` w prod stage go nie odświeża | Dodać `bootstrap/cache/*.php` do `.dockerignore` | `services/backend/.dockerignore` |
-| 7 | `backend` HTTP 500 (po naprawieniu #6) | Brak `APP_KEY` — `.env` celowo poza obrazem (`.dockerignore`), Laravel wywala się na `EncryptCookies` | Kubernetes Secret `backend-secrets` (imperatywnie, nigdy nie commitować realnej wartości do gita), referencja przez `secretKeyRef` | `k8s/chart/values/backend.yaml` + krok 5 w sekcji 1 |
+| 7 | `backend` HTTP 500 (po naprawieniu #6) | Brak `APP_KEY` — `.env` celowo poza obrazem (`.dockerignore`), Laravel wywala się na `EncryptCookies` | Kubernetes Secret `backend-secrets` (imperatywnie, nigdy nie commitować realnej wartości do gita), referencja przez `secretKeyRef` | `k8s/backend/values.yaml` + krok 5 w sekcji 1 |
 | 8 | `terraform destroy` odmawia usunąć repozytoria ECR | Repozytoria zawierają obrazy, domyślnie `force_delete = false` | `force_delete = true` na `aws_ecr_repository` | `infrastructure/eks/ecr.tf` |
 | 9 | Kubernetes 1.33 zbliżało się do końca standard support (koszt x6 na extended support) | — | Wersja `1.35` | `infrastructure/eks/eks.tf` |
-| 10 | `backend` restart w pętli na świeżym RDS, `HTTP probe failed with statuscode: 500` na `/health` mimo że handler nic nie robi z DB | Obraz `prod` nigdy nie uruchamia migracji (tylko `dev-entrypoint.sh` to robi, i to tylko w `dev`) — świeża baza nie ma tabeli `sessions`, a domyślna grupa middleware `web` (którą dostaje KAŻDA trasa, łącznie z `/health`) startuje sesję, więc wywala się na każdym requeście | Helm hook `pre-install,pre-upgrade` (`Job` uruchamiający `php artisan migrate --force` przed rollout Deployment) | `k8s/chart/templates/migrate-job.yaml` |
-| 11 | (przy naprawianiu #10) Świeży `helm install` wisi, `job-controller` event: `serviceaccount "backend" not found` | Hooki (`pre-install`) wykonują się PRZED zwykłymi zasobami release'u — `ServiceAccount` (`serviceaccount.yaml`, zwykły szablon, nie hook) jeszcze nie istnieje, gdy Job próbuje go użyć | Job migracji nie ustawia `serviceAccountName` — używa domyślnego SA namespace'u; i tak nie potrzebuje uprawnień S3/IRSA, tylko łączności z DB | `k8s/chart/templates/migrate-job.yaml` |
-| 12 | `helm install payment/backend` wywala się od razu: `no matches for kind "ServiceMonitor" in version "monitoring.coreos.com/v1"` | Każdy serwis ma `metrics.enabled: true` domyślnie, czyli zawsze renderuje `ServiceMonitor` — ten CRD dostarcza dopiero `kube-prometheus-stack` | Monitoring instalowany PRZED serwisami w kolejności runbooka (krok 6 przed 7), nie jako osobny opcjonalny dodatek na końcu | `docs/runbook.md` |
+| 10 | `backend` restart w pętli na świeżym RDS, `HTTP probe failed with statuscode: 500` na `/health` mimo że handler nic nie robi z DB | Obraz `prod` nigdy nie uruchamia migracji (tylko `dev-entrypoint.sh` to robi, i to tylko w `dev`) — świeża baza nie ma tabeli `sessions`, a domyślna grupa middleware `web` (którą dostaje KAŻDA trasa, łącznie z `/health`) startuje sesję, więc wywala się na każdym requeście | Helm hook `pre-install,pre-upgrade` (`Job` uruchamiający `php artisan migrate --force` przed rollout Deployment) | `k8s/backend/templates/migrate-job.yaml` |
+| 11 | (przy naprawianiu #10) Świeży `helm install` wisi, `job-controller` event: `serviceaccount "backend" not found` | Hooki (`pre-install`) wykonują się PRZED zwykłymi zasobami release'u — `ServiceAccount` (`serviceaccount.yaml`, zwykły szablon, nie hook) jeszcze nie istnieje, gdy Job próbuje go użyć | Job migracji nie ustawia `serviceAccountName` — używa domyślnego SA namespace'u; i tak nie potrzebuje uprawnień S3/IRSA, tylko łączności z DB | `k8s/backend/templates/migrate-job.yaml` |
+| 12 | `helm install payment/backend` wywala się od razu: `no matches for kind "ServiceMonitor" in version "monitoring.coreos.com/v1"` | Każdy chart zawsze renderuje `ServiceMonitor` — ten CRD dostarcza dopiero `kube-prometheus-stack` | Monitoring instalowany PRZED serwisami w kolejności runbooka (krok 6 przed 7), nie jako osobny opcjonalny dodatek na końcu | `docs/runbook.md` |
 | 13 | `terraform destroy` wywala się na `DependencyViolation` przy subnetach/IGW i `ResourceInUseException` przy certyfikacie ACM | Klaster (a razem z nim AWS Load Balancer Controller) zniknął, zanim kontroler zdążył usunąć ALB, który sam utworzył dla Ingressu — ALB (z ENI trzymającymi publiczne IP w subnetach publicznych) i jego security groupy nie są zarządzane przez Terraform, więc `destroy` o nich nie wie i nie potrafi ich sprzątnąć | Przed `terraform destroy`: `helm uninstall backend` (albo `kubectl delete ingress backend`), poczekać aż kontroler usunie ALB, dopiero potem `destroy`. Jeśli już się wywaliło: ręcznie `aws elbv2 delete-load-balancer` + `delete-target-group`, poczekać aż znikną ENI, usunąć osierocone security groupy (`aws ec2 delete-security-group`), potem ponowić `terraform destroy` | `docs/runbook.md` |
 
 ## 5. Rzeczy, które NIE przetrwają `terraform destroy`

@@ -1,8 +1,7 @@
-{{- if .Values.migrate.enabled }}
 apiVersion: batch/v1
 kind: Job
 metadata:
-  name: {{ .Values.name }}-migrate
+  name: backend-migrate
   annotations:
     # Runs before the Deployment rolls out, on every install AND upgrade — without this,
     # a fresh database has no tables and every request 500s (including /health), since
@@ -18,15 +17,10 @@ spec:
   template:
     metadata:
       labels:
-        app: {{ .Values.name }}-migrate
+        app: backend-migrate
     spec:
       restartPolicy: Never
       containers:
         - name: migrate
-          image: {{ .Values.image }}
+          {{- include "backend.imageEnv" . | nindent 10 }}
           command: ["php", "artisan", "migrate", "--force"]
-          {{- with .Values.env }}
-          env:
-            {{- toYaml . | nindent 12 }}
-          {{- end }}
-{{- end }}

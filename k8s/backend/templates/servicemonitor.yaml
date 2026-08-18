@@ -1,15 +1,13 @@
-{{- if .Values.metrics.enabled }}
 apiVersion: monitoring.coreos.com/v1
 kind: ServiceMonitor
 metadata:
-  name: {{ .Values.name }}
+  name: backend
   labels:
     release: kube-prometheus-stack
 spec:
   selector:
     matchLabels:
-      app: {{ .Values.name }}
+      app: backend
   endpoints:
     - port: http
-      path: {{ .Values.metrics.path }}
-{{- end }}
+      path: /metrics

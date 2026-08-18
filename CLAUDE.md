@@ -33,7 +33,8 @@ services/
   frontend/   TypeScript, React — not yet implemented (empty placeholder)
   payment/    Go, Gin — payment handling
 infrastructure/eks/  Terraform — EKS cluster (VPC, node group, ECR, addons)
-k8s/chart/    single reusable Helm chart for all services (see below)
+k8s/backend/  Helm chart for the backend service
+k8s/payment/  Helm chart for the payment service
 k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
 docker-compose.yaml  local dev environment for all services
 ```
