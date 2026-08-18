@@ -9,7 +9,7 @@ use Prism\Prism\Schema\NumberSchema;
 use Prism\Prism\Schema\ObjectSchema;
 use Prism\Prism\ValueObjects\Embedding;
 
-class PrismManualAiService implements ManualAiService
+class PrismProductManualAiService implements ProductManualAiService
 {
     private const string EMBEDDING_MODEL = 'text-embedding-3-small';
 

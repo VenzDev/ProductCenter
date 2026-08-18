@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductAttachmentChunk;
-use App\Services\Ai\ManualAiService;
+use App\Services\Ai\ProductManualAiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
@@ -21,7 +21,7 @@ class AskProductController extends Controller
 
     private const ANSWER_CHUNKS = 5;
 
-    public function __construct(private readonly ManualAiService $ai) {}
+    public function __construct(private readonly ProductManualAiService $ai) {}
 
     public function __invoke(Request $request, Product $product): JsonResponse
     {

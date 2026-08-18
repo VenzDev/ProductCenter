@@ -5,9 +5,9 @@ namespace App\Services\Ai;
 /**
  * Port for the AI operations the manual RAG pipeline needs (ingestion embedding,
  * question embedding, reranking, answer generation) — kept provider-agnostic so
- * PrismManualAiService (or any other adapter) can change without touching callers.
+ * PrismProductManualAiService (or any other adapter) can change without touching callers.
  */
-interface ManualAiService
+interface ProductManualAiService
 {
     /**
      * @param  array<int, string>  $texts
