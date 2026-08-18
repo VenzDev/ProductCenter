@@ -36,7 +36,7 @@ test('handling the job extracts pdf text and stores an embedding per chunk', fun
         'label' => 'Manual',
     ]);
 
-    (new GenerateAttachmentEmbeddingsJob($attachment->id))->handle();
+    app()->call([new GenerateAttachmentEmbeddingsJob($attachment->id), 'handle']);
 
     $chunks = $attachment->chunks()->orderBy('chunk_index')->get();
     expect($chunks)->toHaveCount(1);
@@ -45,6 +45,6 @@ test('handling the job extracts pdf text and stores an embedding per chunk', fun
 });
 
 test('a job for an attachment that no longer exists does nothing without throwing', function () {
-    expect(fn () => (new GenerateAttachmentEmbeddingsJob(999999))->handle())
+    expect(fn () => app()->call([new GenerateAttachmentEmbeddingsJob(999999), 'handle']))
         ->not->toThrow(Throwable::class);
 });

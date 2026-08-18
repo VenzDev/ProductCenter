@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\ProductAttachment;
+use App\Services\Ai\ManualAiService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -11,23 +12,23 @@ use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Pgvector\Laravel\Vector;
-use Prism\Prism\Enums\Provider;
-use Prism\Prism\Facades\Prism;
 use Smalot\PdfParser\Parser;
 
 class GenerateAttachmentEmbeddingsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private const CHUNK_SIZE = 1000;
+    private const int CHUNK_SIZE = 1000;
 
-    private const CHUNK_OVERLAP = 150;
+    private const int CHUNK_OVERLAP = 150;
 
     public function __construct(
         public readonly int $attachmentId,
     ) {}
 
-    public function handle(): void
+    // Resolved from the container per-run, not the constructor — constructor
+    // properties get serialized onto the queued job row (see SerializesModels).
+    public function handle(ManualAiService $ai): void
     {
         $attachment = ProductAttachment::find($this->attachmentId);
 
@@ -54,16 +55,13 @@ class GenerateAttachmentEmbeddingsJob implements ShouldQueue
             return;
         }
 
-        $response = Prism::embeddings()
-            ->using(Provider::OpenAI, 'text-embedding-3-small')
-            ->fromArray($chunks)
-            ->asEmbeddings();
+        $embeddings = $ai->embed($chunks);
 
         foreach ($chunks as $index => $content) {
             $attachment->chunks()->create([
                 'chunk_index' => $index,
                 'content' => $content,
-                'embedding' => new Vector($response->embeddings[$index]->embedding),
+                'embedding' => new Vector($embeddings[$index]),
             ]);
         }
     }

@@ -4,16 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Product;
 use App\Models\ProductAttachmentChunk;
+use App\Services\Ai\ManualAiService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Pgvector\Laravel\Distance;
 use Pgvector\Laravel\Vector;
-use Prism\Prism\Enums\Provider;
-use Prism\Prism\Facades\Prism;
-use Prism\Prism\Schema\ArraySchema;
-use Prism\Prism\Schema\NumberSchema;
-use Prism\Prism\Schema\ObjectSchema;
 
 class AskProductController extends Controller
 {
@@ -25,20 +21,19 @@ class AskProductController extends Controller
 
     private const ANSWER_CHUNKS = 5;
 
+    public function __construct(private readonly ManualAiService $ai) {}
+
     public function __invoke(Request $request, Product $product): JsonResponse
     {
         $data = $request->validate([
             'question' => ['required', 'string', 'max:1000'],
         ]);
 
-        $embeddings = Prism::embeddings()
-            ->using(Provider::OpenAI, 'text-embedding-3-small')
-            ->fromInput($data['question'])
-            ->asEmbeddings();
+        $questionEmbedding = $this->ai->embed([$data['question']])[0];
 
         $candidates = ProductAttachmentChunk::query()
             ->whereHas('attachment', fn ($query) => $query->where('product_id', $product->id))
-            ->nearestNeighbors('embedding', new Vector($embeddings->embeddings[0]->embedding), Distance::Cosine)
+            ->nearestNeighbors('embedding', new Vector($questionEmbedding), Distance::Cosine)
             ->limit(self::CANDIDATE_CHUNKS)
             ->get();
 
@@ -49,25 +44,16 @@ class AskProductController extends Controller
             ]);
         }
 
-        $chunks = $this->rerank($data['question'], $candidates);
+        $chunks = $this->selectChunks($data['question'], $candidates);
 
         $context = $chunks
             ->map(fn (ProductAttachmentChunk $chunk, int $i) => "[{$i}] {$chunk->content}")
             ->implode("\n\n");
 
-        $response = Prism::text()
-            ->using(Provider::OpenAI, 'gpt-4o-mini')
-            ->withSystemPrompt(
-                "Answer the user's question using only the numbered manual excerpts below. ".
-                "If the excerpts don't contain the answer, say so instead of guessing. ".
-                'Reply in plain flowing prose: no line breaks and no bullet/numbered lists — '.
-                "if you need to list multiple items, separate them with commas instead.\n\n{$context}"
-            )
-            ->withPrompt($data['question'])
-            ->asText();
+        $answer = $this->ai->answerQuestion($data['question'], $context);
 
         return response()->json([
-            'answer' => $response->text,
+            'answer' => $answer,
             'sources' => $chunks
                 ->map(fn (ProductAttachmentChunk $chunk) => [
                     'attachment_id' => $chunk->product_attachment_id,
@@ -81,50 +67,22 @@ class AskProductController extends Controller
      * @param  Collection<int, ProductAttachmentChunk>  $candidates
      * @return Collection<int, ProductAttachmentChunk>
      */
-    private function rerank(string $question, Collection $candidates): Collection
+    private function selectChunks(string $question, Collection $candidates): Collection
     {
-        $list = $candidates
-            ->map(fn (ProductAttachmentChunk $chunk, int $i) => "[{$i}] {$chunk->content}")
-            ->implode("\n\n");
+        $excerpts = $candidates->map(fn (ProductAttachmentChunk $chunk) => $chunk->content)->all();
 
-        $schema = new ObjectSchema(
-            name: 'relevant_excerpts',
-            description: 'The excerpts that actually help answer the question.',
-            properties: [
-                new ArraySchema(
-                    name: 'indices',
-                    description: 'Indices of the relevant excerpts, most relevant first. Empty if none are relevant.',
-                    items: new NumberSchema('index', 'The excerpt index, matching its [N] marker.'),
-                ),
-            ],
-            requiredFields: ['indices'],
-        );
-
-        $response = Prism::structured()
-            ->using(Provider::OpenAI, 'gpt-4o-mini')
-            ->withSchema($schema)
-            ->withPrompt("Question: {$question}\n\nExcerpts:\n{$list}")
-            ->asStructured();
-
-        /** @var array<int, mixed> $rawIndices */
-        $rawIndices = $response->structured['indices'] ?? [];
-
-        $indices = collect($rawIndices)
-            ->map(fn ($index) => (int) $index)
-            ->filter(fn (int $index) => $index >= 0 && $index < $candidates->count())
-            ->unique()
-            ->take(self::ANSWER_CHUNKS);
+        $indices = $this->ai->selectRelevantExcerpts($question, $excerpts, self::ANSWER_CHUNKS);
 
         // Can't tell "legitimately nothing relevant" apart from a malformed/empty
         // response, so fall back to the plain vector ranking rather than answering
         // with zero context either way — the final answer step still declines to
         // guess if none of these are actually relevant.
-        if ($indices->isEmpty()) {
+        if ($indices === []) {
             return $candidates->take(self::ANSWER_CHUNKS)->values();
         }
 
         $candidateChunks = $candidates->values()->all();
 
-        return $indices->map(fn (int $index) => $candidateChunks[$index])->values();
+        return collect($indices)->map(fn (int $index) => $candidateChunks[$index])->values();
     }
 }

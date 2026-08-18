@@ -2,6 +2,8 @@
 
 namespace App\Providers;
 
+use App\Services\Ai\ManualAiService;
+use App\Services\Ai\PrismManualAiService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
@@ -14,7 +16,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->bind(ManualAiService::class, PrismManualAiService::class);
     }
 
     /**
