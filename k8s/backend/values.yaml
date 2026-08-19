@@ -13,6 +13,8 @@ ingress:
 env:
   - name: SERVER_NAME
     value: ":80"
+  - name: LOG_CHANNEL
+    value: stderr
   - name: APP_KEY
     valueFrom:
       secretKeyRef:

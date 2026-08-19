@@ -11,8 +11,11 @@ module "eks" {
   addons = {
     coredns    = {}
     kube-proxy = {}
-    vpc-cni    = {
+    vpc-cni = {
       before_compute = true
+    }
+    amazon-cloudwatch-observability = {
+      service_account_role_arn = aws_iam_role.cloudwatch_observability.arn
     }
   }
 
