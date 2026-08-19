@@ -3,7 +3,7 @@
 use App\Models\User;
 
 test('a user can register and receives a jwt', function () {
-    $response = $this->postJson('/api/register', [
+    $response = $this->postJson('/api/v1/register', [
         'name' => 'Jane Doe',
         'email' => 'jane@example.com',
         'password' => 'secret1234',
@@ -17,7 +17,7 @@ test('a user can register and receives a jwt', function () {
 test('registration fails with a duplicate email', function () {
     User::factory()->create(['email' => 'jane@example.com']);
 
-    $response = $this->postJson('/api/register', [
+    $response = $this->postJson('/api/v1/register', [
         'name' => 'Jane Doe',
         'email' => 'jane@example.com',
         'password' => 'secret1234',
@@ -27,7 +27,7 @@ test('registration fails with a duplicate email', function () {
 });
 
 test('registration fails with a short password', function () {
-    $response = $this->postJson('/api/register', [
+    $response = $this->postJson('/api/v1/register', [
         'name' => 'Jane Doe',
         'email' => 'jane@example.com',
         'password' => 'short',

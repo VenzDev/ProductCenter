@@ -8,7 +8,7 @@ test('a user can log in with correct credentials and receives a jwt', function (
         'password' => 'secret1234',
     ]);
 
-    $response = $this->postJson('/api/login', [
+    $response = $this->postJson('/api/v1/login', [
         'email' => 'jane@example.com',
         'password' => 'secret1234',
     ]);
@@ -22,7 +22,7 @@ test('login fails with an incorrect password', function () {
         'password' => 'secret1234',
     ]);
 
-    $response = $this->postJson('/api/login', [
+    $response = $this->postJson('/api/v1/login', [
         'email' => 'jane@example.com',
         'password' => 'wrong-password',
     ]);
@@ -34,13 +34,13 @@ test('an authenticated user can fetch their own profile via /me', function () {
     $user = User::factory()->create();
     $token = auth('api')->login($user);
 
-    $response = $this->getJson('/api/me', ['Authorization' => "Bearer {$token}"]);
+    $response = $this->getJson('/api/v1/me', ['Authorization' => "Bearer {$token}"]);
 
     $response->assertOk()->assertJson(['id' => $user->id, 'email' => $user->email]);
 });
 
 test('an unauthenticated request to /me is rejected', function () {
-    $response = $this->getJson('/api/me');
+    $response = $this->getJson('/api/v1/me');
 
     $response->assertUnauthorized();
 });

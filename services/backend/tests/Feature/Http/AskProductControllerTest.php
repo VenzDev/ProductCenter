@@ -41,7 +41,7 @@ test('asking about a product with a manual returns an answer grounded in its chu
     ]);
     $product = createProductWithManual();
 
-    $response = $this->postJson("/api/products/{$product->id}/ask", [
+    $response = $this->postJson("/api/v1/products/{$product->id}/ask", [
         'question' => 'How do I prepare the washing machine before first use?',
     ]);
 
@@ -85,7 +85,7 @@ test('rerank picks the excerpt the LLM found relevant even when it is not the cl
         'embedding' => new Vector(array_fill(0, 1536, 0.2)), // further away, but what the reranker picks
     ]);
 
-    $response = $this->postJson("/api/products/{$product->id}/ask", [
+    $response = $this->postJson("/api/v1/products/{$product->id}/ask", [
         'question' => 'How do I refresh clothes with steam?',
     ]);
 
@@ -108,7 +108,7 @@ test('an empty rerank selection falls back to the plain vector ranking instead o
     ]);
     $product = createProductWithManual();
 
-    $response = $this->postJson("/api/products/{$product->id}/ask", [
+    $response = $this->postJson("/api/v1/products/{$product->id}/ask", [
         'question' => 'Irrelevant question',
     ]);
 
@@ -134,7 +134,7 @@ test('asking about a product without a manual returns a fallback answer', functi
         'currency' => 'PLN',
     ]);
 
-    $response = $this->postJson("/api/products/{$product->id}/ask", [
+    $response = $this->postJson("/api/v1/products/{$product->id}/ask", [
         'question' => 'How does this work?',
     ]);
 
@@ -148,7 +148,7 @@ test('asking about a product without a manual returns a fallback answer', functi
 test('question is required', function () {
     $product = createProductWithManual();
 
-    $response = $this->postJson("/api/products/{$product->id}/ask", []);
+    $response = $this->postJson("/api/v1/products/{$product->id}/ask", []);
 
     $response->assertUnprocessable();
     $response->assertJsonValidationErrors('question');
