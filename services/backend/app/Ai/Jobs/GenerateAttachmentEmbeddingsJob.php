@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Pgvector\Laravel\Vector;
@@ -36,6 +37,12 @@ class GenerateAttachmentEmbeddingsJob implements ShouldQueue
             return;
         }
 
+        if ($attachment->chunks()->exists()) {
+            Log::info("GenerateAttachmentEmbeddingsJob: attachment [{$this->attachmentId}] already has embeddings, skipping");
+
+            return;
+        }
+
         $pdf = Storage::disk('s3')->get($attachment->path);
 
         if ($pdf === null) {
@@ -55,13 +62,15 @@ class GenerateAttachmentEmbeddingsJob implements ShouldQueue
 
         $embeddings = $ai->embed($chunks);
 
-        foreach ($chunks as $index => $content) {
-            $attachment->chunks()->create([
-                'chunk_index' => $index,
-                'content' => $content,
-                'embedding' => new Vector($embeddings[$index]),
-            ]);
-        }
+        DB::transaction(function () use ($attachment, $chunks, $embeddings): void {
+            foreach ($chunks as $index => $content) {
+                $attachment->chunks()->create([
+                    'chunk_index' => $index,
+                    'content' => $content,
+                    'embedding' => new Vector($embeddings[$index]),
+                ]);
+            }
+        });
     }
 
     /**

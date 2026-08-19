@@ -1,0 +1,19 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend-worker
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: backend-worker
+  template:
+    metadata:
+      labels:
+        app: backend-worker
+    spec:
+      serviceAccountName: backend
+      containers:
+        - name: worker
+          {{- include "backend.imageEnv" . | nindent 10 }}
+          command: ["php", "artisan", "queue:work"]
