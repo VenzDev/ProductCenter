@@ -1,3 +1,5 @@
+import Image from "next/image";
+
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 
@@ -8,15 +10,17 @@ type Product = {
   inStock: boolean;
   price?: number;
   originalPrice?: number;
+  image?: string;
 };
 
 const PRODUCTS: Product[] = [
   {
-    name: "Wireless Headphones",
+    name: "Portable Speaker",
     category: "Electronics",
-    description: "Noise-cancelling, 30-hour battery.",
+    description: "Wireless, with a woven carry strap.",
     inStock: true,
     price: 129.99,
+    image: "/product/product.webp",
   },
   {
     name: "Running Shoes",
@@ -25,12 +29,14 @@ const PRODUCTS: Product[] = [
     inStock: true,
     price: 69.99,
     originalPrice: 89.99,
+    image: "/product/product.webp",
   },
   {
     name: "Ceramic Mug Set",
     category: "Home & Garden",
     description: "Set of four, dishwasher safe.",
     inStock: false,
+    image: "/product/product.webp",
   },
   {
     name: "Leather Wallet",
@@ -38,6 +44,7 @@ const PRODUCTS: Product[] = [
     description: "Full-grain leather, slim profile.",
     inStock: true,
     price: 49.99,
+    image: "/product/product.webp",
   },
 ];
 
@@ -75,7 +82,17 @@ export function ProductsSection() {
       <div className="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4">
         {PRODUCTS.map((product) => (
           <Card key={product.name} className="gap-0 py-0">
-            <div className="aspect-square rounded-t-xl bg-muted" />
+            <div className="relative aspect-square overflow-hidden rounded-t-xl bg-muted">
+              {product.image && (
+                <Image
+                  src={product.image}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 768px) 25vw, 50vw"
+                />
+              )}
+            </div>
             <CardContent className="flex flex-col gap-2 p-4">
               <Badge variant="outline" className="w-fit">
                 {product.category}

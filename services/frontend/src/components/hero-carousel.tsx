@@ -1,11 +1,10 @@
 "use client";
 
 import * as React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import Autoplay from "embla-carousel-autoplay";
 
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
 import {
   Carousel,
   CarouselContent,
@@ -16,25 +15,19 @@ import { cn } from "@/lib/utils";
 
 const SLIDES = [
   {
-    badge: "New Arrivals",
-    title: "New Season, New Style",
-    description: "Explore the latest arrivals, updated every week.",
-    cta: "Shop New Arrivals",
-    href: "/products?filter=new",
-  },
-  {
-    badge: "Sale",
-    title: "Up to 30% Off",
-    description: "Selected items across the store, for a limited time.",
-    cta: "Shop Sale",
+    image: "/carousel/slide1.webp",
+    alt: "Kids Fashion — extra 50% off, shop now",
     href: "/products?filter=sale",
   },
   {
-    badge: "Shipping",
-    title: "Free Shipping",
-    description: "On all orders over $50, no code needed.",
-    cta: "Browse Products",
-    href: "/products",
+    image: "/carousel/slide2.webp",
+    alt: "Sale on Sale — 25% off everything, shop now",
+    href: "/products?filter=sale",
+  },
+  {
+    image: "/carousel/slide3.webp",
+    alt: "Mother's Day Sale — up to 30% off, shop now",
+    href: "/products?filter=sale",
   },
 ];
 
@@ -58,31 +51,28 @@ export function HeroCarousel() {
     >
       <div className="relative mx-auto max-w-6xl px-4 pt-8">
         <CarouselContent>
-          {SLIDES.map((slide) => (
-            <CarouselItem key={slide.title}>
-              <div className="flex h-64 flex-col justify-center gap-3 rounded-xl bg-muted px-8 md:h-80">
-                <Badge>{slide.badge}</Badge>
-                <h2 className="text-2xl font-semibold md:text-4xl">
-                  {slide.title}
-                </h2>
-                <p className="text-muted-foreground md:text-lg">
-                  {slide.description}
-                </p>
-                <Button
-                  nativeButton={false}
-                  render={<Link href={slide.href} />}
-                  className="w-fit"
-                >
-                  {slide.cta}
-                </Button>
-              </div>
+          {SLIDES.map((slide, index) => (
+            <CarouselItem key={slide.image}>
+              <Link
+                href={slide.href}
+                className="relative block aspect-2/1 overflow-hidden rounded-xl"
+              >
+                <Image
+                  src={slide.image}
+                  alt={slide.alt}
+                  fill
+                  priority={index === 0}
+                  className="object-cover"
+                  sizes="(min-width: 1152px) 1120px, 100vw"
+                />
+              </Link>
             </CarouselItem>
           ))}
         </CarouselContent>
         <div className="absolute inset-x-0 bottom-4 flex justify-center gap-2">
           {SLIDES.map((slide, index) => (
             <button
-              key={slide.title}
+              key={slide.image}
               type="button"
               onClick={() => api?.scrollTo(index)}
               className={cn(

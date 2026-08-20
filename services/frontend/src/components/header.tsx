@@ -86,7 +86,7 @@ function ListItem({
 
 export function Header() {
   return (
-    <header className="border-b">
+    <header className="sticky top-0 z-40 border-b bg-background">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-8 px-4">
         <Link href="/" className="text-lg font-semibold">
           Product Center
