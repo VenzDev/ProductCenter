@@ -86,8 +86,10 @@ docker compose exec payment go build -o payment .
 
 **frontend** (`services/frontend`, Next.js 16 / TypeScript, App Router, shadcn/ui):
 ```bash
-docker compose exec frontend npm run lint     # ESLint
-docker compose exec frontend npx tsc --noEmit # type check
-docker compose exec frontend npm run build    # production build
+docker compose exec frontend npm run lint       # ESLint
+docker compose exec frontend npx next typegen   # generate .next/types (needed before tsc on a clean checkout)
+docker compose exec frontend npx tsc --noEmit   # type check
+docker compose exec frontend npm run build      # production build
 ```
+`tsc --noEmit` alone fails on a clean checkout with `Cannot find name 'LayoutProps'` — that global type is generated into `.next/types` by `next dev`/`next build`/`next typegen`, not shipped statically. Always run `next typegen` first if `.next/types` isn't already present (e.g. from a prior `next dev`/`build` in the same container).
 Skeleton only — no pages/features, no `/health` or `/metrics` yet, so it isn't deployable with the shared Helm chart pattern.
