@@ -30,7 +30,7 @@ Monorepo, one directory per independently deployable service, plus infra:
 ```
 services/
   backend/    PHP, Laravel (FrankenPHP) — main business logic / API
-  frontend/   TypeScript, React — not yet implemented (empty placeholder)
+  frontend/   TypeScript, Next.js (App Router) + shadcn/ui — skeleton, no pages/features yet
   payment/    Go, Gin — payment handling
 infrastructure/eks/  Terraform — EKS cluster (VPC, node group, ECR, addons)
 k8s/backend/  Helm chart for the backend service
@@ -50,10 +50,11 @@ Read `docs/design.md` first for architecture/rationale, `docs/runbook.md` for th
 Each service has `dev` and `prod` Docker build targets. `docker-compose.yaml` runs both implemented services in `dev` mode with source bind-mounts (live reload), plus `postgres` and `localstack`:
 
 ```bash
-docker compose up          # payment:8080, backend:8081(→80), localstack:4566
+docker compose up          # frontend:3000, payment:8080, backend:8081(→80), localstack:4566
 docker compose up payment  # single service
 ```
 
+- **frontend**: `next dev` (Turbopack, hot reload), full source + a named `frontend_node_modules` volume mounted so container-installed deps aren't clobbered by the host bind mount.
 - **payment**: `air` (hot reload via `.air.toml`), full source mounted.
 - **localstack**: simulates S3 locally; the `product-files` bucket is created automatically on every start via `services/backend/docker/localstack-init-s3.sh` (mounted into LocalStack's init hooks — there's no persistent volume, so it needs recreating each time).
 - **backend**: FrankenPHP dev entrypoint (`docker/dev-entrypoint.sh`) runs `php artisan migrate --force` then starts the server; full source + a named `backend_vendor` volume mounted so container-installed vendor deps aren't clobbered by the host bind mount.
@@ -83,4 +84,10 @@ docker compose exec payment go test ./...
 docker compose exec payment go build -o payment .
 ```
 
-**frontend**: not started — empty directory, no scaffolding yet.
+**frontend** (`services/frontend`, Next.js 16 / TypeScript, App Router, shadcn/ui):
+```bash
+docker compose exec frontend npm run lint     # ESLint
+docker compose exec frontend npx tsc --noEmit # type check
+docker compose exec frontend npm run build    # production build
+```
+Skeleton only — no pages/features, no `/health` or `/metrics` yet, so it isn't deployable with the shared Helm chart pattern.
