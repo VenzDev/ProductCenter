@@ -69,7 +69,6 @@ test('an admin can create a category with translations for both locales from the
         ->mountAction('create')
         ->setActionData([
             'name' => ['en' => 'Books', 'pl' => 'Książki'],
-            'slug' => 'books',
         ])
         ->callMountedAction()
         ->assertHasNoActionErrors();
@@ -99,7 +98,6 @@ test('an admin can update a category name per locale from the tree page', functi
         ->call('mountTreeAction', 'edit', (string) $category->getKey())
         ->setActionData([
             'name' => ['en' => 'Consumer Electronics', 'pl' => 'Elektronika Użytkowa'],
-            'slug' => 'electronics',
         ])
         ->callMountedAction()
         ->assertHasNoActionErrors();

@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 use SolutionForest\FilamentTree\Concern\ModelTree;
 use Spatie\Translatable\Attributes\Translatable;
 use Spatie\Translatable\HasTranslations;
@@ -42,11 +43,15 @@ class Category extends Model
     /**
      * filament-tree's $maxDepth only blocks nesting in the browser widget; it never
      * validates depth server-side, so this guards the two-level rule at the data layer.
+     * The same event also derives the slug, since it's the one place that already
+     * looks up the parent for every create/update/reparent.
      */
     protected static function booted(): void
     {
         static::saving(function (self $category) {
             if ($category->parent_id === -1) {
+                $category->slug = Str::slug($category->getTranslation('name', config('app.fallback_locale')));
+
                 return;
             }
 
@@ -55,6 +60,20 @@ class Category extends Model
             if ($parent && ! $parent->isRoot()) {
                 throw new \LogicException('Categories only support two levels: a subcategory cannot itself have subcategories.');
             }
+
+            if ($parent) {
+                $category->slug = $parent->slug.'/'.Str::slug($category->getTranslation('name', config('app.fallback_locale')));
+            }
+        });
+
+        // A root category's slug is a prefix of its children's slugs, so renaming
+        // or reparenting it must re-derive theirs too.
+        static::saved(function (self $category) {
+            if (! $category->wasChanged('slug')) {
+                return;
+            }
+
+            $category->children->each->save();
         });
     }
 }

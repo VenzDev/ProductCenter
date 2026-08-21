@@ -60,8 +60,6 @@ class CategoryTree extends TreePage
                                 ->required($language->isFallback()),
                         ])
                 )->all()),
-            TextInput::make('slug')
-                ->required(),
         ];
     }
 
