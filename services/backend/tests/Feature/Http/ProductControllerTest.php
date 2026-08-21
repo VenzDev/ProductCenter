@@ -27,6 +27,22 @@ test('products can be listed', function () {
     $response->assertJsonPath('data.0.name', 'Washing machine');
 });
 
+test('the latest 4 products are returned, most recent first', function () {
+    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+    $products = collect(range(1, 5))->map(fn (int $i) => Product::create([
+        'category_id' => $category->id,
+        'name' => "Product {$i}",
+        'price_cents' => 1000,
+        'currency' => 'PLN',
+    ]));
+
+    $response = $this->getJson('/api/v1/products/latest');
+
+    $response->assertOk();
+    $response->assertJsonCount(4, 'data');
+    $response->assertJsonPath('data.0.id', $products->last()->id);
+});
+
 test('a single product can be retrieved', function () {
     $product = createProduct();
 

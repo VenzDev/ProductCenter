@@ -20,7 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
-import { getCategories, type Category } from "@/lib/categories";
+import { getCategories, type Category } from "@/api/categories";
 
 const MOBILE_LINKS = [
   { label: "Products", href: "/products" },

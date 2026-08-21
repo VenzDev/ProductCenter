@@ -25,6 +25,18 @@ class ProductController extends Controller
     }
 
     /**
+     * List the most recently created products.
+     *
+     * Same translation behavior as {@see index()}.
+     */
+    public function latest(): AnonymousResourceCollection
+    {
+        return ProductResource::collection(
+            Product::query()->with('category')->orderByDesc('id')->take(4)->get()
+        );
+    }
+
+    /**
      * Retrieve a single product.
      *
      * Translatable fields (name, description) are returned in the language requested

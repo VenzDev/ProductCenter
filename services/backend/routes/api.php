@@ -12,6 +12,7 @@ Route::prefix('v1')->name('v1.')->middleware(SetLocaleFromHeader::class)->group(
     Route::post('/login', [AuthController::class, 'login']);
 
     Route::get('/products', [ProductController::class, 'index']);
+    Route::get('/products/latest', [ProductController::class, 'latest']);
     Route::get('/products/{product}', [ProductController::class, 'show']);
     Route::post('/products/{product}/ask', AskProductController::class);
 
