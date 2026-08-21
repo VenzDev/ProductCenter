@@ -1,0 +1,7 @@
+image: 222634367938.dkr.ecr.eu-central-1.amazonaws.com/frontend:latest
+port: 3000
+ingress:
+  host: shop.bechta.pl
+  # ACM cert is DNS-validated (see infrastructure/eks/dns.tf), so its ARN isn't
+  # predictable in advance — same as the backend's admin.bechta.pl cert.
+  certificateArn: "<TERRAFORM_OUTPUT:frontend_acm_certificate_arn>"

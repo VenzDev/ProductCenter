@@ -57,3 +57,8 @@ output "acm_certificate_arn" {
   description = "Validated ACM cert for admin.bechta.pl — paste into k8s/chart/values/backend.yaml (ingress.certificateArn)"
   value       = aws_acm_certificate_validation.backend_admin.certificate_arn
 }
+
+output "frontend_acm_certificate_arn" {
+  description = "Validated ACM cert for shop.bechta.pl — paste into k8s/frontend/values.yaml (ingress.certificateArn)"
+  value       = aws_acm_certificate_validation.frontend.certificate_arn
+}

@@ -24,6 +24,14 @@ k8s/payment/
     deployment.yaml
     service.yaml
     servicemonitor.yaml
+k8s/frontend/
+  Chart.yaml
+  values.yaml            # obraz, port, ingress host/cert
+  templates/
+    deployment.yaml
+    service.yaml
+    servicemonitor.yaml
+    ingress.yaml          # ALB przez AWS Load Balancer Controller — osobny od backendu
 ```
 
 Nowy serwis to nowy katalog chartu, nie nowy plik values do istniejącego wspólnego szablonu.
@@ -44,7 +52,7 @@ aws eks update-kubeconfig --name product-center --region eu-central-1
 # (np. `minikube start`) po cichu je nadpisze
 kubectl config current-context   # powinno pokazać arn:aws:eks:...:cluster/product-center
 
-# 3. Build + push obrazów (dla payment i backend)
+# 3. Build + push obrazów (dla payment, backend i frontend)
 docker build --platform linux/amd64 --target prod \
   -t 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest \
   services/<serwis>
@@ -105,9 +113,14 @@ kubectl wait --for=condition=Available deployment/aws-load-balancer-controller -
 # tak jak rds_endpoint w kroku 4 — nie da się przewidzieć przed apply)
 terraform output acm_certificate_arn
 
+# To samo dla frontendu — osobny cert, osobny placeholder
+# `<TERRAFORM_OUTPUT:frontend_acm_certificate_arn>` w k8s/frontend/values.yaml
+terraform output frontend_acm_certificate_arn
+
 # 8. Zainstaluj serwisy (osobny chart per serwis)
 helm install payment k8s/payment
 helm install backend k8s/backend
+helm install frontend k8s/frontend
 
 # 9. admin.bechta.pl → ALB. AWS Load Balancer Controller tworzy ALB dopiero z Ingressu
 #    backendu (krok 8), więc jego DNS name nie jest znany Terraformowi — rekord Route53
@@ -128,6 +141,30 @@ aws route53 change-resource-record-sets \
         "AliasTarget": {
           "HostedZoneId": "'"$ALB_ZONE_ID"'",
           "DNSName": "'"$ALB_DNS"'",
+          "EvaluateTargetHealth": false
+        }
+      }
+    }]
+  }'
+
+# To samo dla shop.bechta.pl → ALB frontendu (osobny Ingress = osobny ALB, ten sam
+# powód co wyżej: nazwa DNS ALB nie jest znana Terraformowi przed jego utworzeniem)
+kubectl wait --for=jsonpath='{.status.loadBalancer.ingress[0].hostname}' ingress/frontend --timeout=180s
+FRONTEND_ALB_DNS=$(kubectl get ingress frontend -o jsonpath='{.status.loadBalancer.ingress[0].hostname}')
+FRONTEND_ALB_ZONE_ID=$(aws elbv2 describe-load-balancers \
+  --query "LoadBalancers[?DNSName=='$FRONTEND_ALB_DNS'].CanonicalHostedZoneId" --output text)
+
+aws route53 change-resource-record-sets \
+  --hosted-zone-id "$(terraform output -raw route53_zone_id)" \
+  --change-batch '{
+    "Changes": [{
+      "Action": "UPSERT",
+      "ResourceRecordSet": {
+        "Name": "shop.bechta.pl",
+        "Type": "A",
+        "AliasTarget": {
+          "HostedZoneId": "'"$FRONTEND_ALB_ZONE_ID"'",
+          "DNSName": "'"$FRONTEND_ALB_DNS"'",
           "EvaluateTargetHealth": false
         }
       }
@@ -179,6 +216,7 @@ kubectl get pods -o wide
 kubectl run curl-test --image=curlimages/curl --rm -i --restart=Never -- sh -c '
   curl -s http://payment:8080/health; echo
   curl -s http://backend:80/health; echo
+  curl -s http://frontend:3000/health; echo
 '
 ```
 
@@ -206,8 +244,8 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 
 - **Wszystko w klastrze** (pody, Service'y, Secrets) — Kubernetes żyje tylko wewnątrz klastra, destroy usuwa cały klaster.
 - **`backend-secrets`** — musi być stworzony ręcznie na nowo po każdym świeżym `terraform apply` (krok 5 w sekcji 1). Nie jest zarządzany przez Terraform ani przez pliki w `k8s/`.
-- **Obrazy w ECR** — repozytoria (`payment`, `backend`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
+- **Obrazy w ECR** — repozytoria (`payment`, `backend`, `frontend`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
 - **Pliki w S3** (`product-files`) — bucket ma `force_destroy = true`, więc `terraform destroy` kasuje go razem z zawartością (uploadowane zdjęcia produktów). Nie ma osobnego backupu.
 - **Baza RDS** (`skip_final_snapshot = true`) i jej hasło w Secrets Manager (`manage_master_user_password`, zarządzane przez `aws_db_instance`) — obie znikają bez śladu przy `destroy`, żadnego snapshotu na wyjściu.
-- **Rekord Route53 `admin.bechta.pl`** — tworzony imperatywnie (krok 9), nie przez Terraform, więc `terraform destroy` go nie usuwa; wskazuje na ALB, który zniknie razem z klastrem, więc zostaje jako martwy alias dopóki nie zrobi się `aws route53 change-resource-record-sets` z `"Action": "DELETE"` ręcznie.
-- **Sam ALB** — tworzony imperatywnie przez AWS Load Balancer Controller (nie Terraform) w reakcji na Ingress. Trzeba go usunąć PRZED `terraform destroy` (`helm uninstall backend` i poczekać aż kontroler go sprzątnie), inaczej `destroy` wywali się próbując usunąć subnety/IGW, na których ALB nadal ma ENI — patrz błąd #13.
+- **Rekordy Route53 `admin.bechta.pl` i `shop.bechta.pl`** — tworzone imperatywnie (krok 9), nie przez Terraform, więc `terraform destroy` ich nie usuwa; wskazują na ALB, które znikną razem z klastrem, więc zostają jako martwe aliasy dopóki nie zrobi się `aws route53 change-resource-record-sets` z `"Action": "DELETE"` ręcznie dla każdego.
+- **Same ALB** — tworzone imperatywnie przez AWS Load Balancer Controller (nie Terraform) w reakcji na Ingress. Trzeba je usunąć PRZED `terraform destroy` (`helm uninstall backend`, `helm uninstall frontend` i poczekać aż kontroler je sprzątnie), inaczej `destroy` wywali się próbując usunąć subnety/IGW, na których ALB nadal ma ENI — patrz błąd #13.
