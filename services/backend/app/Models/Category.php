@@ -2,10 +2,10 @@
 
 namespace App\Models;
 
+use App\Category\Support\CategorySlugger;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Str;
 use SolutionForest\FilamentTree\Concern\ModelTree;
 use Spatie\Translatable\Attributes\Translatable;
 use Spatie\Translatable\HasTranslations;
@@ -49,8 +49,10 @@ class Category extends Model
     protected static function booted(): void
     {
         static::saving(function (self $category) {
+            $name = $category->getTranslation('name', config('app.fallback_locale'));
+
             if ($category->parent_id === -1) {
-                $category->slug = Str::slug($category->getTranslation('name', config('app.fallback_locale')));
+                $category->slug = CategorySlugger::slug($name);
 
                 return;
             }
@@ -62,7 +64,7 @@ class Category extends Model
             }
 
             if ($parent) {
-                $category->slug = $parent->slug.'/'.Str::slug($category->getTranslation('name', config('app.fallback_locale')));
+                $category->slug = CategorySlugger::slug($name, $parent->slug);
             }
         });
 
