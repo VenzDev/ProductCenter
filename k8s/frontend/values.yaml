@@ -1,5 +1,11 @@
 image: 222634367938.dkr.ecr.eu-central-1.amazonaws.com/frontend:latest
 port: 3000
+env:
+  - name: BACKEND_URL
+    # In-cluster Service DNS — the backend Service is named "backend" (see
+    # k8s/backend/templates/service.yaml), reachable from any pod in the
+    # same namespace by that short name.
+    value: http://backend
 ingress:
   host: shop.bechta.pl
   # ACM cert is DNS-validated (see infrastructure/eks/dns.tf), so its ARN isn't

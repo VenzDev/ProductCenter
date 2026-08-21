@@ -10,7 +10,12 @@ use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 class CategoryController extends Controller
 {
     /**
-     * List categories.
+     * List categories as a tree.
+     *
+     * Only root categories are returned at the top level; each includes its
+     * subcategories nested under `children` (empty array if it has none — the
+     * category structure is capped at two levels, so children never have
+     * children of their own).
      *
      * The translatable name field is returned in the language requested via the
      * `Accept-Language` header (`en` or `pl`), falling back to `en` otherwise.
@@ -19,11 +24,14 @@ class CategoryController extends Controller
      */
     public function index(): AnonymousResourceCollection
     {
-        return CategoryResource::collection(Category::query()->paginate());
+        return CategoryResource::collection(
+            Category::query()->isRoot()->with('children')->ordered()->get()
+        );
     }
 
     /**
-     * Retrieve a single category.
+     * Retrieve a single category, with its subcategories nested under `children`
+     * (empty array if it has none).
      *
      * The translatable name field is returned in the language requested via the
      * `Accept-Language` header (`en` or `pl`), falling back to `en` otherwise.
@@ -32,6 +40,6 @@ class CategoryController extends Controller
      */
     public function show(Category $category): CategoryResource
     {
-        return new CategoryResource($category);
+        return new CategoryResource($category->loadMissing('children'));
     }
 }

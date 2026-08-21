@@ -4,6 +4,12 @@ import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import "./globals.css";
 
+// Header fetches categories from the backend on every request. Without this,
+// Next would prerender the page once at build time — when the backend isn't
+// reachable from the image build — and bake an empty category menu into the
+// production image permanently.
+export const dynamic = "force-dynamic";
+
 const inter = Inter({
   variable: "--font-sans",
   subsets: ["latin"],

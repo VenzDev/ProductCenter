@@ -17,6 +17,38 @@ test('categories can be listed', function () {
     $response->assertJsonPath('data.0.name', 'Electronics');
 });
 
+test('a root category without subcategories has an empty children array', function () {
+    createCategory();
+
+    $response = $this->getJson('/api/v1/categories');
+
+    $response->assertOk();
+    $response->assertJsonPath('data.0.children', []);
+});
+
+test('a root category lists its subcategories nested under children', function () {
+    $parent = createCategory();
+    $child = Category::create(['name' => 'Phones', 'slug' => 'phones', 'parent_id' => $parent->id]);
+
+    $response = $this->getJson('/api/v1/categories');
+
+    $response->assertOk();
+    $response->assertJsonCount(1, 'data');
+    $response->assertJsonPath('data.0.id', $parent->id);
+    $response->assertJsonPath('data.0.children.0.id', $child->id);
+    $response->assertJsonPath('data.0.children.0.name', 'Phones');
+});
+
+test('subcategories are not listed as their own top-level entry', function () {
+    $parent = createCategory();
+    Category::create(['name' => 'Phones', 'slug' => 'phones', 'parent_id' => $parent->id]);
+
+    $response = $this->getJson('/api/v1/categories');
+
+    $response->assertOk();
+    $response->assertJsonCount(1, 'data');
+});
+
 test('a single category can be retrieved', function () {
     $category = createCategory();
 
@@ -28,6 +60,7 @@ test('a single category can be retrieved', function () {
             'id' => $category->id,
             'name' => 'Electronics',
             'slug' => 'electronics',
+            'children' => [],
         ],
     ]);
 });

@@ -26,6 +26,7 @@ class CategoryResource extends JsonResource
             'name' => $this->name,
             'name_translations' => $this->when($withTranslations, fn () => $this->getTranslations('name')),
             'slug' => $this->slug,
+            'children' => static::collection($this->whenLoaded('children')),
         ];
     }
 }

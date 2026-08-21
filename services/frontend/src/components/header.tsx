@@ -20,6 +20,7 @@ import {
   SheetTitle,
   SheetTrigger,
 } from "@/components/ui/sheet";
+import { getCategories, type Category } from "@/lib/categories";
 
 const MOBILE_LINKS = [
   { label: "Products", href: "/products" },
@@ -50,14 +51,32 @@ const PRODUCT_LINKS = [
   },
 ];
 
-const CATEGORY_LINKS = [
-  { title: "Electronics", href: "/categories/electronics" },
-  { title: "Clothing", href: "/categories/clothing" },
-  { title: "Home & Garden", href: "/categories/home-garden" },
-  { title: "Sports & Outdoors", href: "/categories/sports-outdoors" },
-  { title: "Beauty & Health", href: "/categories/beauty-health" },
-  { title: "Toys & Games", href: "/categories/toys-games" },
-];
+function CategoryMenuItem({ category }: { category: Category }) {
+  return (
+    <li>
+      <NavigationMenuLink
+        render={<Link href={`/categories/${category.slug}`} />}
+        className="text-sm font-medium"
+      >
+        {category.name}
+      </NavigationMenuLink>
+      {category.children.length > 0 && (
+        <ul className="mt-1 flex flex-col gap-1 pl-3">
+          {category.children.map((child) => (
+            <li key={child.id}>
+              <NavigationMenuLink
+                render={<Link href={`/categories/${child.slug}`} />}
+                className="text-muted-foreground text-sm"
+              >
+                {child.name}
+              </NavigationMenuLink>
+            </li>
+          ))}
+        </ul>
+      )}
+    </li>
+  );
+}
 
 function ListItem({
   title,
@@ -84,7 +103,9 @@ function ListItem({
   );
 }
 
-export function Header() {
+export async function Header() {
+  const categories = await getCategories();
+
   return (
     <header className="sticky top-0 z-40 border-b bg-background">
       <div className="mx-auto flex h-16 max-w-6xl items-center gap-8 px-4">
@@ -107,8 +128,8 @@ export function Header() {
               <NavigationMenuTrigger>Categories</NavigationMenuTrigger>
               <NavigationMenuContent>
                 <ul className="grid w-[400px] gap-2 p-2 md:grid-cols-2">
-                  {CATEGORY_LINKS.map((item) => (
-                    <ListItem key={item.href} {...item} />
+                  {categories.map((category) => (
+                    <CategoryMenuItem key={category.id} category={category} />
                   ))}
                 </ul>
               </NavigationMenuContent>
