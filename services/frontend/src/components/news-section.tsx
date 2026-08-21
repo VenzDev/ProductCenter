@@ -19,7 +19,7 @@ const POSTS = [
 
 export function NewsSection() {
   return (
-    <section className="mx-auto max-w-6xl px-4 py-12">
+    <section className="mx-auto max-w-6xl px-4 py-6">
       <h2 className="text-2xl font-semibold">News</h2>
       <p className="text-muted-foreground">
         Updates and stories from the team.

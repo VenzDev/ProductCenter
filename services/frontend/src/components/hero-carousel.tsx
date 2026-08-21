@@ -49,7 +49,7 @@ export function HeroCarousel() {
       plugins={[Autoplay({ delay: 3000 })]}
       className="w-full min-w-0"
     >
-      <div className="relative mx-auto max-w-6xl px-4 pt-8">
+      <div className="relative mx-auto max-w-6xl px-4 py-6">
         <CarouselContent>
           {SLIDES.map((slide, index) => (
             <CarouselItem key={slide.image}>
@@ -69,7 +69,7 @@ export function HeroCarousel() {
             </CarouselItem>
           ))}
         </CarouselContent>
-        <div className="absolute inset-x-0 bottom-4 flex justify-center gap-2">
+        <div className="absolute inset-x-0 bottom-12 flex justify-center gap-2">
           {SLIDES.map((slide, index) => (
             <button
               key={slide.image}
