@@ -46,7 +46,7 @@ export function HeroCarousel() {
     <Carousel
       setApi={setApi}
       opts={{ loop: true }}
-      plugins={[Autoplay({ delay: 50000 })]}
+      plugins={[Autoplay({ delay: 3000 })]}
       className="w-full min-w-0"
     >
       <div className="relative mx-auto max-w-6xl px-4 pt-8">
