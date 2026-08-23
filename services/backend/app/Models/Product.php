@@ -2,7 +2,9 @@
 
 namespace App\Models;
 
+use App\Product\Observers\ProductObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,6 +21,7 @@ use Spatie\Translatable\HasTranslations;
  */
 #[Fillable(['category_id', 'name', 'description', 'price_cents', 'currency', 'attributes', 'main_image'])]
 #[Translatable(['name', 'description'])]
+#[ObservedBy(ProductObserver::class)]
 class Product extends Model
 {
     use HasTranslations;

@@ -7,7 +7,11 @@ export type Product = {
   description: string | null;
   price_cents: number;
   currency: string;
-  main_image: string | null;
+  main_image: {
+    original_url: string;
+    webp_url: string;
+    thumbnail_webp_url: string;
+  } | null;
 };
 
 export function getLatestProducts(): Promise<Product[]> {

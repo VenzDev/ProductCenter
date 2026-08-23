@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\Products\Schemas;
 
 use App\Enums\Language;
+use App\Models\Product;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -45,7 +46,7 @@ class ProductForm
                 FileUpload::make('main_image')
                     ->image()
                     ->disk('s3')
-                    ->directory('products')
+                    ->directory(fn (?Product $record) => $record ? "product-images/{$record->id}/uploads" : 'product-images/tmp')
                     ->visibility('public'),
             ]);
     }

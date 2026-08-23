@@ -25,6 +25,8 @@ export default async function ProductPage({
     .filter((related) => related.id !== product.id)
     .slice(0, 4);
 
+  const imageSrc = product.main_image?.webp_url;
+
   return (
     <div className="flex-1">
       <div className="mx-auto max-w-6xl px-4 py-6">
@@ -44,9 +46,9 @@ export default async function ProductPage({
 
         <div className="mt-6 grid gap-8 md:grid-cols-2">
           <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-            {product.main_image && (
+            {imageSrc && (
               <Image
-                src={product.main_image}
+                src={imageSrc}
                 alt={product.name}
                 fill
                 className="object-cover"

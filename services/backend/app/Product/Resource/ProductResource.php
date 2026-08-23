@@ -4,6 +4,7 @@ namespace App\Product\Resource;
 
 use App\Http\Resources\Concerns\HasRequestedIncludes;
 use App\Models\Product;
+use App\Product\Support\ProductImagePaths;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 use Illuminate\Support\Facades\Storage;
@@ -35,7 +36,11 @@ class ProductResource extends JsonResource
             'price_cents' => $this->price_cents,
             'currency' => $this->currency,
             'attributes' => $this->attributes,
-            'main_image' => $this->main_image ? Storage::disk('s3')->url($this->main_image) : null,
+            'main_image' => $this->main_image ? [
+                'original_url' => Storage::disk('s3')->url($this->main_image),
+                'webp_url' => Storage::disk('s3')->url(ProductImagePaths::webp($this->id)),
+                'thumbnail_webp_url' => Storage::disk('s3')->url(ProductImagePaths::thumbnailWebp($this->id)),
+            ] : null,
         ];
     }
 }

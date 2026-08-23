@@ -7,13 +7,15 @@ import { formatPrice } from "@/lib/format";
 import type { Product } from "@/api/products";
 
 export function ProductCard({ product }: { product: Product }) {
+  const imageSrc = product.main_image?.thumbnail_webp_url;
+
   return (
     <Link href={`/products/${product.id}`}>
       <Card className="gap-0 py-0">
         <div className="relative aspect-square overflow-hidden rounded-t-xl bg-muted">
-          {product.main_image && (
+          {imageSrc && (
             <Image
-              src={product.main_image}
+              src={imageSrc}
               alt={product.name}
               fill
               className="object-cover"

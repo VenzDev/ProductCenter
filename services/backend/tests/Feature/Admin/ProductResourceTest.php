@@ -5,6 +5,7 @@ use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Models\Admin;
 use App\Models\Category;
 use App\Models\Product;
+use App\Product\Support\ProductImagePaths;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -131,7 +132,11 @@ test('an admin can upload a product image to the s3 disk', function () {
         ->assertHasNoFormErrors();
 
     $product = Product::first();
-    expect($product->main_image)->not->toBeNull();
-    expect($product->main_image)->toStartWith('products/');
+    expect($product->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
     Storage::disk('s3')->assertExists($product->main_image);
+
+    // The GenerateProductWebpImageJob runs synchronously (sync queue driver in tests), so its
+    // output is already in place once the form submission above returns.
+    Storage::disk('s3')->assertExists(ProductImagePaths::webp($product->id));
+    Storage::disk('s3')->assertExists(ProductImagePaths::thumbnailWebp($product->id));
 });

@@ -62,6 +62,28 @@ test('a single product can be retrieved', function () {
     ]);
 });
 
+test('a product with a main image exposes the original, webp and thumbnail URLs', function () {
+    $product = createProduct();
+    $product->main_image = "product-images/{$product->id}/main-image.jpg";
+    $product->saveQuietly();
+
+    $response = $this->getJson("/api/v1/products/{$product->id}");
+
+    $response->assertOk();
+    $response->assertJsonPath('data.main_image.original_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image.jpg"));
+    $response->assertJsonPath('data.main_image.webp_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image.webp"));
+    $response->assertJsonPath('data.main_image.thumbnail_webp_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image-thumbnail.webp"));
+});
+
+test('a product without a main image has a null main_image', function () {
+    $product = createProduct();
+
+    $response = $this->getJson("/api/v1/products/{$product->id}");
+
+    $response->assertOk();
+    $response->assertJsonPath('data.main_image', null);
+});
+
 test('retrieving a non-existent product returns 404', function () {
     $response = $this->getJson('/api/v1/products/999');
 
