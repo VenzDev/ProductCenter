@@ -11,3 +11,15 @@ export async function fetchApi<T>(path: string): Promise<T[]> {
     return [];
   }
 }
+
+export async function fetchApiItem<T>(path: string): Promise<T | null> {
+  try {
+    const response = await fetch(`${BASE_URL}${path}`);
+    if (!response.ok) return null;
+
+    const { data } = (await response.json()) as { data: T };
+    return data;
+  } catch {
+    return null;
+  }
+}

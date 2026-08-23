@@ -1,4 +1,4 @@
-import { fetchApi } from "@/api/api";
+import { fetchApi, fetchApiItem } from "@/api/api";
 
 export type Product = {
   id: number;
@@ -12,4 +12,8 @@ export type Product = {
 
 export function getLatestProducts(): Promise<Product[]> {
   return fetchApi<Product>("/api/v1/products/latest");
+}
+
+export function getProduct(id: number): Promise<Product | null> {
+  return fetchApiItem<Product>(`/api/v1/products/${id}`);
 }
