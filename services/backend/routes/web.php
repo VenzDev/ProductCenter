@@ -1,5 +1,6 @@
 <?php
 
+use App\Auth\Admin\Controller\DevAuthController;
 use App\Auth\Admin\Controller\MicrosoftAuthController;
 use Illuminate\Support\Facades\Route;
 use Prometheus\CollectorRegistry;
@@ -12,6 +13,12 @@ Route::get('/', function () {
 
 Route::get('/auth/microsoft/redirect', [MicrosoftAuthController::class, 'redirect']);
 Route::get('/auth/microsoft/callback', [MicrosoftAuthController::class, 'callback']);
+
+// Only registered in local dev — bypasses Entra ID SSO, which nobody can complete
+// interactively there. Never exists in any other environment.
+if (app()->environment('local')) {
+    Route::get('/admin/dev-login', [DevAuthController::class, 'login']);
+}
 
 // The dashboard itself (/admin) is now served by the Filament panel (AdminPanelProvider),
 // which reuses this same 'admin' guard — see app/Providers/Filament/AdminPanelProvider.php.
