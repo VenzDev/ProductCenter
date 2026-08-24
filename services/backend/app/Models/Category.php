@@ -6,6 +6,7 @@ use App\Category\Observers\CategoryObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use SolutionForest\FilamentTree\Concern\ModelTree;
 use Spatie\Translatable\Attributes\Translatable;
@@ -35,6 +36,14 @@ class Category extends Model
     public function products(): HasMany
     {
         return $this->hasMany(Product::class);
+    }
+
+    /**
+     * @return BelongsToMany<Attribute, $this>
+     */
+    public function attributes(): BelongsToMany
+    {
+        return $this->belongsToMany(Attribute::class);
     }
 
     public function determineTitleColumnName(): string

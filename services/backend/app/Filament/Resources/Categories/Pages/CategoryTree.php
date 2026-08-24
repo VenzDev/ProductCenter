@@ -4,6 +4,7 @@ namespace App\Filament\Resources\Categories\Pages;
 
 use App\Enums\Language;
 use App\Models\Category;
+use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Tabs;
@@ -60,6 +61,10 @@ class CategoryTree extends TreePage
                                 ->required($language->isFallback()),
                         ])
                 )->all()),
+            Select::make('attributes')
+                ->relationship('attributes', 'name')
+                ->multiple()
+                ->preload(),
         ];
     }
 

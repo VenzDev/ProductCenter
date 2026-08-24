@@ -1,13 +1,15 @@
 <?php
 
+use App\Enums\AttributeType;
 use App\Filament\Resources\Categories\Pages\CategoryTree;
 use App\Models\Admin;
+use App\Models\Attribute;
 use App\Models\Category;
 use Livewire\Livewire;
 
 test('an admin can view the category tree page', function () {
     $admin = Admin::factory()->create();
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+    Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
 
     $response = $this->actingAs($admin, 'admin')->get('/admin/categories');
 
@@ -105,4 +107,24 @@ test('an admin can update a category name per locale from the tree page', functi
     $category->refresh();
     expect($category->getTranslation('name', 'en', false))->toBe('Consumer Electronics');
     expect($category->getTranslation('name', 'pl', false))->toBe('Elektronika Użytkowa');
+});
+
+test('an admin can assign attributes to a category from the tree page', function () {
+    $admin = Admin::factory()->create();
+    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+    $weight = Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
+    $color = Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => ['red', 'blue']]);
+    $this->actingAs($admin, 'admin');
+
+    Livewire::test(CategoryTree::class)
+        ->call('mountTreeAction', 'edit', (string) $category->getKey())
+        ->setActionData([
+            'name' => ['en' => 'Electronics'],
+            'attributes' => [$weight->id, $color->id],
+        ])
+        ->callMountedAction()
+        ->assertHasNoActionErrors();
+
+    expect($category->attributes()->pluck('attributes.id')->sort()->values()->all())
+        ->toBe([$weight->id, $color->id]);
 });
