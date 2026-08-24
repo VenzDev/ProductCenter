@@ -1,4 +1,5 @@
 const TOKEN_KEY = "auth_token";
+export const AUTH_CHANGE_EVENT = "auth-change";
 
 export type AuthResponse = {
   access_token: string;
@@ -6,13 +7,41 @@ export type AuthResponse = {
   expires_in: number;
 };
 
+export type User = {
+  id: number;
+  name: string;
+  email: string;
+};
+
 export function getToken(): string | null {
   if (typeof window === "undefined") return null;
   return localStorage.getItem(TOKEN_KEY);
 }
 
+function setToken(token: string) {
+  localStorage.setItem(TOKEN_KEY, token);
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+}
+
 export function clearToken() {
   localStorage.removeItem(TOKEN_KEY);
+  window.dispatchEvent(new Event(AUTH_CHANGE_EVENT));
+}
+
+export async function getCurrentUser(): Promise<User | null> {
+  const token = getToken();
+  if (!token) return null;
+
+  const response = await fetch("/api/auth/me", {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+
+  if (!response.ok) {
+    if (response.status === 401) clearToken();
+    return null;
+  }
+
+  return (await response.json()) as User;
 }
 
 async function authRequest(path: string, body: unknown): Promise<AuthResponse> {
@@ -30,7 +59,7 @@ async function authRequest(path: string, body: unknown): Promise<AuthResponse> {
     throw new Error(firstError ?? data.message ?? "Something went wrong.");
   }
 
-  localStorage.setItem(TOKEN_KEY, data.access_token);
+  setToken(data.access_token);
   return data as AuthResponse;
 }
 

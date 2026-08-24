@@ -37,3 +37,12 @@ export async function postApi<T>(
   const data = (await response.json()) as T;
   return { status: response.status, data };
 }
+
+export async function proxyGet<T>(
+  path: string,
+  headers: HeadersInit,
+): Promise<{ status: number; data: T }> {
+  const response = await fetch(`${BASE_URL}${path}`, { headers });
+  const data = (await response.json()) as T;
+  return { status: response.status, data };
+}

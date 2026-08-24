@@ -1,6 +1,7 @@
 import Link from "next/link";
-import { LogInIcon, MenuIcon, ShoppingCartIcon } from "lucide-react";
+import { MenuIcon, ShoppingCartIcon } from "lucide-react";
 
+import { AuthStatus } from "@/components/auth/auth-status";
 import { Button } from "@/components/ui/button";
 import {
   NavigationMenu,
@@ -155,14 +156,7 @@ export async function Header() {
             <ShoppingCartIcon />
             <span className="sr-only">Cart</span>
           </Button>
-          <Button
-            variant="outline"
-            nativeButton={false}
-            render={<Link href="/login" />}
-          >
-            <LogInIcon data-icon="inline-start" />
-            <span className="hidden sm:inline">Login</span>
-          </Button>
+          <AuthStatus />
         </div>
         <Sheet>
           <SheetTrigger
