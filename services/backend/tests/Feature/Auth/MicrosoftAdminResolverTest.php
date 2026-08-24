@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Auth\Admin\MicrosoftAdminResolver;
 use App\Models\Admin;
 use Laravel\Socialite\Two\User as SocialiteUser;

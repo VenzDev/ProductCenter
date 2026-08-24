@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Ai\Controller\AskProductController;
 use App\Auth\Jwt\Controller\AuthController;
 use App\Category\Controller\CategoryController;

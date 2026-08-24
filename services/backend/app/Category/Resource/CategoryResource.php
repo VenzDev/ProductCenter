@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Category\Resource;
 
 use App\Http\Resources\Concerns\HasRequestedIncludes;

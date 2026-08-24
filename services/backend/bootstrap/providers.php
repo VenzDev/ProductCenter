@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Filament\Provider\AdminPanelProvider;
 use App\Providers\AppServiceProvider;
 

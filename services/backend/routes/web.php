@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Auth\Admin\Controller\DevAuthController;
 use App\Auth\Admin\Controller\MicrosoftAuthController;
 use Illuminate\Support\Facades\Route;

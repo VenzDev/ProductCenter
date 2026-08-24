@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Category\Observers;
 
 use App\Category\Support\CategorySlugger;
@@ -36,9 +38,10 @@ class CategoryObserver
             $category->slug = CategorySlugger::slug($name, $parent->slug);
         }
     }
+
     private function updateChildrenSlug(Category $category): void
     {
-        if (!$category->wasChanged('slug')) {
+        if (! $category->wasChanged('slug')) {
             return;
         }
 
@@ -54,7 +57,7 @@ class CategoryObserver
 
     private function validateCategoryLevel(?Category $parent): void
     {
-        if ($parent && !$parent->isRoot()) {
+        if ($parent && ! $parent->isRoot()) {
             throw new LogicException('Categories only support two levels: a subcategory cannot itself have subcategories.');
         }
     }

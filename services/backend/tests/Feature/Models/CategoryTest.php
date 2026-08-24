@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Category;
 
 test('a root category gets a slug derived from its name', function () {

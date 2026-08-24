@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Auth\Jwt\Controller;
 
 use App\Auth\Jwt\Request\LoginRequest;

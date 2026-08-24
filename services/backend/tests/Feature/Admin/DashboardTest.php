@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use App\Models\Admin;
 
 test('an unauthenticated request to the admin page is redirected to microsoft login', function () {

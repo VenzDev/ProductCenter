@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Filament\Provider;
 
 use App\Filament\Resources\Categories\Pages\CategoryTree;
