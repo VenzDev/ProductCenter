@@ -23,3 +23,17 @@ export async function fetchApiItem<T>(path: string): Promise<T | null> {
     return null;
   }
 }
+
+export async function postApi<T>(
+  path: string,
+  body: unknown,
+): Promise<{ status: number; data: T }> {
+  const response = await fetch(`${BASE_URL}${path}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(body),
+  });
+
+  const data = (await response.json()) as T;
+  return { status: response.status, data };
+}
