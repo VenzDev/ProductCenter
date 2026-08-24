@@ -70,6 +70,40 @@ test('an admin can create a select attribute with options', function () {
     expect($attribute->options)->toBe(['red', 'blue']);
 });
 
+test('a multiselect attribute requires its options', function () {
+    $admin = Admin::factory()->create();
+    $this->actingAs($admin, 'admin');
+
+    Livewire::test(CreateAttribute::class)
+        ->fillForm([
+            'key' => 'materials',
+            'name.en' => 'Materials',
+            'type' => AttributeType::MultiSelect->value,
+            'options' => [],
+        ])
+        ->call('create')
+        ->assertHasFormErrors(['options']);
+});
+
+test('an admin can create a multiselect attribute with options', function () {
+    $admin = Admin::factory()->create();
+    $this->actingAs($admin, 'admin');
+
+    Livewire::test(CreateAttribute::class)
+        ->fillForm([
+            'key' => 'materials',
+            'name.en' => 'Materials',
+            'type' => AttributeType::MultiSelect->value,
+            'options' => ['wood', 'metal'],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $attribute = Attribute::where('key', 'materials')->first();
+    expect($attribute->type)->toBe(AttributeType::MultiSelect);
+    expect($attribute->options)->toBe(['wood', 'metal']);
+});
+
 test('an admin can update an attribute', function () {
     $admin = Admin::factory()->create();
     $attribute = Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);

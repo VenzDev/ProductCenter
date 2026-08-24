@@ -81,12 +81,13 @@ class ProductForm
                                             ->disableOptionsWhenSelectedInSiblingRepeaterItems(),
                                         TextInput::make('value')
                                             ->numeric(fn (Get $get) => self::attributeType($get('key')) === AttributeType::Number)
-                                            ->visible(fn (Get $get) => self::attributeType($get('key')) !== AttributeType::Select)
-                                            ->dehydrated(fn (Get $get) => self::attributeType($get('key')) !== AttributeType::Select),
+                                            ->visible(fn (Get $get) => ! self::attributeType($get('key'))?->hasOptions())
+                                            ->dehydrated(fn (Get $get) => ! self::attributeType($get('key'))?->hasOptions()),
                                         Select::make('value')
                                             ->options(fn (Get $get) => self::selectOptions($get('key')))
-                                            ->visible(fn (Get $get) => self::attributeType($get('key')) === AttributeType::Select)
-                                            ->dehydrated(fn (Get $get) => self::attributeType($get('key')) === AttributeType::Select),
+                                            ->multiple(fn (Get $get) => self::attributeType($get('key')) === AttributeType::MultiSelect)
+                                            ->visible(fn (Get $get) => self::attributeType($get('key'))?->hasOptions())
+                                            ->dehydrated(fn (Get $get) => self::attributeType($get('key'))?->hasOptions()),
                                     ])
                                     ->columns(2)
                                     ->addActionLabel('Add attribute')

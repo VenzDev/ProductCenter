@@ -219,6 +219,29 @@ test('an admin can create a product with a number and a select attribute value',
         ->toBe(['color' => 'red', 'weight_kg' => 1.2]);
 });
 
+test('an admin can create a product with a multiselect attribute value', function () {
+    $admin = Admin::factory()->create();
+    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+    Attribute::create(['key' => 'materials', 'name' => 'Materials', 'type' => AttributeType::MultiSelect, 'options' => ['wood', 'metal', 'plastic']]);
+    $this->actingAs($admin, 'admin');
+
+    Livewire::test(CreateProduct::class)
+        ->fillForm([
+            'category_id' => $category->id,
+            'name.en' => 'Widget',
+            'price_cents' => 1999,
+            'currency' => 'PLN',
+            'attributes' => [
+                ['key' => 'materials', 'value' => ['wood', 'metal']],
+            ],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $product = Product::first();
+    expect($product->attributes)->toBe(['materials' => ['wood', 'metal']]);
+});
+
 test('an admin can remove an attribute row before creating a product', function () {
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);

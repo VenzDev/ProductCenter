@@ -40,8 +40,8 @@ class AttributeForm
                     ->live(),
                 TagsInput::make('options')
                     ->helperText('The selectable values for this attribute.')
-                    ->visible(fn (Get $get) => $get('type') === AttributeType::Select->value)
-                    ->required(fn (Get $get) => $get('type') === AttributeType::Select->value),
+                    ->visible(fn (Get $get) => AttributeType::tryFrom($get('type') ?? '')?->hasOptions())
+                    ->required(fn (Get $get) => AttributeType::tryFrom($get('type') ?? '')?->hasOptions()),
             ]);
     }
 }

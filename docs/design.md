@@ -72,7 +72,7 @@ To jest plan schematu (dokumentacja decyzji projektowej), nie gotowe migracje �
 
 Założenia:
 - **i18n** (PL/EN, rozszerzalne) — pola tłumaczone jako `JSONB` w formacie `{"pl": "...", "en": "..."}` na tej samej tabeli (wzorzec `spatie/laravel-translatable`), zamiast osobnej tabeli `product_translations` — nowy język nie wymaga migracji.
-- **Dynamiczne cechy** (waga, szerokość, wysokość itd.) — wartości nadal trzymane w kolumnie `attributes JSONB` na produkcie (nowa cecha nie wymaga migracji; `GIN` index umożliwia filtrowanie po cechach). Definicje cech (klucz, nazwa tłumaczona, typ: number/text/select) żyją osobno w tabeli `attributes`, edytowalnej z poziomu Filamenta; `attribute_category` (pivot) przypisuje, które cechy są dostępne dla danej kategorii. To nie jest klasyczny EAV — wartości produktu wciąż są jednym JSONB, nie wierszem na cechę.
+- **Dynamiczne cechy** (waga, szerokość, wysokość itd.) — wartości nadal trzymane w kolumnie `attributes JSONB` na produkcie (nowa cecha nie wymaga migracji; `GIN` index umożliwia filtrowanie po cechach). Definicje cech (klucz, nazwa tłumaczona, typ: number/text/select/multiselect) żyją osobno w tabeli `attributes`, edytowalnej z poziomu Filamenta; `attribute_category` (pivot) przypisuje, które cechy są dostępne dla danej kategorii. To nie jest klasyczny EAV — wartości produktu wciąż są jednym JSONB, nie wierszem na cechę.
 - **Kategorie** — płaska lista na MVP (produkt należy do jednej kategorii). Hierarchia kategorii (drzewo, wiele kategorii na produkt) odłożona do momentu, aż będzie faktycznie potrzebna.
 - **Warianty produktu** (np. inny kolor/rozmiar z własną ceną/SKU) — **poza zakresem MVP**, świadomie nie tworzymy tabeli `product_variants` teraz. Zaplanowane rozszerzenie: osobna tabela z FK do `products`, własnym SKU, ceną i podzbiorem `attributes`, gdy będzie na to konkretne zapotrzebowanie.
 - Zdjęcie główne i załączniki to referencje do plików w S3, nie dane binarne w bazie.
@@ -107,8 +107,8 @@ CREATE TABLE attributes (
     id          BIGSERIAL PRIMARY KEY,
     key         VARCHAR(255) NOT NULL UNIQUE,  -- np. "weight_kg", klucz używany w products.attributes
     name        JSONB NOT NULL,                -- {"pl": "Waga", "en": "Weight"}
-    type        VARCHAR(255) NOT NULL,         -- number | text | select
-    options     JSONB,                         -- wartości do wyboru, tylko dla type = select
+    type        VARCHAR(255) NOT NULL,         -- number | text | select | multiselect
+    options     JSONB,                         -- wartości do wyboru, tylko dla type = select/multiselect
     created_at  TIMESTAMP NOT NULL DEFAULT now(),
     updated_at  TIMESTAMP NOT NULL DEFAULT now()
 );
