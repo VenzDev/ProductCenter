@@ -99,10 +99,12 @@ Skeleton only — no pages/features, no `/health` or `/metrics` yet, so it isn't
 **e2e** (`e2e`, Playwright, run via `docker-compose.e2e.yaml` — a fully separate compose project, not a profile on the main file):
 ```bash
 docker compose -f docker-compose.e2e.yaml up -d --wait frontend-e2e backend-e2e postgres localstack
+docker compose -f docker-compose.e2e.yaml exec backend-e2e php artisan db:seed --class=BlogPostSeeder --force   # blog.spec.ts needs a published post to browse
 docker compose -f docker-compose.e2e.yaml run --rm e2e   # npm ci + playwright test, headless chromium
 docker compose -f docker-compose.e2e.yaml down -v        # tear down + drop its own volumes only
 ```
 Uses the official `mcr.microsoft.com/playwright` image (Debian-based) rather than the frontend's own Alpine image, since Playwright's browser binaries aren't officially supported on musl libc. This is its own compose project (`name: product-center-e2e`) with its own `postgres`/`localstack`, entirely disjoint from the main `docker-compose.yaml` project — so `down -v` here can never touch dev data, and it can run concurrently with the dev stack without port clashes (nothing here publishes a host port except through the `e2e` container's own network). `backend-e2e` and `frontend-e2e` bind-mount the same `./services/backend` and `./services/frontend` host directories as `backend`/`frontend` — including `vendor`/`node_modules`, so they share whatever's already installed there rather than reinstalling. They can still collide on writes to that shared filesystem: `frontend-e2e` gets a dedicated `.next` build-cache volume to avoid that (see `frontend_e2e_next`), while backend's writes (queue/session/cache) are DB-backed and route to `backend_test` on e2e's own postgres, not the dev one. Runs against `http://frontend-e2e:3000` — this requires `allowedDevOrigins: ["frontend-e2e"]` in `next.config.ts`, because Next's dev server otherwise 403s `/_next/*` asset requests from any origin other than localhost.
+`BlogPostSeeder` is only ever invoked explicitly like this — it's not part of `DatabaseSeeder::run()` — so it never runs against local dev or production data.
 
 On a fresh checkout (no local `vendor`/`node_modules`/`.env` yet — this is what CI does, see `.github/workflows/e2e-tests.yaml`) the command above alone will fail: `backend-e2e` needs `services/backend/.env` (copied from `.env.example`, since `.env` is gitignored) plus a generated `APP_KEY`/`JWT_SECRET`, and both `backend-e2e`/`frontend-e2e` need their deps installed onto the host once, e.g.:
 ```bash

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use Database\Factories\BlogPostFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -15,6 +17,9 @@ use Illuminate\Support\Carbon;
 #[Fillable(['title', 'slug', 'content', 'published_at'])]
 class BlogPost extends Model
 {
+    /** @use HasFactory<BlogPostFactory> */
+    use HasFactory;
+
     /**
      * @return array<string, string>
      */
