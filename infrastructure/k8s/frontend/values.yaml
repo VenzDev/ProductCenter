@@ -6,6 +6,10 @@ env:
     # infrastructure/k8s/backend/templates/service.yaml), reachable from any pod in the
     # same namespace by that short name.
     value: http://backend
+  - name: SITE_URL
+    # Used to build metadataBase/canonical/hreflang URLs and robots.txt's Sitemap line —
+    # must match ingress.host below.
+    value: https://shop.bechta.pl
 ingress:
   host: shop.bechta.pl
   # ACM cert is DNS-validated (see infrastructure/eks/dns.tf), so its ARN isn't

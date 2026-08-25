@@ -85,6 +85,10 @@
     "suggestions": ["Electronics", "Clothing", "Home & Garden", "New Arrivals", "Best Sellers"]
   },
   "home": {
+    "meta": {
+      "title": "Product Center — Shop quality products online",
+      "description": "Browse new arrivals, best sellers, and deals across our full product catalog."
+    },
     "hero": {
       "slides": [
         { "alt": "Kids Fashion — extra 50% off, shop now" },

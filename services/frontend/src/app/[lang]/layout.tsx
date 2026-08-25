@@ -3,6 +3,7 @@ import { Inter, Geist_Mono } from "next/font/google";
 import { Header } from "@/components/header";
 import { Footer } from "@/components/footer";
 import { locales } from "@/i18n/config";
+import { siteUrl } from "@/lib/site";
 import "../globals.css";
 
 // Header fetches categories from the backend on every request. Without this,
@@ -22,6 +23,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: "Product Center",
   description: "Product Center storefront",
 };

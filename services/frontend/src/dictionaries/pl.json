@@ -85,6 +85,10 @@
     "suggestions": ["Elektronika", "Odzież", "Dom i ogród", "Nowości", "Bestsellery"]
   },
   "home": {
+    "meta": {
+      "title": "Product Center — Kupuj wysokiej jakości produkty online",
+      "description": "Przeglądaj nowości, bestsellery i promocje w naszym pełnym katalogu produktów."
+    },
     "hero": {
       "slides": [
         { "alt": "Moda dziecięca — dodatkowe 50% zniżki, kup teraz" },
