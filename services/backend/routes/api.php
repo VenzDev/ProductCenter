@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Ai\Controller\AskProductController;
 use App\Auth\Jwt\Controller\AuthController;
+use App\BlogPost\Controller\BlogPostController;
 use App\Category\Controller\CategoryController;
 use App\Http\Middleware\SetLocaleFromHeader;
 use App\Product\Controller\ProductController;
@@ -20,6 +21,9 @@ Route::prefix('v1')->name('v1.')->middleware(SetLocaleFromHeader::class)->group(
 
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/categories/{category}', [CategoryController::class, 'show']);
+
+    Route::get('/blog-posts', [BlogPostController::class, 'index']);
+    Route::get('/blog-posts/{blogPost:slug}', [BlogPostController::class, 'show']);
 
     Route::middleware('auth:api')->group(function () {
         Route::get('/me', [AuthController::class, 'me']);
