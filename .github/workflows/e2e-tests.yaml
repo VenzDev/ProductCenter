@@ -1,0 +1,31 @@
+name: e2e tests
+
+on:
+  push:
+    paths:
+      - "e2e/**"
+      - "services/frontend/**"
+      - "services/backend/**"
+      - "docker-compose.e2e.yaml"
+  pull_request:
+    paths:
+      - "e2e/**"
+      - "services/frontend/**"
+      - "services/backend/**"
+      - "docker-compose.e2e.yaml"
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - run: docker compose -f docker-compose.e2e.yaml up -d --wait frontend-e2e backend-e2e postgres localstack
+
+      - run: docker compose -f docker-compose.e2e.yaml run --rm e2e
+
+      - if: failure()
+        run: docker compose -f docker-compose.e2e.yaml logs
+
+      - if: always()
+        run: docker compose -f docker-compose.e2e.yaml down -v

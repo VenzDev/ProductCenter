@@ -36,7 +36,9 @@ infrastructure/eks/  Terraform — EKS cluster (VPC, node group, ECR, addons)
 k8s/backend/  Helm chart for the backend service
 k8s/payment/  Helm chart for the payment service
 k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
+e2e/  Playwright end-to-end tests, driving the frontend against the real stack
 docker-compose.yaml  local dev environment for all services
+docker-compose.e2e.yaml  fully separate stack (own postgres/localstack) for running e2e/
 ```
 
 Target cloud is AWS. AWS services in the design (DynamoDB, S3, SQS) are simulated locally via LocalStack. S3 (product images, via the backend's `s3` filesystem disk) is wired into `docker-compose.yaml`; DynamoDB/SQS are not yet.
@@ -54,10 +56,10 @@ docker compose up          # frontend:3000, payment:8080, backend:8081(→80), l
 docker compose up payment  # single service
 ```
 
-- **frontend**: `next dev` (Turbopack, hot reload), full source + a named `frontend_node_modules` volume mounted so container-installed deps aren't clobbered by the host bind mount.
+- **frontend**: `next dev` (Turbopack, hot reload), full source bind-mounted including `node_modules` — `docker compose exec frontend npm ci` installs straight onto the host, so it's visible to your editor. After changing dependencies, delete `.next` (Turbopack's persistent cache can otherwise keep referencing the old `node_modules` state and throw module-resolution errors like `Cannot find module 'picocolors'`) and restart the container.
 - **payment**: `air` (hot reload via `.air.toml`), full source mounted.
 - **localstack**: simulates S3 locally; the `product-files` bucket is created automatically on every start via `services/backend/docker/localstack-init-s3.sh` (mounted into LocalStack's init hooks — there's no persistent volume, so it needs recreating each time).
-- **backend**: FrankenPHP dev entrypoint (`docker/dev-entrypoint.sh`) runs `php artisan migrate --force` then starts the server; full source + a named `backend_vendor` volume mounted so container-installed vendor deps aren't clobbered by the host bind mount.
+- **backend**: FrankenPHP dev entrypoint (`docker/dev-entrypoint.sh`) runs `php artisan migrate --force` then starts the server; full source bind-mounted including `vendor` — `docker compose exec backend composer install` installs straight onto the host. Note: the entrypoint ignores any command passed via `docker compose run backend <cmd>` (it always runs migrate + serve) — if the container isn't already running (so `exec` isn't an option), use `docker compose run --rm --entrypoint sh backend -c "<cmd>"` instead.
 
 Every service exposes `GET /health` (liveness/readiness) and `GET /metrics` (Prometheus text format) — both are load-bearing conventions used by the Helm chart's probes and `ServiceMonitor`, so any new service must implement both before it can be deployed with the shared chart.
 
@@ -93,3 +95,11 @@ docker compose exec frontend npm run build      # production build
 ```
 `tsc --noEmit` alone fails on a clean checkout with `Cannot find name 'LayoutProps'` — that global type is generated into `.next/types` by `next dev`/`next build`/`next typegen`, not shipped statically. Always run `next typegen` first if `.next/types` isn't already present (e.g. from a prior `next dev`/`build` in the same container).
 Skeleton only — no pages/features, no `/health` or `/metrics` yet, so it isn't deployable with the shared Helm chart pattern.
+
+**e2e** (`e2e`, Playwright, run via `docker-compose.e2e.yaml` — a fully separate compose project, not a profile on the main file):
+```bash
+docker compose -f docker-compose.e2e.yaml up -d --wait frontend-e2e backend-e2e postgres localstack
+docker compose -f docker-compose.e2e.yaml run --rm e2e   # npm ci + playwright test, headless chromium
+docker compose -f docker-compose.e2e.yaml down -v        # tear down + drop its own volumes only
+```
+Uses the official `mcr.microsoft.com/playwright` image (Debian-based) rather than the frontend's own Alpine image, since Playwright's browser binaries aren't officially supported on musl libc. This is its own compose project (`name: product-center-e2e`) with its own `postgres`/`localstack`, entirely disjoint from the main `docker-compose.yaml` project — so `down -v` here can never touch dev data, and it can run concurrently with the dev stack without port clashes (nothing here publishes a host port except through the `e2e` container's own network). `backend-e2e` and `frontend-e2e` bind-mount the same `./services/backend` and `./services/frontend` host directories as `backend`/`frontend` — including `vendor`/`node_modules`, so they share whatever's already installed there rather than reinstalling. They can still collide on writes to that shared filesystem: `frontend-e2e` gets a dedicated `.next` build-cache volume to avoid that (see `frontend_e2e_next`), while backend's writes (queue/session/cache) are DB-backed and route to `backend_test` on e2e's own postgres, not the dev one. Runs against `http://frontend-e2e:3000` — this requires `allowedDevOrigins: ["frontend-e2e"]` in `next.config.ts`, because Next's dev server otherwise 403s `/_next/*` asset requests from any origin other than localhost.
