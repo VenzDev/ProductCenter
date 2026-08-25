@@ -100,6 +100,6 @@ class CategoryTree extends TreePage
      */
     public function getBreadcrumbs(): array
     {
-        return [static::getTitle()];
+        return [static::getTitle(), 'List'];
     }
 }
