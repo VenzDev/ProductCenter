@@ -19,17 +19,17 @@ output "ecr_repository_urls" {
 }
 
 output "s3_bucket_name" {
-  description = "S3 bucket for product files — paste into k8s/chart/values/backend.yaml (AWS_BUCKET)"
+  description = "S3 bucket for product files — paste into infrastructure/k8s/chart/values/backend.yaml (AWS_BUCKET)"
   value       = aws_s3_bucket.product_files.bucket
 }
 
 output "backend_s3_irsa_role_arn" {
-  description = "IAM role ARN for the backend's ServiceAccount — paste into k8s/chart/values/backend.yaml (serviceAccount.annotations)"
+  description = "IAM role ARN for the backend's ServiceAccount — paste into infrastructure/k8s/chart/values/backend.yaml (serviceAccount.annotations)"
   value       = aws_iam_role.backend_s3.arn
 }
 
 output "rds_endpoint" {
-  description = "RDS Postgres host — paste into k8s/chart/values/backend.yaml (DB_HOST)"
+  description = "RDS Postgres host — paste into infrastructure/k8s/chart/values/backend.yaml (DB_HOST)"
   value       = aws_db_instance.this.address
 }
 
@@ -54,11 +54,11 @@ output "route53_zone_id" {
 }
 
 output "acm_certificate_arn" {
-  description = "Validated ACM cert for admin.bechta.pl — paste into k8s/chart/values/backend.yaml (ingress.certificateArn)"
+  description = "Validated ACM cert for admin.bechta.pl — paste into infrastructure/k8s/chart/values/backend.yaml (ingress.certificateArn)"
   value       = aws_acm_certificate_validation.backend_admin.certificate_arn
 }
 
 output "frontend_acm_certificate_arn" {
-  description = "Validated ACM cert for shop.bechta.pl — paste into k8s/frontend/values.yaml (ingress.certificateArn)"
+  description = "Validated ACM cert for shop.bechta.pl — paste into infrastructure/k8s/frontend/values.yaml (ingress.certificateArn)"
   value       = aws_acm_certificate_validation.frontend.certificate_arn
 }

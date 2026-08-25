@@ -1,6 +1,6 @@
 # admin.bechta.pl — public hostname for the backend admin panel, terminated at the ALB
 # that AWS Load Balancer Controller provisions from the Ingress (see
-# k8s/backend/templates/ingress.yaml). The zone itself already exists in this AWS account
+# infrastructure/k8s/backend/templates/ingress.yaml). The zone itself already exists in this AWS account
 # and is managed outside this Terraform — only referenced here for DNS validation.
 
 data "aws_route53_zone" "bechta_pl" {
@@ -39,7 +39,7 @@ resource "aws_acm_certificate_validation" "backend_admin" {
 }
 
 # shop.bechta.pl — public hostname for the Next.js storefront, terminated at its own
-# ALB (see k8s/frontend/templates/ingress.yaml) — separate Ingress from the backend
+# ALB (see infrastructure/k8s/frontend/templates/ingress.yaml) — separate Ingress from the backend
 # admin panel above, so a separate ALB and cert, same pattern otherwise.
 
 resource "aws_acm_certificate" "frontend" {

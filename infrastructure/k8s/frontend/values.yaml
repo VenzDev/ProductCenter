@@ -3,7 +3,7 @@ port: 3000
 env:
   - name: BACKEND_URL
     # In-cluster Service DNS — the backend Service is named "backend" (see
-    # k8s/backend/templates/service.yaml), reachable from any pod in the
+    # infrastructure/k8s/backend/templates/service.yaml), reachable from any pod in the
     # same namespace by that short name.
     value: http://backend
 ingress:

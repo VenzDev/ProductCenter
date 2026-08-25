@@ -16,7 +16,7 @@ data "aws_iam_policy_document" "backend_s3_assume_role" {
       test     = "StringEquals"
       variable = "${replace(module.eks.cluster_oidc_issuer_url, "https://", "")}:sub"
       # Must match the ServiceAccount the backend actually runs as — see
-      # k8s/chart/values/backend.yaml (serviceAccount.name) and the "default" namespace
+      # infrastructure/k8s/chart/values/backend.yaml (serviceAccount.name) and the "default" namespace
       # used by `helm install backend ...` in docs/runbook.md.
       values = ["system:serviceaccount:default:backend"]
     }

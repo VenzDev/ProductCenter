@@ -88,7 +88,7 @@ Dwie rzeczy per serwis:
 1. Endpoint `/metrics` w kodzie serwisu — biblioteka inna per stack:
    - `payment` (Go/Gin): `prometheus/client_golang` → `r.GET("/metrics", gin.WrapH(promhttp.Handler()))`
    - `backend` (Laravel/FrankenPHP): `promphp/prometheus_client_php` + rozszerzenie PHP `apcu` (dodane w Dockerfile: `install-php-extensions apcu`) — liczniki trzymane w APCu, żeby przetrwały między requestami
-2. Zasób `ServiceMonitor` (szablon `k8s/<serwis>/templates/servicemonitor.yaml`) — mówi Prometheusowi, żeby scrapował dany Service.
+2. Zasób `ServiceMonitor` (szablon `infrastructure/k8s/<serwis>/templates/servicemonitor.yaml`) — mówi Prometheusowi, żeby scrapował dany Service.
 
 **Ważne, sprawdzone wymaganie:** Prometheus w tym stacku ma `serviceMonitorSelector: matchLabels: release: kube-prometheus-stack` — każdy `ServiceMonitor` musi mieć etykietę `release: kube-prometheus-stack`, inaczej zostanie zignorowany. Sprawdź komendą:
 ```bash
@@ -99,7 +99,7 @@ kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.serviceMonitor
 
 Po dodaniu `ServiceMonitor` z poprawną etykietą `release`, Prometheus **nie zgłaszał żadnego błędu**, ale target po prostu nie istniał (`/api/v1/targets` — brak `payment`/`backend`, nawet wśród `dropped`). Przyczyna: `ServiceMonitor.spec.selector.matchLabels: {app: <serwis>}` dopasowuje się do **etykiet samego obiektu Service** (`metadata.labels`), a nie do jego `spec.selector` (to, czego Service używa do znalezienia swoich podów — zupełnie inne pole). Nasz szablon `service.yaml` ustawiał `spec.selector.app`, ale nigdy `metadata.labels.app` — więc `ServiceMonitor` szukał etykiety, której obiekt Service nigdy nie miał.
 
-Fix: dodać `labels: app: <serwis>` do `metadata` w `k8s/<serwis>/templates/service.yaml`, obok `spec.selector`.
+Fix: dodać `labels: app: <serwis>` do `metadata` w `infrastructure/k8s/<serwis>/templates/service.yaml`, obok `spec.selector`.
 
 ### Jak zweryfikować, że dany serwis jest faktycznie scrapowany
 
@@ -132,10 +132,10 @@ kubectl get svc <serwis> -n product-center --show-labels
 Dashboard **nie** budujemy ręcznie w UI Grafany — nie przetrwałby kolejnego `terraform destroy`/świeżego Minikube (żyje tylko w bazie Grafany, nie w repo). Zamiast tego: plik JSON w `ConfigMap` z etykietą `grafana_dashboard: "1"` — sidecar Grafany (`grafana-sc-dashboard`, wbudowany w ten chart) sam go wykrywa i ładuje, w dowolnym namespace.
 
 ```bash
-kubectl apply -f k8s/monitoring/dashboard-services.yaml -n monitoring
+kubectl apply -f infrastructure/k8s/monitoring/dashboard-services.yaml -n monitoring
 ```
 
-Dashboard `product-center services (RED)` (`k8s/monitoring/dashboard-services.yaml`) ma trzy panele — Request rate, Error rate (5xx), Latency p95 — oraz zmienną `$service` (z `label_values(http_requests_total, job)`) do filtrowania między `payment`/`backend`.
+Dashboard `product-center services (RED)` (`infrastructure/k8s/monitoring/dashboard-services.yaml`) ma trzy panele — Request rate, Error rate (5xx), Latency p95 — oraz zmienną `$service` (z `label_values(http_requests_total, job)`) do filtrowania między `payment`/`backend`.
 
 Weryfikacja, że sidecar podłapał plik:
 ```bash

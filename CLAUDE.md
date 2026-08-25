@@ -33,9 +33,9 @@ services/
   frontend/   TypeScript, Next.js (App Router) + shadcn/ui — skeleton, no pages/features yet
   payment/    Go, Gin — payment handling
 infrastructure/eks/  Terraform — EKS cluster (VPC, node group, ECR, addons)
-k8s/backend/  Helm chart for the backend service
-k8s/payment/  Helm chart for the payment service
-k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
+infrastructure/k8s/backend/  Helm chart for the backend service
+infrastructure/k8s/payment/  Helm chart for the payment service
+infrastructure/k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
 e2e/  Playwright end-to-end tests, driving the frontend against the real stack
 docker-compose.yaml  local dev environment for all services
 docker-compose.e2e.yaml  fully separate stack (own postgres/localstack) for running e2e/
