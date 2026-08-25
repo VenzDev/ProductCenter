@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { MenuIcon } from "lucide-react";
+import { lang } from "next/root-params";
 
 import {
   Accordion,
@@ -18,8 +19,16 @@ import {
 } from "@/components/ui/sheet";
 import { type Category } from "@/api/categories";
 import { PRODUCT_LINKS } from "@/components/header/product-links";
+import { getDictionary } from "@/app/[lang]/dictionaries";
+import { localizedHref } from "@/i18n/config";
 
-function MobileCategoryItem({ category }: { category: Category }) {
+function MobileCategoryItem({
+  category,
+  locale,
+}: {
+  category: Category;
+  locale: string;
+}) {
   if (category.children.length === 0) {
     return (
       <li>
@@ -27,7 +36,7 @@ function MobileCategoryItem({ category }: { category: Category }) {
           nativeButton={false}
           render={
             <Link
-              href={`/categories/${category.slug}`}
+              href={localizedHref(locale, `/categories/${category.slug}`)}
               className="block rounded-lg px-3 py-2 text-sm hover:bg-muted"
             />
           }
@@ -53,7 +62,7 @@ function MobileCategoryItem({ category }: { category: Category }) {
                     nativeButton={false}
                     render={
                       <Link
-                        href={`/categories/${child.slug}`}
+                        href={localizedHref(locale, `/categories/${child.slug}`)}
                         className="block rounded-lg px-3 py-2 text-sm text-muted-foreground hover:bg-muted"
                       />
                     }
@@ -70,22 +79,24 @@ function MobileCategoryItem({ category }: { category: Category }) {
   );
 }
 
-export function MobileNav({ categories }: { categories: Category[] }) {
+export async function MobileNav({ categories }: { categories: Category[] }) {
+  const [dict, locale] = await Promise.all([getDictionary(), lang()]);
+
   return (
     <Sheet>
       <SheetTrigger
         render={<Button variant="ghost" size="icon" className="md:hidden" />}
       >
         <MenuIcon />
-        <span className="sr-only">Open menu</span>
+        <span className="sr-only">{dict.nav.openMenu}</span>
       </SheetTrigger>
       <SheetContent side="left">
         <SheetHeader>
-          <SheetTitle>Product Center</SheetTitle>
+          <SheetTitle>{dict.common.siteName}</SheetTitle>
         </SheetHeader>
         <Accordion className="px-4">
           <AccordionItem value="products">
-            <AccordionTrigger>Products</AccordionTrigger>
+            <AccordionTrigger>{dict.nav.products}</AccordionTrigger>
             <AccordionContent className="[&_a]:no-underline">
               <ul className="flex flex-col gap-1">
                 {PRODUCT_LINKS.map((item) => (
@@ -94,12 +105,12 @@ export function MobileNav({ categories }: { categories: Category[] }) {
                       nativeButton={false}
                       render={
                         <Link
-                          href={item.href}
+                          href={localizedHref(locale, item.href)}
                           className="block rounded-lg px-3 py-2 text-sm hover:bg-muted"
                         />
                       }
                     >
-                      {item.title}
+                      {dict.nav.productLinks[item.key].title}
                     </SheetClose>
                   </li>
                 ))}
@@ -107,11 +118,11 @@ export function MobileNav({ categories }: { categories: Category[] }) {
             </AccordionContent>
           </AccordionItem>
           <AccordionItem value="categories">
-            <AccordionTrigger>Categories</AccordionTrigger>
+            <AccordionTrigger>{dict.nav.categories}</AccordionTrigger>
             <AccordionContent className="[&_a]:no-underline">
               <ul className="flex flex-col gap-1">
                 {categories.map((category) => (
-                  <MobileCategoryItem key={category.id} category={category} />
+                  <MobileCategoryItem key={category.id} category={category} locale={locale} />
                 ))}
               </ul>
             </AccordionContent>
@@ -122,12 +133,12 @@ export function MobileNav({ categories }: { categories: Category[] }) {
             nativeButton={false}
             render={
               <Link
-                href="/about"
+                href={localizedHref(locale, "/about")}
                 className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
               />
             }
           >
-            About
+            {dict.nav.about}
           </SheetClose>
         </nav>
       </SheetContent>

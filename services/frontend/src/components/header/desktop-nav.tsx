@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { lang } from "next/root-params";
 
 import {
   NavigationMenu,
@@ -11,12 +12,20 @@ import {
 } from "@/components/ui/navigation-menu";
 import { type Category } from "@/api/categories";
 import { PRODUCT_LINKS } from "@/components/header/product-links";
+import { getDictionary } from "@/app/[lang]/dictionaries";
+import { localizedHref } from "@/i18n/config";
 
-function CategoryMenuItem({ category }: { category: Category }) {
+function CategoryMenuItem({
+  category,
+  locale,
+}: {
+  category: Category;
+  locale: string;
+}) {
   return (
     <li>
       <NavigationMenuLink
-        render={<Link href={`/categories/${category.slug}`} />}
+        render={<Link href={localizedHref(locale, `/categories/${category.slug}`)} />}
         className="text-sm font-medium"
       >
         {category.name}
@@ -26,7 +35,7 @@ function CategoryMenuItem({ category }: { category: Category }) {
           {category.children.map((child) => (
             <li key={child.id}>
               <NavigationMenuLink
-                render={<Link href={`/categories/${child.slug}`} />}
+                render={<Link href={localizedHref(locale, `/categories/${child.slug}`)} />}
                 className="text-muted-foreground text-sm"
               >
                 {child.name}
@@ -64,36 +73,42 @@ function ListItem({
   );
 }
 
-export function DesktopNav({ categories }: { categories: Category[] }) {
+export async function DesktopNav({ categories }: { categories: Category[] }) {
+  const [dict, locale] = await Promise.all([getDictionary(), lang()]);
+
   return (
     <NavigationMenu className="hidden md:flex">
       <NavigationMenuList>
         <NavigationMenuItem>
-          <NavigationMenuTrigger>Products</NavigationMenuTrigger>
+          <NavigationMenuTrigger>{dict.nav.products}</NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid w-[400px] gap-2 p-2 md:grid-cols-2">
               {PRODUCT_LINKS.map((item) => (
-                <ListItem key={item.href} {...item} />
+                <ListItem
+                  key={item.href}
+                  href={localizedHref(locale, item.href)}
+                  {...dict.nav.productLinks[item.key]}
+                />
               ))}
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
         <NavigationMenuItem>
-          <NavigationMenuTrigger>Categories</NavigationMenuTrigger>
+          <NavigationMenuTrigger>{dict.nav.categories}</NavigationMenuTrigger>
           <NavigationMenuContent>
             <ul className="grid w-[400px] gap-2 p-2 md:grid-cols-2">
               {categories.map((category) => (
-                <CategoryMenuItem key={category.id} category={category} />
+                <CategoryMenuItem key={category.id} category={category} locale={locale} />
               ))}
             </ul>
           </NavigationMenuContent>
         </NavigationMenuItem>
         <NavigationMenuItem>
           <NavigationMenuLink
-            render={<Link href="/about" />}
+            render={<Link href={localizedHref(locale, "/about")} />}
             className={navigationMenuTriggerStyle()}
           >
-            About
+            {dict.nav.about}
           </NavigationMenuLink>
         </NavigationMenuItem>
       </NavigationMenuList>

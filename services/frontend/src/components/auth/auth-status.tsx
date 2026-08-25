@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { LogInIcon } from "lucide-react";
 
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -17,6 +17,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { useCurrentUser } from "@/hooks/use-current-user";
 import { clearToken } from "@/api/auth";
+import { localizedHref } from "@/i18n/config";
 
 function initials(name: string) {
   return name
@@ -28,24 +29,35 @@ function initials(name: string) {
     .toUpperCase();
 }
 
-export function AuthStatus() {
+type AuthStatusDict = {
+  login: string;
+  profile: string;
+  logout: string;
+};
+
+export function AuthStatus({ dict }: { dict: AuthStatusDict }) {
   const router = useRouter();
+  const { lang } = useParams<{ lang: string }>();
   const { user, loading } = useCurrentUser();
 
   if (loading) return null;
 
   if (!user) {
     return (
-      <Button variant="outline" nativeButton={false} render={<Link href="/login" />}>
+      <Button
+        variant="outline"
+        nativeButton={false}
+        render={<Link href={localizedHref(lang, "/login")} />}
+      >
         <LogInIcon data-icon="inline-start" />
-        <span className="hidden sm:inline">Login</span>
+        <span className="hidden sm:inline">{dict.login}</span>
       </Button>
     );
   }
 
   function handleLogout() {
     clearToken();
-    router.push("/");
+    router.push(localizedHref(lang, "/"));
     router.refresh();
   }
 
@@ -71,11 +83,14 @@ export function AuthStatus() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
-          <DropdownMenuItem className="cursor-pointer text-sm" render={<Link href="/profile" />}>
-            Profile
+          <DropdownMenuItem
+            className="cursor-pointer text-sm"
+            render={<Link href={localizedHref(lang, "/profile")} />}
+          >
+            {dict.profile}
           </DropdownMenuItem>
           <DropdownMenuItem className="cursor-pointer text-sm" onClick={handleLogout}>
-            Logout
+            {dict.logout}
           </DropdownMenuItem>
         </DropdownMenuGroup>
       </DropdownMenuContent>

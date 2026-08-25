@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { CircleAlertIcon } from "lucide-react";
 
 import { Alert, AlertTitle } from "@/components/ui/alert";
@@ -16,9 +16,29 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { login } from "@/api/auth";
+import { localizedHref } from "@/i18n/config";
 
-export function LoginForm({ onCreateAccount }: { onCreateAccount: () => void }) {
+type LoginFormDict = {
+  title: string;
+  subtitle: string;
+  email: string;
+  password: string;
+  submit: string;
+  noAccount: string;
+  createAccount: string;
+};
+
+export function LoginForm({
+  dict,
+  genericError,
+  onCreateAccount,
+}: {
+  dict: LoginFormDict;
+  genericError: string;
+  onCreateAccount: () => void;
+}) {
   const router = useRouter();
+  const { lang } = useParams<{ lang: string }>();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -31,10 +51,10 @@ export function LoginForm({ onCreateAccount }: { onCreateAccount: () => void }) 
 
     try {
       await login(email, password);
-      router.push("/");
+      router.push(localizedHref(lang, "/"));
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : genericError);
     } finally {
       setSubmitting(false);
     }
@@ -43,10 +63,8 @@ export function LoginForm({ onCreateAccount }: { onCreateAccount: () => void }) 
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Log in</CardTitle>
-        <CardDescription>
-          Welcome back. Enter your details to continue.
-        </CardDescription>
+        <CardTitle>{dict.title}</CardTitle>
+        <CardDescription>{dict.subtitle}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
@@ -58,7 +76,7 @@ export function LoginForm({ onCreateAccount }: { onCreateAccount: () => void }) 
               </Alert>
             )}
             <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <FieldLabel htmlFor="email">{dict.email}</FieldLabel>
               <Input
                 id="email"
                 type="email"
@@ -68,7 +86,7 @@ export function LoginForm({ onCreateAccount }: { onCreateAccount: () => void }) 
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <FieldLabel htmlFor="password">{dict.password}</FieldLabel>
               <Input
                 id="password"
                 type="password"
@@ -78,18 +96,18 @@ export function LoginForm({ onCreateAccount }: { onCreateAccount: () => void }) 
               />
             </Field>
             <Button type="submit" disabled={submitting} className="cursor-pointer">
-              Log in
+              {dict.submit}
             </Button>
           </FieldGroup>
         </form>
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
+          {dict.noAccount}{" "}
           <button
             type="button"
             onClick={onCreateAccount}
             className="cursor-pointer font-medium text-foreground underline underline-offset-4"
           >
-            Create account
+            {dict.createAccount}
           </button>
         </p>
       </CardContent>

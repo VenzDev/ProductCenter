@@ -1,16 +1,19 @@
 import Image from "next/image";
 import Link from "next/link";
+import { lang } from "next/root-params";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import { formatPrice } from "@/lib/format";
+import { localizedHref } from "@/i18n/config";
 import type { Product } from "@/api/products";
 
-export function ProductCard({ product }: { product: Product }) {
+export async function ProductCard({ product }: { product: Product }) {
   const imageSrc = product.main_image?.thumbnail_webp_url;
+  const locale = await lang();
 
   return (
-    <Link href={`/products/${product.id}`}>
+    <Link href={localizedHref(locale, `/products/${product.id}`)}>
       <Card className="gap-0 py-0">
         <div className="relative aspect-square overflow-hidden rounded-t-xl bg-muted">
           {imageSrc && (

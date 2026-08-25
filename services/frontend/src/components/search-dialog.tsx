@@ -14,15 +14,16 @@ import {
   CommandList,
 } from "@/components/ui/command";
 
-const SUGGESTIONS = [
-  "Electronics",
-  "Clothing",
-  "Home & Garden",
-  "New Arrivals",
-  "Best Sellers",
-];
+type SearchDialogDict = {
+  placeholder: string;
+  dialogTitle: string;
+  dialogDescription: string;
+  noResults: string;
+  suggestionsHeading: string;
+  suggestions: string[];
+};
 
-export function SearchDialog() {
+export function SearchDialog({ dict }: { dict: SearchDialogDict }) {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
@@ -44,7 +45,7 @@ export function SearchDialog() {
         className="justify-start gap-2 text-muted-foreground sm:w-56"
       >
         <SearchIcon data-icon="inline-start" />
-        <span className="hidden sm:inline">Search products...</span>
+        <span className="hidden sm:inline">{dict.placeholder}</span>
         <kbd className="ml-auto hidden rounded border px-1.5 text-xs text-muted-foreground sm:inline">
           ⌘K
         </kbd>
@@ -52,15 +53,15 @@ export function SearchDialog() {
       <CommandDialog
         open={open}
         onOpenChange={setOpen}
-        title="Search products"
-        description="Search is a mockup for now — no results are wired up yet."
+        title={dict.dialogTitle}
+        description={dict.dialogDescription}
       >
         <Command>
-          <CommandInput placeholder="Search products..." />
+          <CommandInput placeholder={dict.placeholder} />
           <CommandList>
-            <CommandEmpty>No results found.</CommandEmpty>
-            <CommandGroup heading="Suggestions">
-              {SUGGESTIONS.map((item) => (
+            <CommandEmpty>{dict.noResults}</CommandEmpty>
+            <CommandGroup heading={dict.suggestionsHeading}>
+              {dict.suggestions.map((item) => (
                 <CommandItem key={item} onSelect={() => setOpen(false)}>
                   {item}
                 </CommandItem>

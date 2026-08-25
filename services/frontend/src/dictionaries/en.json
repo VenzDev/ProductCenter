@@ -1,0 +1,118 @@
+{
+  "common": {
+    "siteName": "Product Center",
+    "cart": "Cart"
+  },
+  "nav": {
+    "products": "Products",
+    "categories": "Categories",
+    "about": "About",
+    "openMenu": "Open menu",
+    "productLinks": {
+      "newArrivals": {
+        "title": "New Arrivals",
+        "description": "Freshly added items, updated every week."
+      },
+      "bestSellers": {
+        "title": "Best Sellers",
+        "description": "The products our customers buy the most."
+      },
+      "onSale": {
+        "title": "On Sale",
+        "description": "Discounted items across the whole store."
+      },
+      "allProducts": {
+        "title": "All Products",
+        "description": "Browse the entire catalog."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "© {year} Product Center. All rights reserved.",
+    "shop": {
+      "heading": "Shop",
+      "products": "Products",
+      "categories": "Categories",
+      "cart": "Cart"
+    },
+    "company": {
+      "heading": "Company",
+      "about": "About",
+      "contact": "Contact"
+    },
+    "legal": {
+      "heading": "Legal",
+      "privacy": "Privacy Policy",
+      "terms": "Terms & Conditions"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "twitter": "Twitter",
+      "github": "GitHub"
+    }
+  },
+  "auth": {
+    "login": "Login",
+    "profile": "Profile",
+    "logout": "Logout",
+    "genericError": "Something went wrong.",
+    "loginForm": {
+      "title": "Log in",
+      "subtitle": "Welcome back. Enter your details to continue.",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Log in",
+      "noAccount": "Don't have an account?",
+      "createAccount": "Create account"
+    },
+    "registerForm": {
+      "title": "Create account",
+      "subtitle": "Fill in your details to create a new account.",
+      "name": "Name",
+      "email": "Email",
+      "password": "Password",
+      "submit": "Create account",
+      "haveAccount": "Already have an account?",
+      "login": "Log in"
+    }
+  },
+  "search": {
+    "placeholder": "Search products...",
+    "dialogTitle": "Search products",
+    "dialogDescription": "Search is a mockup for now — no results are wired up yet.",
+    "noResults": "No results found.",
+    "suggestionsHeading": "Suggestions",
+    "suggestions": ["Electronics", "Clothing", "Home & Garden", "New Arrivals", "Best Sellers"]
+  },
+  "home": {
+    "hero": {
+      "slides": [
+        { "alt": "Kids Fashion — extra 50% off, shop now" },
+        { "alt": "Sale on Sale — 25% off everything, shop now" },
+        { "alt": "Mother's Day Sale — up to 30% off, shop now" }
+      ],
+      "goToSlide": "Go to slide {n}"
+    },
+    "products": {
+      "heading": "Product for you",
+      "subtitle": "A few picks we think you'll like."
+    },
+    "news": {
+      "heading": "News",
+      "subtitle": "Updates and stories from the team.",
+      "author": "Product Center Team",
+      "posts": [
+        "How We Pick Products for the Store",
+        "A Look Behind Our Fulfillment Process",
+        "Tips for Getting the Most from Sale Season"
+      ]
+    }
+  },
+  "product": {
+    "breadcrumbHome": "Home",
+    "relatedHeading": "You might also like",
+    "decreaseQuantity": "Decrease quantity",
+    "increaseQuantity": "Increase quantity",
+    "addToCart": "Add to Cart"
+  }
+}

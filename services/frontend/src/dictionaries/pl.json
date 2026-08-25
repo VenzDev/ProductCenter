@@ -1,0 +1,118 @@
+{
+  "common": {
+    "siteName": "Product Center",
+    "cart": "Koszyk"
+  },
+  "nav": {
+    "products": "Produkty",
+    "categories": "Kategorie",
+    "about": "O nas",
+    "openMenu": "Otwórz menu",
+    "productLinks": {
+      "newArrivals": {
+        "title": "Nowości",
+        "description": "Świeżo dodane produkty, aktualizowane co tydzień."
+      },
+      "bestSellers": {
+        "title": "Bestsellery",
+        "description": "Produkty najczęściej kupowane przez naszych klientów."
+      },
+      "onSale": {
+        "title": "Wyprzedaż",
+        "description": "Przecenione produkty w całym sklepie."
+      },
+      "allProducts": {
+        "title": "Wszystkie produkty",
+        "description": "Przeglądaj cały katalog."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "© {year} Product Center. Wszelkie prawa zastrzeżone.",
+    "shop": {
+      "heading": "Sklep",
+      "products": "Produkty",
+      "categories": "Kategorie",
+      "cart": "Koszyk"
+    },
+    "company": {
+      "heading": "Firma",
+      "about": "O nas",
+      "contact": "Kontakt"
+    },
+    "legal": {
+      "heading": "Informacje prawne",
+      "privacy": "Polityka prywatności",
+      "terms": "Regulamin"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "twitter": "Twitter",
+      "github": "GitHub"
+    }
+  },
+  "auth": {
+    "login": "Zaloguj się",
+    "profile": "Profil",
+    "logout": "Wyloguj się",
+    "genericError": "Coś poszło nie tak.",
+    "loginForm": {
+      "title": "Zaloguj się",
+      "subtitle": "Witaj ponownie. Podaj swoje dane, aby kontynuować.",
+      "email": "E-mail",
+      "password": "Hasło",
+      "submit": "Zaloguj się",
+      "noAccount": "Nie masz konta?",
+      "createAccount": "Utwórz konto"
+    },
+    "registerForm": {
+      "title": "Utwórz konto",
+      "subtitle": "Podaj swoje dane, aby założyć nowe konto.",
+      "name": "Imię",
+      "email": "E-mail",
+      "password": "Hasło",
+      "submit": "Utwórz konto",
+      "haveAccount": "Masz już konto?",
+      "login": "Zaloguj się"
+    }
+  },
+  "search": {
+    "placeholder": "Szukaj produktów...",
+    "dialogTitle": "Szukaj produktów",
+    "dialogDescription": "Wyszukiwanie to na razie makieta — wyniki nie są jeszcze podłączone.",
+    "noResults": "Brak wyników.",
+    "suggestionsHeading": "Sugestie",
+    "suggestions": ["Elektronika", "Odzież", "Dom i ogród", "Nowości", "Bestsellery"]
+  },
+  "home": {
+    "hero": {
+      "slides": [
+        { "alt": "Moda dziecięca — dodatkowe 50% zniżki, kup teraz" },
+        { "alt": "Wyprzedaż wyprzedaży — 25% zniżki na wszystko, kup teraz" },
+        { "alt": "Wyprzedaż z okazji Dnia Matki — do 30% zniżki, kup teraz" }
+      ],
+      "goToSlide": "Przejdź do slajdu {n}"
+    },
+    "products": {
+      "heading": "Produkty dla Ciebie",
+      "subtitle": "Kilka propozycji, które mogą Ci się spodobać."
+    },
+    "news": {
+      "heading": "Aktualności",
+      "subtitle": "Nowości i historie od zespołu.",
+      "author": "Zespół Product Center",
+      "posts": [
+        "Jak wybieramy produkty do sklepu",
+        "Za kulisami naszego procesu realizacji zamówień",
+        "Jak najlepiej wykorzystać sezon wyprzedaży"
+      ]
+    }
+  },
+  "product": {
+    "breadcrumbHome": "Strona główna",
+    "relatedHeading": "Może Ci się spodobać",
+    "decreaseQuantity": "Zmniejsz ilość",
+    "increaseQuantity": "Zwiększ ilość",
+    "addToCart": "Dodaj do koszyka"
+  }
+}

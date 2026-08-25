@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, type FormEvent } from "react";
-import { useRouter } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import { CircleAlertIcon } from "lucide-react";
 
 import { Alert, AlertTitle } from "@/components/ui/alert";
@@ -16,9 +16,30 @@ import {
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import { register } from "@/api/auth";
+import { localizedHref } from "@/i18n/config";
 
-export function RegisterForm({ onLogin }: { onLogin: () => void }) {
+type RegisterFormDict = {
+  title: string;
+  subtitle: string;
+  name: string;
+  email: string;
+  password: string;
+  submit: string;
+  haveAccount: string;
+  login: string;
+};
+
+export function RegisterForm({
+  dict,
+  genericError,
+  onLogin,
+}: {
+  dict: RegisterFormDict;
+  genericError: string;
+  onLogin: () => void;
+}) {
   const router = useRouter();
+  const { lang } = useParams<{ lang: string }>();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -32,10 +53,10 @@ export function RegisterForm({ onLogin }: { onLogin: () => void }) {
 
     try {
       await register(name, email, password);
-      router.push("/");
+      router.push(localizedHref(lang, "/"));
       router.refresh();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Something went wrong.");
+      setError(err instanceof Error ? err.message : genericError);
     } finally {
       setSubmitting(false);
     }
@@ -44,10 +65,8 @@ export function RegisterForm({ onLogin }: { onLogin: () => void }) {
   return (
     <Card className="w-full max-w-sm">
       <CardHeader>
-        <CardTitle>Create account</CardTitle>
-        <CardDescription>
-          Fill in your details to create a new account.
-        </CardDescription>
+        <CardTitle>{dict.title}</CardTitle>
+        <CardDescription>{dict.subtitle}</CardDescription>
       </CardHeader>
       <CardContent>
         <form onSubmit={handleSubmit}>
@@ -59,7 +78,7 @@ export function RegisterForm({ onLogin }: { onLogin: () => void }) {
               </Alert>
             )}
             <Field>
-              <FieldLabel htmlFor="name">Name</FieldLabel>
+              <FieldLabel htmlFor="name">{dict.name}</FieldLabel>
               <Input
                 id="name"
                 value={name}
@@ -68,7 +87,7 @@ export function RegisterForm({ onLogin }: { onLogin: () => void }) {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="email">Email</FieldLabel>
+              <FieldLabel htmlFor="email">{dict.email}</FieldLabel>
               <Input
                 id="email"
                 type="email"
@@ -78,7 +97,7 @@ export function RegisterForm({ onLogin }: { onLogin: () => void }) {
               />
             </Field>
             <Field>
-              <FieldLabel htmlFor="password">Password</FieldLabel>
+              <FieldLabel htmlFor="password">{dict.password}</FieldLabel>
               <Input
                 id="password"
                 type="password"
@@ -89,18 +108,18 @@ export function RegisterForm({ onLogin }: { onLogin: () => void }) {
               />
             </Field>
             <Button type="submit" disabled={submitting} className="cursor-pointer">
-              Create account
+              {dict.submit}
             </Button>
           </FieldGroup>
         </form>
         <p className="mt-4 text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
+          {dict.haveAccount}{" "}
           <button
             type="button"
             onClick={onLogin}
             className="cursor-pointer font-medium text-foreground underline underline-offset-4"
           >
-            Log in
+            {dict.login}
           </button>
         </p>
       </CardContent>

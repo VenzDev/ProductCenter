@@ -8,22 +8,27 @@ import { ProductCard } from "@/components/product-card";
 import { QuantityAddToCart } from "@/components/quantity-add-to-cart";
 import { formatPrice } from "@/lib/format";
 import { getLatestProducts, getProduct } from "@/api/products";
+import { getDictionary } from "@/app/[lang]/dictionaries";
+import { localizedHref } from "@/i18n/config";
 
 export default async function ProductPage({
   params,
 }: {
-  params: Promise<{ id: string }>;
+  params: Promise<{ lang: string; id: string }>;
 }) {
-  const { id } = await params;
+  const { lang, id } = await params;
   const product = await getProduct(Number(id));
 
   if (!product) {
     notFound();
   }
 
-  const relatedProducts = (await getLatestProducts())
-    .filter((related) => related.id !== product.id)
-    .slice(0, 4);
+  const [relatedProducts, dict] = await Promise.all([
+    getLatestProducts().then((products) =>
+      products.filter((related) => related.id !== product.id).slice(0, 4)
+    ),
+    getDictionary(),
+  ]);
 
   const imageSrc = product.main_image?.webp_url;
 
@@ -31,8 +36,8 @@ export default async function ProductPage({
     <div className="flex-1">
       <div className="mx-auto max-w-6xl px-4 py-6">
         <nav className="flex items-center gap-1 text-sm text-muted-foreground">
-          <Link href="/" className="hover:text-foreground">
-            Home
+          <Link href={localizedHref(lang, "/")} className="hover:text-foreground">
+            {dict.product.breadcrumbHome}
           </Link>
           {product.category.name && (
             <>
@@ -75,7 +80,7 @@ export default async function ProductPage({
               <p className="text-muted-foreground">{product.description}</p>
             )}
             <div className="mt-2 border-t pt-4">
-              <QuantityAddToCart />
+              <QuantityAddToCart dict={dict.product} />
             </div>
           </div>
         </div>
@@ -83,7 +88,7 @@ export default async function ProductPage({
 
       {relatedProducts.length > 0 && (
         <section className="mx-auto max-w-6xl px-4 py-6">
-          <h2 className="text-2xl font-semibold">You might also like</h2>
+          <h2 className="text-2xl font-semibold">{dict.product.relatedHeading}</h2>
           <div className="mt-6 grid grid-cols-2 gap-6 md:grid-cols-4">
             {relatedProducts.map((related) => (
               <ProductCard key={related.id} product={related} />

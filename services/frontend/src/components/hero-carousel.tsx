@@ -3,6 +3,7 @@
 import * as React from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useParams } from "next/navigation";
 import Autoplay from "embla-carousel-autoplay";
 
 import {
@@ -12,26 +13,23 @@ import {
   type CarouselApi,
 } from "@/components/ui/carousel";
 import { cn } from "@/lib/utils";
+import { localizedHref } from "@/i18n/config";
 
-const SLIDES = [
-  {
-    image: "/carousel/slide1.webp",
-    alt: "Kids Fashion — extra 50% off, shop now",
-    href: "/products?filter=sale",
-  },
-  {
-    image: "/carousel/slide2.webp",
-    alt: "Sale on Sale — 25% off everything, shop now",
-    href: "/products?filter=sale",
-  },
-  {
-    image: "/carousel/slide3.webp",
-    alt: "Mother's Day Sale — up to 30% off, shop now",
-    href: "/products?filter=sale",
-  },
+const SLIDE_IMAGES = [
+  "/carousel/slide1.webp",
+  "/carousel/slide2.webp",
+  "/carousel/slide3.webp",
 ];
 
-export function HeroCarousel() {
+const SLIDE_HREF = "/products?filter=sale";
+
+type HeroDict = {
+  slides: { alt: string }[];
+  goToSlide: string;
+};
+
+export function HeroCarousel({ dict }: { dict: HeroDict }) {
+  const { lang } = useParams<{ lang: string }>();
   const [api, setApi] = React.useState<CarouselApi>();
   const [current, setCurrent] = React.useState(0);
 
@@ -51,15 +49,15 @@ export function HeroCarousel() {
     >
       <div className="relative mx-auto max-w-6xl px-4 py-6">
         <CarouselContent>
-          {SLIDES.map((slide, index) => (
-            <CarouselItem key={slide.image}>
+          {SLIDE_IMAGES.map((image, index) => (
+            <CarouselItem key={image}>
               <Link
-                href={slide.href}
+                href={localizedHref(lang, SLIDE_HREF)}
                 className="relative block aspect-2/1 overflow-hidden rounded-xl"
               >
                 <Image
-                  src={slide.image}
-                  alt={slide.alt}
+                  src={image}
+                  alt={dict.slides[index].alt}
                   fill
                   priority={index === 0}
                   className="object-cover"
@@ -70,9 +68,9 @@ export function HeroCarousel() {
           ))}
         </CarouselContent>
         <div className="absolute inset-x-0 bottom-12 flex justify-center gap-2">
-          {SLIDES.map((slide, index) => (
+          {SLIDE_IMAGES.map((image, index) => (
             <button
-              key={slide.image}
+              key={image}
               type="button"
               onClick={() => api?.scrollTo(index)}
               className={cn(
@@ -80,7 +78,9 @@ export function HeroCarousel() {
                 current === index && "bg-foreground"
               )}
             >
-              <span className="sr-only">Go to slide {index + 1}</span>
+              <span className="sr-only">
+                {dict.goToSlide.replace("{n}", String(index + 1))}
+              </span>
             </button>
           ))}
         </div>

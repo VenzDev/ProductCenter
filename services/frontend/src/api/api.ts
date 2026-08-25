@@ -1,8 +1,16 @@
+import { lang } from "next/root-params";
+
 const BASE_URL = process.env.BACKEND_URL ?? "http://backend";
+
+async function localeHeaders(): Promise<HeadersInit> {
+  return { "Accept-Language": await lang() };
+}
 
 export async function fetchApi<T>(path: string): Promise<T[]> {
   try {
-    const response = await fetch(`${BASE_URL}${path}`);
+    const response = await fetch(`${BASE_URL}${path}`, {
+      headers: await localeHeaders(),
+    });
     if (!response.ok) return [];
 
     const { data } = (await response.json()) as { data: T[] };
@@ -14,7 +22,9 @@ export async function fetchApi<T>(path: string): Promise<T[]> {
 
 export async function fetchApiItem<T>(path: string): Promise<T | null> {
   try {
-    const response = await fetch(`${BASE_URL}${path}`);
+    const response = await fetch(`${BASE_URL}${path}`, {
+      headers: await localeHeaders(),
+    });
     if (!response.ok) return null;
 
     const { data } = (await response.json()) as { data: T };
