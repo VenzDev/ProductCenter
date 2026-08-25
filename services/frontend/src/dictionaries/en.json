@@ -118,5 +118,15 @@
     "decreaseQuantity": "Decrease quantity",
     "increaseQuantity": "Increase quantity",
     "addToCart": "Add to Cart"
+  },
+  "blog": {
+    "meta": {
+      "title": "Blog — Product Center",
+      "description": "News, updates, and stories from the Product Center team."
+    },
+    "heading": "Blog",
+    "subtitle": "News, updates, and stories from our team.",
+    "empty": "No posts yet — check back soon.",
+    "breadcrumbHome": "Home"
   }
 }

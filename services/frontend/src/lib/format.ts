@@ -4,3 +4,9 @@ export function formatPrice(cents: number, currency: string): string {
     currency,
   }).format(cents / 100);
 }
+
+export function formatDate(iso: string): string {
+  return new Intl.DateTimeFormat("en-US", { dateStyle: "long" }).format(
+    new Date(iso)
+  );
+}

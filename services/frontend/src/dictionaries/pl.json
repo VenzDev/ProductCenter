@@ -118,5 +118,15 @@
     "decreaseQuantity": "Zmniejsz ilość",
     "increaseQuantity": "Zwiększ ilość",
     "addToCart": "Dodaj do koszyka"
+  },
+  "blog": {
+    "meta": {
+      "title": "Blog — Product Center",
+      "description": "Nowości, aktualizacje i historie od zespołu Product Center."
+    },
+    "heading": "Blog",
+    "subtitle": "Nowości, aktualizacje i historie od naszego zespołu.",
+    "empty": "Brak wpisów — zajrzyj wkrótce.",
+    "breadcrumbHome": "Strona główna"
   }
 }
