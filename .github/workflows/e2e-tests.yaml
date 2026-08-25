@@ -20,7 +20,20 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - run: docker compose -f docker-compose.e2e.yaml up -d --wait frontend-e2e backend-e2e postgres localstack
+      # .env is gitignored (real secrets locally) — a fresh checkout has none.
+      - run: cp services/backend/.env.example services/backend/.env
+
+      # vendor/node_modules are bind-mounted from the host (not a self-populating named
+      # volume), so a fresh checkout has neither — install them before anything boots.
+      - run: docker compose -f docker-compose.e2e.yaml build backend-e2e frontend-e2e
+
+      - run: docker compose -f docker-compose.e2e.yaml up -d --wait postgres localstack
+
+      - run: docker compose -f docker-compose.e2e.yaml run --rm --entrypoint sh backend-e2e -c "composer install --no-interaction && php artisan key:generate --force && php artisan jwt:secret --force"
+
+      - run: docker compose -f docker-compose.e2e.yaml run --rm frontend-e2e npm ci
+
+      - run: docker compose -f docker-compose.e2e.yaml up -d --wait frontend-e2e backend-e2e
 
       - run: docker compose -f docker-compose.e2e.yaml run --rm e2e
 
