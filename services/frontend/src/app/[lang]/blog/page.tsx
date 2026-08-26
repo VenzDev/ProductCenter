@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 
 import { Card, CardContent } from "@/components/ui/card";
@@ -46,8 +47,20 @@ export default async function BlogPage({
                 key={post.id}
                 href={localizedHref(lang, `/blog/${post.slug}`)}
               >
-                <Card className="h-full gap-2 py-4">
-                  <CardContent className="flex flex-col gap-2 px-4">
+                <Card className="h-full gap-0 py-0">
+                  <div className="relative aspect-video overflow-hidden rounded-t-xl bg-muted">
+                    {post.preview_image && (
+                      <Image
+                        src={post.preview_image.thumbnail_webp_url}
+                        alt={post.title}
+                        fill
+                        className="object-cover"
+                        sizes="(min-width: 1024px) 33vw, (min-width: 640px) 50vw, 100vw"
+                        unoptimized
+                      />
+                    )}
+                  </div>
+                  <CardContent className="flex flex-col gap-2 p-4">
                     {post.published_at && (
                       <span className="text-sm text-muted-foreground">
                         {formatDate(post.published_at)}

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\BlogPost\Observers\BlogPostObserver;
 use Database\Factories\BlogPostFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +16,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property-read Carbon|null $published_at
  */
-#[Fillable(['title', 'slug', 'content', 'published_at'])]
+#[Fillable(['title', 'slug', 'content', 'published_at', 'preview_image'])]
+#[ObservedBy(BlogPostObserver::class)]
 class BlogPost extends Model
 {
     /** @use HasFactory<BlogPostFactory> */

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronRightIcon } from "lucide-react";
@@ -23,6 +24,9 @@ export async function generateMetadata({
   return {
     title: post.title,
     description: excerptHtml(post.content),
+    openGraph: post.preview_image
+      ? { images: [post.preview_image.webp_url] }
+      : undefined,
   };
 }
 
@@ -68,6 +72,20 @@ export default async function BlogPostPage({
           <p className="mt-1 text-sm text-muted-foreground">
             {formatDate(post.published_at)}
           </p>
+        )}
+
+        {post.preview_image && (
+          <div className="relative mt-6 aspect-video overflow-hidden rounded-xl bg-muted">
+            <Image
+              src={post.preview_image.webp_url}
+              alt={post.title}
+              fill
+              className="object-cover"
+              sizes="(min-width: 768px) 768px, 100vw"
+              priority
+              unoptimized
+            />
+          </div>
         )}
 
         <div

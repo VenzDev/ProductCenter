@@ -6,6 +6,7 @@ namespace App\Filament\Resources\BlogPosts\Schemas;
 
 use App\Models\BlogPost;
 use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Utilities\Set;
@@ -30,6 +31,11 @@ class BlogPostForm
                     ->required()
                     ->alphaDash()
                     ->unique(ignoreRecord: true),
+                FileUpload::make('preview_image')
+                    ->image()
+                    ->disk('s3')
+                    ->directory(fn (?BlogPost $record) => $record ? "blog-post-images/{$record->id}/uploads" : 'blog-post-images/tmp')
+                    ->visibility('public'),
                 RichEditor::make('content')
                     ->required()
                     ->resizableImages()

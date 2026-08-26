@@ -84,3 +84,24 @@ test('retrieving a non-existent blog post returns 404', function () {
 
     $response->assertNotFound();
 });
+
+test('a blog post with a preview image exposes the webp and thumbnail URLs', function () {
+    $post = createPublishedBlogPost();
+    $post->preview_image = "blog-post-images/{$post->id}/preview-image.jpg";
+    $post->saveQuietly();
+
+    $response = $this->getJson('/api/v1/blog-posts/hello-world');
+
+    $response->assertOk();
+    $response->assertJsonPath('data.preview_image.webp_url', fn ($url) => str_ends_with($url, "blog-post-images/{$post->id}/preview-image.webp"));
+    $response->assertJsonPath('data.preview_image.thumbnail_webp_url', fn ($url) => str_ends_with($url, "blog-post-images/{$post->id}/preview-image-thumbnail.webp"));
+});
+
+test('a blog post without a preview image has a null preview_image', function () {
+    createPublishedBlogPost();
+
+    $response = $this->getJson('/api/v1/blog-posts/hello-world');
+
+    $response->assertOk();
+    $response->assertJsonPath('data.preview_image', null);
+});

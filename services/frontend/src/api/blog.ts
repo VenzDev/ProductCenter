@@ -6,6 +6,10 @@ export type BlogPost = {
   slug: string;
   content: string;
   published_at: string | null;
+  preview_image: {
+    webp_url: string;
+    thumbnail_webp_url: string;
+  } | null;
 };
 
 export function getBlogPosts(): Promise<BlogPost[]> {
