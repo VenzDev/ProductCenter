@@ -103,13 +103,7 @@
     },
     "news": {
       "heading": "News",
-      "subtitle": "Updates and stories from the team.",
-      "author": "Product Center Team",
-      "posts": [
-        "How We Pick Products for the Store",
-        "A Look Behind Our Fulfillment Process",
-        "Tips for Getting the Most from Sale Season"
-      ]
+      "subtitle": "Updates and stories from the team."
     }
   },
   "product": {

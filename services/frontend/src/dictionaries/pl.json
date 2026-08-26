@@ -103,13 +103,7 @@
     },
     "news": {
       "heading": "Aktualności",
-      "subtitle": "Nowości i historie od zespołu.",
-      "author": "Zespół Product Center",
-      "posts": [
-        "Jak wybieramy produkty do sklepu",
-        "Za kulisami naszego procesu realizacji zamówień",
-        "Jak najlepiej wykorzystać sezon wyprzedaży"
-      ]
+      "subtitle": "Nowości i historie od zespołu."
     }
   },
   "product": {
