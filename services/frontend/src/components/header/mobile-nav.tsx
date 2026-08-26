@@ -133,12 +133,12 @@ export async function MobileNav({ categories }: { categories: Category[] }) {
             nativeButton={false}
             render={
               <Link
-                href={localizedHref(locale, "/about")}
+                href={localizedHref(locale, "/blog")}
                 className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-muted"
               />
             }
           >
-            {dict.nav.about}
+            {dict.nav.blog}
           </SheetClose>
         </nav>
       </SheetContent>

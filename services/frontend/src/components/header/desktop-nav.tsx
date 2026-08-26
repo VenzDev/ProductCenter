@@ -105,10 +105,10 @@ export async function DesktopNav({ categories }: { categories: Category[] }) {
         </NavigationMenuItem>
         <NavigationMenuItem>
           <NavigationMenuLink
-            render={<Link href={localizedHref(locale, "/about")} />}
+            render={<Link href={localizedHref(locale, "/blog")} />}
             className={navigationMenuTriggerStyle()}
           >
-            {dict.nav.about}
+            {dict.nav.blog}
           </NavigationMenuLink>
         </NavigationMenuItem>
       </NavigationMenuList>
