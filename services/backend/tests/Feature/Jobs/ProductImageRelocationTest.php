@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use App\Images\Jobs\RelocateUploadedImageJob;
 use App\Models\Category;
 use App\Models\Product;
-use App\Product\Jobs\GenerateProductWebpImageJob;
 use App\Product\Support\ProductImagePaths;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Drivers\Gd\Driver;
@@ -35,12 +35,19 @@ function stageImage(Product $product, string $stagingKey): void
     $product->saveQuietly();
 }
 
+function relocateProductImage(Product $product): void
+{
+    // GenerateWebpImageJob::dispatch() inside the job runs synchronously here (sync
+    // queue driver in tests), so both variants exist by the time this call returns.
+    (new RelocateUploadedImageJob(Product::class, $product->id, 'main_image', ProductImagePaths::class))->handle();
+}
+
 test('handling the job relocates a staged upload and generates both webp variants', function () {
     Storage::fake('s3');
     $product = createProductWithoutImage();
     stageImage($product, 'product-images/tmp/abc123.jpg');
 
-    (new GenerateProductWebpImageJob($product->id))->handle();
+    relocateProductImage($product);
 
     $fresh = $product->fresh();
     expect($fresh->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
@@ -55,11 +62,11 @@ test('replacing the image removes the stale canonical original when the extensio
     Storage::fake('s3');
     $product = createProductWithoutImage();
     stageImage($product, "product-images/{$product->id}/uploads/first.jpg");
-    (new GenerateProductWebpImageJob($product->id))->handle();
+    relocateProductImage($product);
 
     stageImage($product->fresh(), "product-images/{$product->id}/uploads/second.png");
 
-    (new GenerateProductWebpImageJob($product->id))->handle();
+    relocateProductImage($product->fresh());
 
     $fresh = $product->fresh();
     expect($fresh->main_image)->toBe("product-images/{$product->id}/main-image.png");
@@ -68,6 +75,6 @@ test('replacing the image removes the stale canonical original when the extensio
 });
 
 test('a job for a product that no longer exists does nothing without throwing', function () {
-    expect(fn () => (new GenerateProductWebpImageJob(999999))->handle())
+    expect(fn () => (new RelocateUploadedImageJob(Product::class, 999999, 'main_image', ProductImagePaths::class))->handle())
         ->not->toThrow(Throwable::class);
 });

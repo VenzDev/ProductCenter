@@ -139,8 +139,9 @@ test('an admin can upload a product image to the s3 disk', function () {
     expect($product->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
     Storage::disk('s3')->assertExists($product->main_image);
 
-    // The GenerateProductWebpImageJob runs synchronously (sync queue driver in tests), so its
-    // output is already in place once the form submission above returns.
+    // RelocateUploadedImageJob and the GenerateWebpImageJob it dispatches both run
+    // synchronously (sync queue driver in tests), so their output is already in place
+    // once the form submission above returns.
     Storage::disk('s3')->assertExists(ProductImagePaths::webp($product->id));
     Storage::disk('s3')->assertExists(ProductImagePaths::thumbnailWebp($product->id));
 });
