@@ -34,23 +34,33 @@ class ProductInfolist
                                     ->placeholder('-'),
                             ])
                     )->all()),
-                TextEntry::make('category.name')
-                    ->label('Category'),
-                TextEntry::make('price_cents')
-                    ->numeric(),
-                TextEntry::make('currency'),
-                KeyValueEntry::make('attributes')
-                    ->placeholder('-'),
-                ImageEntry::make('main_image')
-                    ->disk('s3')
-                    ->visibility('public')
-                    ->placeholder('-'),
-                TextEntry::make('created_at')
-                    ->dateTime()
-                    ->placeholder('-'),
-                TextEntry::make('updated_at')
-                    ->dateTime()
-                    ->placeholder('-'),
+                Tabs::make('Details')
+                    ->columnSpanFull()
+                    ->tabs([
+                        Tab::make('Details')
+                            ->schema([
+                                TextEntry::make('category.name')
+                                    ->label('Category'),
+                                TextEntry::make('price_cents')
+                                    ->numeric(),
+                                TextEntry::make('currency'),
+                                KeyValueEntry::make('attributes')
+                                    ->placeholder('-'),
+                                TextEntry::make('created_at')
+                                    ->dateTime()
+                                    ->placeholder('-'),
+                                TextEntry::make('updated_at')
+                                    ->dateTime()
+                                    ->placeholder('-'),
+                            ]),
+                        Tab::make('Media')
+                            ->schema([
+                                ImageEntry::make('main_image')
+                                    ->disk('s3')
+                                    ->visibility('public')
+                                    ->placeholder('-'),
+                            ]),
+                    ]),
             ]);
     }
 }
