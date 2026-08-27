@@ -12,6 +12,8 @@ use App\Ai\DescriptionGeneration\Generator\PrismProductDescriptionGenerator;
 use App\Ai\DescriptionGeneration\Generator\ProductDescriptionGeneratorInterface;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use OpenSearch\Client as OpenSearchClient;
+use OpenSearch\ClientBuilder as OpenSearchClientBuilder;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Microsoft\MicrosoftExtendSocialite;
 
@@ -25,6 +27,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ProductAttachmentEmbedderInterface::class, PrismProductAttachmentEmbedder::class);
         $this->app->bind(ProductDescriptionGeneratorInterface::class, PrismProductDescriptionGenerator::class);
         $this->app->bind(ChunksSplitterInterface::class, MinimalChunksSplitter::class);
+
+        $this->app->singleton(OpenSearchClient::class, fn () => OpenSearchClientBuilder::create()
+            ->setHosts([config('opensearch.host')])
+            ->build());
     }
 
     /**

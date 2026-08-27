@@ -8,6 +8,7 @@ use App\Category\Controller\CategoryController;
 use App\Http\Middleware\SetLocaleFromHeader;
 use App\Product\Controller\AskProductController;
 use App\Product\Controller\ProductController;
+use App\Product\Controller\SearchProductsController;
 use Illuminate\Support\Facades\Route;
 
 Route::prefix('v1')->name('v1.')->middleware(SetLocaleFromHeader::class)->group(function () {
@@ -16,6 +17,7 @@ Route::prefix('v1')->name('v1.')->middleware(SetLocaleFromHeader::class)->group(
 
     Route::get('/products', [ProductController::class, 'index']);
     Route::get('/products/latest', [ProductController::class, 'latest']);
+    Route::get('/products/search', SearchProductsController::class);
     Route::get('/products/{product}', [ProductController::class, 'show']);
     Route::post('/products/{product}/ask', AskProductController::class);
 

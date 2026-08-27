@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Product\Observers\ProductImageObserver;
+use App\Product\Observers\ProductSearchObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +24,7 @@ use Spatie\Translatable\HasTranslations;
  */
 #[Fillable(['category_id', 'name', 'description', 'price_cents', 'currency', 'attributes', 'main_image'])]
 #[Translatable(['name', 'description'])]
-#[ObservedBy(ProductImageObserver::class)]
+#[ObservedBy([ProductImageObserver::class, ProductSearchObserver::class])]
 class Product extends Model
 {
     use HasTranslations;

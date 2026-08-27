@@ -65,6 +65,7 @@ Projekt to sklep e-commerce. System ma dwóch typów użytkowników: `user` (kli
 - **Payment**: DynamoDB — rozważane jako storage własny serwisu (np. transakcje, idempotency), decyzja do podjęcia przy jego implementacji.
 - **S3**: pliki — zdjęcia produktów i dokumentacja PDF.
 - **SQS**: zdarzenia async między serwisami — `payment-completed` → backend (status zamówienia). Generowanie opisu produktu nie używa SQS (patrz wyżej) — cały przepływ mieści się w backendzie, więc wystarcza kolejka Laravela.
+- **OpenSearch**: pełnotekstowe wyszukiwanie produktów (`GET /v1/products/search?q=`). Postgres nie ma wbudowanego stemmera polskiego, więc do tego celu wybrano OpenSearch zamiast rozszerzania Postgresa (np. `pg_trgm`). MVP: jeden indeks `products`, dokument indeksowany po każdym zapisie produktu (`ProductSearchObserver`), pola `name`/`description` trzymane per-locale (jak w bazie), bez dedykowanego analizatora językowego (np. Stempel dla PL) — to świadomie odłożone do czasu, aż jakość wyszukiwania stanie się realnym problemem.
 
 ### Schemat produktów (PostgreSQL) — plan
 
