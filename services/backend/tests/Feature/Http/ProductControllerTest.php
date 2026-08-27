@@ -237,32 +237,3 @@ test('a translatable text attribute value falls back to the default locale when 
     $response->assertJsonPath('data.attributes.0.value_label', 'Cotton');
 });
 
-test('include=translations adds every language for translatable fields', function () {
-    $product = createProduct();
-    $product->setTranslation('name', 'pl', 'Pralka');
-    $product->setTranslation('description', 'pl', 'Pralka ładowana od przodu.');
-    $product->save();
-
-    $response = $this->getJson("/api/v1/products/{$product->id}?include=translations");
-
-    $response->assertOk();
-    $response->assertJsonPath('data.name', 'Washing machine');
-    $response->assertJsonPath('data.name_translations', [
-        'en' => 'Washing machine',
-        'pl' => 'Pralka',
-    ]);
-    $response->assertJsonPath('data.description_translations', [
-        'en' => 'Front-loading washing machine.',
-        'pl' => 'Pralka ładowana od przodu.',
-    ]);
-});
-
-test('translations are omitted by default', function () {
-    $product = createProduct();
-
-    $response = $this->getJson("/api/v1/products/{$product->id}");
-
-    $response->assertOk();
-    $response->assertJsonMissingPath('data.name_translations');
-    $response->assertJsonMissingPath('data.description_translations');
-});

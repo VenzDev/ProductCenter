@@ -16,8 +16,6 @@ class ProductController extends Controller
      *
      * Translatable fields (name, description) are returned in the language requested
      * via the `Accept-Language` header (`en` or `pl`), falling back to `en` otherwise.
-     * Pass `?include=translations` to additionally get every language for those fields
-     * as `name_translations`/`description_translations` maps.
      */
     public function index(): AnonymousResourceCollection
     {
@@ -43,8 +41,6 @@ class ProductController extends Controller
      *
      * Translatable fields (name, description) are returned in the language requested
      * via the `Accept-Language` header (`en` or `pl`), falling back to `en` otherwise.
-     * Pass `?include=translations` to additionally get every language for those fields
-     * as `name_translations`/`description_translations` maps.
      */
     public function show(Product $product): ProductResource
     {
