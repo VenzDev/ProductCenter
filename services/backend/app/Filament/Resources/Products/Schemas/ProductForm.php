@@ -105,6 +105,7 @@ class ProductForm
         return [
             FileUpload::make('main_image')
                 ->image()
+                ->required()
                 ->disk('s3')
                 ->directory(fn (?Product $record) => $record ? "product-images/{$record->id}/uploads" : 'product-images/tmp')
                 ->visibility('public'),

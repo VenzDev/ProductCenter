@@ -15,19 +15,23 @@ function fakeJpegBytes(): string
     return (string) (new ImageManager(new Driver))->create(20, 20)->toJpeg();
 }
 
-function createProductWithoutImage(): Product
+function createProductWithStagedImage(string $stagingKey): Product
 {
+    Storage::disk('s3')->put($stagingKey, fakeJpegBytes());
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
 
-    return Product::create([
+    // withoutEvents skips the real ProductImageObserver dispatch — these tests drive
+    // RelocateUploadedImageJob directly instead.
+    return Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => $stagingKey,
+    ]));
 }
 
-function stageImage(Product $product, string $stagingKey): void
+function restageProductImage(Product $product, string $stagingKey): void
 {
     Storage::disk('s3')->put($stagingKey, fakeJpegBytes());
     // saveQuietly avoids the real ProductImageObserver dispatch — these tests drive the job directly.
@@ -44,8 +48,7 @@ function relocateProductImage(Product $product): void
 
 test('handling the job relocates a staged upload and generates both webp variants', function () {
     Storage::fake('s3');
-    $product = createProductWithoutImage();
-    stageImage($product, 'product-images/tmp/abc123.jpg');
+    $product = createProductWithStagedImage('product-images/tmp/abc123.jpg');
 
     relocateProductImage($product);
 
@@ -60,11 +63,10 @@ test('handling the job relocates a staged upload and generates both webp variant
 
 test('replacing the image removes the stale canonical original when the extension changes', function () {
     Storage::fake('s3');
-    $product = createProductWithoutImage();
-    stageImage($product, "product-images/{$product->id}/uploads/first.jpg");
+    $product = createProductWithStagedImage('product-images/tmp/first.jpg');
     relocateProductImage($product);
 
-    stageImage($product->fresh(), "product-images/{$product->id}/uploads/second.png");
+    restageProductImage($product->fresh(), "product-images/{$product->id}/uploads/second.png");
 
     relocateProductImage($product->fresh());
 

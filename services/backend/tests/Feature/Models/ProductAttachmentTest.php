@@ -11,12 +11,15 @@ test('creating a pdf attachment dispatches the embedding job', function () {
     Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // don't exercise the image pipeline, so main_image is just a required placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
@@ -33,12 +36,15 @@ test('creating a non-pdf attachment does not dispatch the embedding job', functi
     Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // don't exercise the image pipeline, so main_image is just a required placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 
     $product->attachments()->create([
         'path' => 'products/attachments/warranty.jpg',

@@ -12,14 +12,17 @@ function createProduct(): Product
 {
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
 
-    return Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // don't exercise the image pipeline, so main_image is just a required placeholder.
+    return Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Washing machine',
         'description' => 'Front-loading washing machine.',
         'price_cents' => 199900,
         'currency' => 'PLN',
         'attributes' => ['weight_kg' => 70],
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 }
 
 test('products can be listed', function () {
@@ -34,12 +37,13 @@ test('products can be listed', function () {
 
 test('the latest 4 products are returned, most recent first', function () {
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $products = collect(range(1, 5))->map(fn (int $i) => Product::create([
+    $products = collect(range(1, 5))->map(fn (int $i) => Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => "Product {$i}",
         'price_cents' => 1000,
         'currency' => 'PLN',
-    ]));
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ])));
 
     $response = $this->getJson('/api/v1/products/latest');
 
@@ -79,15 +83,6 @@ test('a product with a main image exposes the webp and thumbnail URLs', function
     $response->assertOk();
     $response->assertJsonPath('data.main_image.webp_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image.webp"));
     $response->assertJsonPath('data.main_image.thumbnail_webp_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image-thumbnail.webp"));
-});
-
-test('a product without a main image has a null main_image', function () {
-    $product = createProduct();
-
-    $response = $this->getJson("/api/v1/products/{$product->id}");
-
-    $response->assertOk();
-    $response->assertJsonPath('data.main_image', null);
 });
 
 function createGalleryImageQuietly(Product $product, string $path, int $order = 0): ProductImage
@@ -171,13 +166,14 @@ test('a select attribute name and option label follow the Accept-Language header
             ['key' => 'black', 'name' => ['en' => 'Black', 'pl' => 'Czarny']],
         ],
     ]);
-    $product = Product::create([
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Washing machine',
         'price_cents' => 199900,
         'currency' => 'PLN',
         'attributes' => ['color' => 'black'],
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 
     $response = $this->getJson("/api/v1/products/{$product->id}", ['Accept-Language' => 'pl']);
 
@@ -197,13 +193,14 @@ test('a translatable text attribute value follows the Accept-Language header', f
         'name' => ['en' => 'Material', 'pl' => 'Materiał'],
         'type' => AttributeType::TextTranslatable,
     ]);
-    $product = Product::create([
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Washing machine',
         'price_cents' => 199900,
         'currency' => 'PLN',
         'attributes' => ['material' => ['en' => 'Cotton', 'pl' => 'Bawełna']],
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 
     $response = $this->getJson("/api/v1/products/{$product->id}", ['Accept-Language' => 'pl']);
 
@@ -223,17 +220,17 @@ test('a translatable text attribute value falls back to the default locale when 
         'name' => ['en' => 'Material', 'pl' => 'Materiał'],
         'type' => AttributeType::TextTranslatable,
     ]);
-    $product = Product::create([
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Washing machine',
         'price_cents' => 199900,
         'currency' => 'PLN',
         'attributes' => ['material' => ['en' => 'Cotton', 'pl' => null]],
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 
     $response = $this->getJson("/api/v1/products/{$product->id}", ['Accept-Language' => 'pl']);
 
     $response->assertOk();
     $response->assertJsonPath('data.attributes.0.value_label', 'Cotton');
 });
-

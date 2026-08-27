@@ -17,12 +17,15 @@ test('an admin can upload a gallery image to the s3 disk', function () {
 
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // exercise the gallery pipeline, not the main image one, so it's just a placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
     $this->actingAs($admin, 'admin');
     $image = UploadedFile::fake()->image('photo.jpg');
 
@@ -46,12 +49,15 @@ test('an admin can delete a gallery image', function () {
 
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // exercise the gallery pipeline, not the main image one, so it's just a placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
     // saveQuietly avoids the real ProductGalleryObserver dispatch — this test only
     // cares about the delete action, not relocation/webp generation.
     $galleryImage = new ProductImage(['product_id' => $product->id, 'path' => 'product-images/gallery/1/image.jpg']);

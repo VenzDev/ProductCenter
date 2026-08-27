@@ -16,13 +16,16 @@ test('generating a description from the view page dispatches the job for the cho
 
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — this test only
+    // asserts the job dispatch (via Queue::fake), so main_image is just a placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => ['en' => 'Widget', 'pl' => 'Gadżet'],
         'price_cents' => 1999,
         'currency' => 'PLN',
         'attributes' => ['weight_kg' => 1.2],
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
     $this->actingAs($admin, 'admin');
 
     Livewire::test(ViewProduct::class, ['record' => $product->getRouteKey()])
@@ -37,12 +40,13 @@ test('the button is also available from the edit page', function () {
 
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
     $this->actingAs($admin, 'admin');
 
     Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])

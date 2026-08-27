@@ -14,12 +14,15 @@ use Intervention\Image\ImageManager;
 function createProductImageWithoutPath(): ProductImage
 {
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch (this test only
+    // exercises the gallery pipeline), so main_image is just a required placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 
     return ProductImage::create(['product_id' => $product->id, 'path' => 'placeholder']);
 }

@@ -13,12 +13,15 @@ function createProductForGallery(): Product
 {
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
 
-    return Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // exercise the gallery pipeline, not the main image one, so it's just a placeholder.
+    return Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 }
 
 test('creating a product image dispatches the relocation job', function () {

@@ -28,12 +28,15 @@ test('handling the job extracts pdf text and stores an embedding per chunk', fun
     Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // don't exercise the image pipeline, so main_image is just a required placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
         'label' => 'Manual',
@@ -64,12 +67,15 @@ test('a job for an attachment that already has embeddings skips re-processing', 
     Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // don't exercise the image pipeline, so main_image is just a required placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
         'label' => 'Manual',

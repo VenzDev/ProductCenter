@@ -14,12 +14,15 @@ use Prism\Prism\ValueObjects\Embedding;
 function createProductWithManual(): Product
 {
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
+    // don't exercise the image pipeline, so main_image is just a required placeholder.
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Washing machine',
         'price_cents' => 199900,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
         'label' => 'manual',
@@ -66,12 +69,13 @@ test('rerank picks the excerpt the LLM found relevant even when it is not the cl
     ]);
 
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Washing machine',
         'price_cents' => 199900,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
         'label' => 'manual',
@@ -129,12 +133,13 @@ test('asking about a product without a manual returns a fallback answer', functi
         ]),
     ]);
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::create([
+    $product = Product::withoutEvents(fn () => Product::create([
         'category_id' => $category->id,
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-    ]);
+        'main_image' => 'product-images/placeholder/main-image.jpg',
+    ]));
 
     $response = $this->postJson("/api/v1/products/{$product->id}/ask", [
         'question' => 'How does this work?',
