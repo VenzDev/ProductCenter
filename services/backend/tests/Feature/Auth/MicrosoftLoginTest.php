@@ -5,9 +5,10 @@ declare(strict_types=1);
 use App\Models\Admin;
 use Laravel\Socialite\Facades\Socialite;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use Tests\Factories\AdminFactory;
 
 test('an admin can log in via microsoft and gets a session', function () {
-    $admin = Admin::factory()->create(['microsoft_id' => 'oid-admin']);
+    $admin = AdminFactory::new()->create(['microsoft_id' => 'oid-admin']);
 
     $socialiteUser = new SocialiteUser;
     $socialiteUser->id = 'oid-admin';

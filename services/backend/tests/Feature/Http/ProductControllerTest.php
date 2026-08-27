@@ -7,22 +7,16 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
+use Tests\Factories\ProductFactory;
 
 function createProduct(): Product
 {
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-
-    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
-    // don't exercise the image pipeline, so main_image is just a required placeholder.
-    return Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
+    return ProductFactory::new()->createQuietly([
         'name' => 'Washing machine',
         'description' => 'Front-loading washing machine.',
         'price_cents' => 199900,
-        'currency' => 'PLN',
         'attributes' => ['weight_kg' => 70],
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    ]);
 }
 
 test('products can be listed', function () {
@@ -37,13 +31,7 @@ test('products can be listed', function () {
 
 test('the latest 4 products are returned, most recent first', function () {
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $products = collect(range(1, 5))->map(fn (int $i) => Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => "Product {$i}",
-        'price_cents' => 1000,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ])));
+    $products = collect(range(1, 5))->map(fn (int $i) => ProductFactory::new()->createQuietly(['category_id' => $category->id, 'name' => "Product {$i}"]));
 
     $response = $this->getJson('/api/v1/products/latest');
 
@@ -157,7 +145,6 @@ test('an unsupported Accept-Language falls back to the default locale', function
 });
 
 test('a select attribute name and option label follow the Accept-Language header', function () {
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create([
         'key' => 'color',
         'name' => ['en' => 'Color', 'pl' => 'Kolor'],
@@ -166,14 +153,11 @@ test('a select attribute name and option label follow the Accept-Language header
             ['key' => 'black', 'name' => ['en' => 'Black', 'pl' => 'Czarny']],
         ],
     ]);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
+    $product = ProductFactory::new()->createQuietly([
         'name' => 'Washing machine',
         'price_cents' => 199900,
-        'currency' => 'PLN',
         'attributes' => ['color' => 'black'],
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    ]);
 
     $response = $this->getJson("/api/v1/products/{$product->id}", ['Accept-Language' => 'pl']);
 
@@ -187,20 +171,16 @@ test('a select attribute name and option label follow the Accept-Language header
 });
 
 test('a translatable text attribute value follows the Accept-Language header', function () {
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create([
         'key' => 'material',
         'name' => ['en' => 'Material', 'pl' => 'Materiał'],
         'type' => AttributeType::TextTranslatable,
     ]);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
+    $product = ProductFactory::new()->createQuietly([
         'name' => 'Washing machine',
         'price_cents' => 199900,
-        'currency' => 'PLN',
         'attributes' => ['material' => ['en' => 'Cotton', 'pl' => 'Bawełna']],
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    ]);
 
     $response = $this->getJson("/api/v1/products/{$product->id}", ['Accept-Language' => 'pl']);
 
@@ -214,20 +194,16 @@ test('a translatable text attribute value follows the Accept-Language header', f
 });
 
 test('a translatable text attribute value falls back to the default locale when missing a translation', function () {
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create([
         'key' => 'material',
         'name' => ['en' => 'Material', 'pl' => 'Materiał'],
         'type' => AttributeType::TextTranslatable,
     ]);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
+    $product = ProductFactory::new()->createQuietly([
         'name' => 'Washing machine',
         'price_cents' => 199900,
-        'currency' => 'PLN',
         'attributes' => ['material' => ['en' => 'Cotton', 'pl' => null]],
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    ]);
 
     $response = $this->getJson("/api/v1/products/{$product->id}", ['Accept-Language' => 'pl']);
 

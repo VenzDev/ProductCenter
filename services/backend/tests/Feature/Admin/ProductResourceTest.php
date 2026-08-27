@@ -5,7 +5,6 @@ declare(strict_types=1);
 use App\Enums\AttributeType;
 use App\Filament\Resources\Products\Pages\CreateProduct;
 use App\Filament\Resources\Products\Pages\EditProduct;
-use App\Models\Admin;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
@@ -13,19 +12,12 @@ use App\Product\Support\ProductImagePaths;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Tests\Factories\AdminFactory;
+use Tests\Factories\ProductFactory;
 
 test('an admin can list products', function () {
-    $admin = Admin::factory()->create();
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    // withoutEvents skips ProductImageObserver's relocation dispatch — this test
-    // doesn't exercise the image pipeline, so main_image is just a required placeholder.
-    Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $admin = AdminFactory::new()->create();
+    ProductFactory::new()->createQuietly();
 
     $response = $this->actingAs($admin, 'admin')->get('/admin/products');
 
@@ -34,7 +26,7 @@ test('an admin can list products', function () {
 
 test('an admin can create a product with translations for both locales', function () {
     Storage::fake('s3');
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $this->actingAs($admin, 'admin');
 
@@ -61,20 +53,15 @@ test('an admin can create a product with translations for both locales', functio
 });
 
 test('editing a product pre-fills the name/description for each locale tab', function () {
-    $admin = Admin::factory()->create();
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
+    $admin = AdminFactory::new()->create();
+    $product = ProductFactory::new()->createQuietly([
         'name' => ['en' => 'Widget', 'pl' => 'Gadżet'],
         'description' => ['en' => 'A fine widget', 'pl' => 'Świetny gadżet'],
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    ]);
     $this->actingAs($admin, 'admin');
 
     Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
-        ->assertFormSet([
+        ->assertSchemaStateSet([
             'name.en' => 'Widget',
             'name.pl' => 'Gadżet',
             'description.en' => 'A fine widget',
@@ -86,15 +73,8 @@ test('an admin can update a product name/description per locale', function () {
     Storage::fake('s3');
     Storage::disk('s3')->put('product-images/placeholder/main-image.jpg', 'fake-bytes');
 
-    $admin = Admin::factory()->create();
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $admin = AdminFactory::new()->create();
+    $product = ProductFactory::new()->createQuietly();
     $this->actingAs($admin, 'admin');
 
     Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
@@ -109,16 +89,11 @@ test('an admin can update a product name/description per locale', function () {
 });
 
 test('viewing a product shows the name/description for both locales', function () {
-    $admin = Admin::factory()->create();
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
+    $admin = AdminFactory::new()->create();
+    $product = ProductFactory::new()->createQuietly([
         'name' => ['en' => 'Widget', 'pl' => 'Gadżet'],
         'description' => ['en' => 'A fine widget', 'pl' => 'Świetny gadżet'],
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    ]);
 
     $response = $this->actingAs($admin, 'admin')->get("/admin/products/{$product->id}");
 
@@ -130,7 +105,7 @@ test('viewing a product shows the name/description for both locales', function (
 test('an admin can upload a product image to the s3 disk', function () {
     Storage::fake('s3');
 
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $this->actingAs($admin, 'admin');
     $image = UploadedFile::fake()->image('product.jpg');
@@ -158,7 +133,7 @@ test('an admin can upload a product image to the s3 disk', function () {
 });
 
 test('the attributes repeater starts empty on create before a category is chosen', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     $component = Livewire::test(CreateProduct::class);
@@ -167,7 +142,7 @@ test('the attributes repeater starts empty on create before a category is chosen
 });
 
 test('selecting a category on create preinitializes the attributes repeater from it', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $weight = Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
     $color = Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => [
@@ -188,18 +163,10 @@ test('selecting a category on create preinitializes the attributes repeater from
 });
 
 test('changing the category on an existing product does not touch its saved attributes', function () {
-    $admin = Admin::factory()->create();
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+    $admin = AdminFactory::new()->create();
     $otherCategory = Category::create(['name' => 'Books', 'slug' => 'books']);
     Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'attributes' => ['weight_kg' => '1.2'],
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $product = ProductFactory::new()->createQuietly(['attributes' => ['weight_kg' => '1.2']]);
     $this->actingAs($admin, 'admin');
 
     $component = Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()])
@@ -214,7 +181,7 @@ test('changing the category on an existing product does not touch its saved attr
 
 test('an admin can create a product with a number and a select attribute value', function () {
     Storage::fake('s3');
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
     Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => [
@@ -251,7 +218,7 @@ test('a non-translatable attribute value survives even with an empty value_trans
     // 'value' in that case, rather than a `$row['value_translations'] ?? $row['value']`
     // style fallback silently picking the empty array over the real value.
     Storage::fake('s3');
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
     $this->actingAs($admin, 'admin');
@@ -275,7 +242,7 @@ test('a non-translatable attribute value survives even with an empty value_trans
 });
 
 test('an admin can create a product with a multiselect attribute value', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create(['key' => 'materials', 'name' => 'Materials', 'type' => AttributeType::MultiSelect, 'options' => [
         ['key' => 'wood', 'name' => ['en' => 'Wood', 'pl' => 'Drewno']],
@@ -304,7 +271,7 @@ test('an admin can create a product with a multiselect attribute value', functio
 });
 
 test('an admin can create a product with a translatable text attribute value', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create(['key' => 'material', 'name' => 'Material', 'type' => AttributeType::TextTranslatable]);
     Storage::fake('s3');
@@ -332,7 +299,7 @@ test('an admin can create a product with a translatable text attribute value', f
 
 test('an admin can remove an attribute row before creating a product', function () {
     Storage::fake('s3');
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $this->actingAs($admin, 'admin');
 
@@ -353,16 +320,8 @@ test('an admin can remove an attribute row before creating a product', function 
 });
 
 test('editing a product pre-fills the attributes repeater from its saved values', function () {
-    $admin = Admin::factory()->create();
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'attributes' => ['weight_kg' => '1.2'],
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $admin = AdminFactory::new()->create();
+    $product = ProductFactory::new()->createQuietly(['attributes' => ['weight_kg' => '1.2']]);
     $this->actingAs($admin, 'admin');
 
     $component = Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()]);

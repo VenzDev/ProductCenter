@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use App\Images\Jobs\RelocateUploadedImageJob;
-use App\Models\Category;
 use App\Models\Product;
 use App\Product\Support\ProductImagePaths;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
+use Tests\Factories\ProductFactory;
 
 function fakeJpegBytes(): string
 {
@@ -18,17 +18,8 @@ function fakeJpegBytes(): string
 function createProductWithStagedImage(string $stagingKey): Product
 {
     Storage::disk('s3')->put($stagingKey, fakeJpegBytes());
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
 
-    // withoutEvents skips the real ProductImageObserver dispatch — these tests drive
-    // RelocateUploadedImageJob directly instead.
-    return Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => $stagingKey,
-    ]));
+    return ProductFactory::new()->createQuietly(['main_image' => $stagingKey]);
 }
 
 function restageProductImage(Product $product, string $stagingKey): void

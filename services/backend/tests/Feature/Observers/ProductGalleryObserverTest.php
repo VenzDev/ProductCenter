@@ -3,25 +3,15 @@
 declare(strict_types=1);
 
 use App\Images\Jobs\RelocateUploadedImageJob;
-use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Product\Support\ProductImageGalleryPaths;
 use Illuminate\Support\Facades\Bus;
+use Tests\Factories\ProductFactory;
 
 function createProductForGallery(): Product
 {
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-
-    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
-    // exercise the gallery pipeline, not the main image one, so it's just a placeholder.
-    return Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    return ProductFactory::new()->createQuietly();
 }
 
 test('creating a product image dispatches the relocation job', function () {

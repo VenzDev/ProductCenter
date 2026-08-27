@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use App\Models\Category;
 use App\Models\Product;
 use Pgvector\Laravel\Vector;
 use Prism\Prism\Facades\Prism;
@@ -10,19 +9,11 @@ use Prism\Prism\Testing\EmbeddingsResponseFake;
 use Prism\Prism\Testing\StructuredResponseFake;
 use Prism\Prism\Testing\TextResponseFake;
 use Prism\Prism\ValueObjects\Embedding;
+use Tests\Factories\ProductFactory;
 
 function createProductWithManual(): Product
 {
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
-    // don't exercise the image pipeline, so main_image is just a required placeholder.
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Washing machine',
-        'price_cents' => 199900,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $product = ProductFactory::new()->createQuietly(['name' => 'Washing machine', 'price_cents' => 199900]);
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
         'label' => 'manual',
@@ -68,14 +59,7 @@ test('rerank picks the excerpt the LLM found relevant even when it is not the cl
         TextResponseFake::make()->withText('Use the steam refresh program.'),
     ]);
 
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Washing machine',
-        'price_cents' => 199900,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $product = ProductFactory::new()->createQuietly(['name' => 'Washing machine', 'price_cents' => 199900]);
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
         'label' => 'manual',
@@ -132,14 +116,7 @@ test('asking about a product without a manual returns a fallback answer', functi
             Embedding::fromArray(array_fill(0, 1536, 0.1)),
         ]),
     ]);
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $product = ProductFactory::new()->createQuietly();
 
     $response = $this->postJson("/api/v1/products/{$product->id}/ask", [
         'question' => 'How does this work?',

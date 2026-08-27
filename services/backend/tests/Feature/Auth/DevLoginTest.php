@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Auth\Admin\Controller\DevAuthController;
 use App\Models\Admin;
+use Tests\Factories\AdminFactory;
 
 test('dev-login route does not exist outside local env', function () {
     // phpunit.xml pins APP_ENV=testing for the whole suite, so this also proves the
@@ -24,7 +25,7 @@ test('dev-login creates an admin when none exists yet and logs in as them', func
 });
 
 test('dev-login reuses the existing admin instead of creating another one', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
 
     app(DevAuthController::class)->login();
 

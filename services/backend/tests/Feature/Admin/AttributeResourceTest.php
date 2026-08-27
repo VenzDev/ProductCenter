@@ -5,12 +5,12 @@ declare(strict_types=1);
 use App\Enums\AttributeType;
 use App\Filament\Resources\Attributes\Pages\CreateAttribute;
 use App\Filament\Resources\Attributes\Pages\EditAttribute;
-use App\Models\Admin;
 use App\Models\Attribute;
 use Livewire\Livewire;
+use Tests\Factories\AdminFactory;
 
 test('an admin can list attributes', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
 
     $response = $this->actingAs($admin, 'admin')->get('/admin/attributes');
@@ -19,7 +19,7 @@ test('an admin can list attributes', function () {
 });
 
 test('an admin can create a text attribute with translations for both locales', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateAttribute::class)
@@ -40,7 +40,7 @@ test('an admin can create a text attribute with translations for both locales', 
 });
 
 test('a select attribute requires its options', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateAttribute::class)
@@ -55,7 +55,7 @@ test('a select attribute requires its options', function () {
 });
 
 test('an admin can create a select attribute with translated options', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateAttribute::class)
@@ -79,7 +79,7 @@ test('an admin can create a select attribute with translated options', function 
 });
 
 test('a multiselect attribute requires its options', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateAttribute::class)
@@ -94,7 +94,7 @@ test('a multiselect attribute requires its options', function () {
 });
 
 test('an admin can create a multiselect attribute with translated options', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateAttribute::class)
@@ -119,7 +119,7 @@ test('an admin can create a multiselect attribute with translated options', func
 });
 
 test('an admin can update an attribute', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $attribute = Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
     $this->actingAs($admin, 'admin');
 

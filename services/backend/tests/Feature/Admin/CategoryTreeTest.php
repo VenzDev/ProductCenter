@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use App\Enums\AttributeType;
 use App\Filament\Resources\Categories\Pages\CategoryTree;
-use App\Models\Admin;
 use App\Models\Attribute;
 use App\Models\Category;
 use Livewire\Livewire;
+use Tests\Factories\AdminFactory;
 
 test('an admin can view the category tree page', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
 
     $response = $this->actingAs($admin, 'admin')->get('/admin/categories');
@@ -35,7 +35,7 @@ test('a category assigned a parent appears in that parent\'s children', function
 });
 
 test('dragging a root category under another root reparents it', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     $electronics = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
@@ -66,16 +66,16 @@ test('a category cannot be nested under a category that already has a parent', f
 });
 
 test('an admin can create a category with translations for both locales from the tree page', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CategoryTree::class)
         ->mountAction('create')
-        ->setActionData([
+        ->fillForm([
             'name' => ['en' => 'Books', 'pl' => 'Książki'],
         ])
         ->callMountedAction()
-        ->assertHasNoActionErrors();
+        ->assertHasNoFormErrors();
 
     $category = Category::where('slug', 'books')->first();
     expect($category)->not->toBeNull();
@@ -84,7 +84,7 @@ test('an admin can create a category with translations for both locales from the
 });
 
 test('editing a category from the tree page pre-fills the name for each locale', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => ['en' => 'Electronics', 'pl' => 'Elektronika'], 'slug' => 'electronics']);
     $this->actingAs($admin, 'admin');
 
@@ -96,17 +96,17 @@ test('editing a category from the tree page pre-fills the name for each locale',
 });
 
 test('an admin can update a category name per locale from the tree page', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => ['en' => 'Electronics', 'pl' => 'Elektronika'], 'slug' => 'electronics']);
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CategoryTree::class)
         ->call('mountTreeAction', 'edit', (string) $category->getKey())
-        ->setActionData([
+        ->fillForm([
             'name' => ['en' => 'Consumer Electronics', 'pl' => 'Elektronika Użytkowa'],
         ])
         ->callMountedAction()
-        ->assertHasNoActionErrors();
+        ->assertHasNoFormErrors();
 
     $category->refresh();
     expect($category->getTranslation('name', 'en', false))->toBe('Consumer Electronics');
@@ -114,7 +114,7 @@ test('an admin can update a category name per locale from the tree page', functi
 });
 
 test('an admin can assign attributes to a category from the tree page', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $weight = Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
     $color = Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => [
@@ -125,12 +125,12 @@ test('an admin can assign attributes to a category from the tree page', function
 
     Livewire::test(CategoryTree::class)
         ->call('mountTreeAction', 'edit', (string) $category->getKey())
-        ->setActionData([
+        ->fillForm([
             'name' => ['en' => 'Electronics'],
             'attributes' => [$weight->id, $color->id],
         ])
         ->callMountedAction()
-        ->assertHasNoActionErrors();
+        ->assertHasNoFormErrors();
 
     expect($category->attributes()->pluck('attributes.id')->sort()->values()->all())
         ->toBe([$weight->id, $color->id]);

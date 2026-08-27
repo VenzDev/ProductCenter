@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Models\Admin;
+use Tests\Factories\AdminFactory;
 
 test('an unauthenticated request to the admin page is redirected to microsoft login', function () {
     $response = $this->get('/admin');
@@ -11,7 +11,7 @@ test('an unauthenticated request to the admin page is redirected to microsoft lo
 });
 
 test('a logged in admin can access the admin page', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
 
     $response = $this->actingAs($admin, 'admin')->get('/admin');
 
@@ -19,7 +19,7 @@ test('a logged in admin can access the admin page', function () {
 });
 
 test('an admin can log out', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
 
     $response = $this->actingAs($admin, 'admin')->post('/admin/logout');
 

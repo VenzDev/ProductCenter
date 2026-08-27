@@ -3,14 +3,13 @@
 declare(strict_types=1);
 
 use App\Ai\Jobs\GenerateAttachmentEmbeddingsJob;
-use App\Models\Category;
-use App\Models\Product;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Pgvector\Laravel\Vector;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Testing\EmbeddingsResponseFake;
 use Prism\Prism\ValueObjects\Embedding;
+use Tests\Factories\ProductFactory;
 
 test('handling the job extracts pdf text and stores an embedding per chunk', function () {
     Storage::fake('s3');
@@ -27,16 +26,7 @@ test('handling the job extracts pdf text and stores an embedding per chunk', fun
     // job a second time as soon as the attachment below is created.
     Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
-    // don't exercise the image pipeline, so main_image is just a required placeholder.
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $product = ProductFactory::new()->createQuietly();
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
         'label' => 'Manual',
@@ -66,16 +56,7 @@ test('a job for an attachment that already has embeddings skips re-processing', 
     Prism::fake([]);
     Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
-    // don't exercise the image pipeline, so main_image is just a required placeholder.
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $product = ProductFactory::new()->createQuietly();
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
         'label' => 'Manual',

@@ -5,10 +5,11 @@ declare(strict_types=1);
 use App\Auth\Admin\MicrosoftAdminResolver;
 use App\Models\Admin;
 use Laravel\Socialite\Two\User as SocialiteUser;
+use Tests\Factories\AdminFactory;
 
 test('resolve returns the existing admin matched by microsoft_id without creating a duplicate', function () {
     config(['services.microsoft.allowed_domain' => 'example.com']);
-    $admin = Admin::factory()->create(['microsoft_id' => 'oid-existing', 'email' => 'existing@example.com']);
+    $admin = AdminFactory::new()->create(['microsoft_id' => 'oid-existing', 'email' => 'existing@example.com']);
 
     $socialiteUser = new SocialiteUser;
     $socialiteUser->id = 'oid-existing';

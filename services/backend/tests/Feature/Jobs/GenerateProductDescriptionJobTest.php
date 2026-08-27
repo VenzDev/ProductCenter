@@ -9,6 +9,7 @@ use App\Models\Product;
 use Illuminate\Support\Facades\Storage;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Testing\TextResponseFake;
+use Tests\Factories\ProductFactory;
 
 test('handling the job writes the AI-generated description in the requested locale onto the product', function () {
     Storage::fake('s3');
@@ -16,17 +17,10 @@ test('handling the job writes the AI-generated description in the requested loca
         TextResponseFake::make()->withText('Gadżet to lekkie i wytrzymałe urządzenie.'),
     ]);
 
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    // withoutEvents skips ProductImageObserver's relocation dispatch — this test only
-    // covers the no-webp-yet branch, so main_image is just a required placeholder.
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
+    $product = ProductFactory::new()->createQuietly([
         'name' => ['en' => 'Widget', 'pl' => 'Gadżet'],
-        'price_cents' => 1999,
-        'currency' => 'PLN',
         'attributes' => ['weight_kg' => 1.2],
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    ]);
 
     app()->call([new GenerateProductDescriptionJob($product->id, 'pl'), 'handle']);
 
@@ -72,15 +66,10 @@ test('handling the job resolves attribute names and option labels in the request
         TextResponseFake::make()->withText('Opis produktu.'),
     ]);
 
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
+    $product = ProductFactory::new()->createQuietly([
         'name' => ['en' => 'Widget', 'pl' => 'Gadżet'],
-        'price_cents' => 1999,
-        'currency' => 'PLN',
         'attributes' => ['color' => 'red'],
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    ]);
 
     app()->call([new GenerateProductDescriptionJob($product->id, 'pl'), 'handle']);
 

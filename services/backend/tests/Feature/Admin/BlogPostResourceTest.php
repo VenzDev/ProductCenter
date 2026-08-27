@@ -5,14 +5,14 @@ declare(strict_types=1);
 use App\BlogPost\Support\BlogPostImagePaths;
 use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
-use App\Models\Admin;
 use App\Models\BlogPost;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
+use Tests\Factories\AdminFactory;
 
 test('an admin can list blog posts', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     BlogPost::create(['title' => 'Hello World', 'slug' => 'hello-world', 'content' => '<p>Hi</p>']);
 
     $response = $this->actingAs($admin, 'admin')->get('/admin/blog-posts');
@@ -21,7 +21,7 @@ test('an admin can list blog posts', function () {
 });
 
 test('an admin can create a blog post with a wysiwyg body', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateBlogPost::class)
@@ -41,7 +41,7 @@ test('an admin can create a blog post with a wysiwyg body', function () {
 });
 
 test('a blog post slug must be unique', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     BlogPost::create(['title' => 'Hello World', 'slug' => 'hello-world', 'content' => '<p>Hi</p>']);
     $this->actingAs($admin, 'admin');
 
@@ -56,7 +56,7 @@ test('a blog post slug must be unique', function () {
 });
 
 test('an admin can update a blog post', function () {
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $post = BlogPost::create(['title' => 'Hello World', 'slug' => 'hello-world', 'content' => '<p>Hi</p>']);
     $this->actingAs($admin, 'admin');
 
@@ -71,7 +71,7 @@ test('an admin can update a blog post', function () {
 test('an admin can upload a blog post preview image to the s3 disk', function () {
     Storage::fake('s3');
 
-    $admin = Admin::factory()->create();
+    $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
     $image = UploadedFile::fake()->image('preview.jpg');
 

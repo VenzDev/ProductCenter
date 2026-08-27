@@ -3,23 +3,13 @@
 declare(strict_types=1);
 
 use App\Ai\Jobs\GenerateAttachmentEmbeddingsJob;
-use App\Models\Category;
-use App\Models\Product;
 use Illuminate\Support\Facades\Bus;
+use Tests\Factories\ProductFactory;
 
 test('creating a pdf attachment dispatches the embedding job', function () {
     Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
-    // don't exercise the image pipeline, so main_image is just a required placeholder.
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $product = ProductFactory::new()->createQuietly();
 
     $attachment = $product->attachments()->create([
         'path' => 'products/attachments/manual.pdf',
@@ -35,16 +25,7 @@ test('creating a pdf attachment dispatches the embedding job', function () {
 test('creating a non-pdf attachment does not dispatch the embedding job', function () {
     Bus::fake([GenerateAttachmentEmbeddingsJob::class]);
 
-    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    // withoutEvents skips ProductImageObserver's relocation dispatch — these tests
-    // don't exercise the image pipeline, so main_image is just a required placeholder.
-    $product = Product::withoutEvents(fn () => Product::create([
-        'category_id' => $category->id,
-        'name' => 'Widget',
-        'price_cents' => 1999,
-        'currency' => 'PLN',
-        'main_image' => 'product-images/placeholder/main-image.jpg',
-    ]));
+    $product = ProductFactory::new()->createQuietly();
 
     $product->attachments()->create([
         'path' => 'products/attachments/warranty.jpg',
