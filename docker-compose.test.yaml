@@ -1,0 +1,19 @@
+services:
+  # Dedicated OpenSearch instance for tests. Unlike Postgres — where the same server
+  # just gets a second `backend_test` database — OpenSearch has no equivalent
+  # per-tenant isolation, so reusing the dev `opensearch` service would mean tests
+  # writing to (and deleting) the same `products` index real dev data lives in.
+  opensearch-test:
+    image: opensearchproject/opensearch:2
+    environment:
+      discovery.type: single-node
+      DISABLE_SECURITY_PLUGIN: "true"
+      OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
+    ports:
+      - "9201:9200"
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+      start_period: 30s

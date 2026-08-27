@@ -39,6 +39,6 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
-        <env name="OPENSEARCH_HOST" value="http://opensearch:9200"/>
+        <env name="OPENSEARCH_HOST" value="http://opensearch-test:9200"/>
     </php>
 </phpunit>

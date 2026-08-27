@@ -10,9 +10,6 @@ use OpenSearch\Client;
 use Tests\Factories\ProductFactory;
 
 beforeEach(function () {
-    // ProductFactory sets main_image, which makes ProductImageObserver dispatch a
-    // real S3 relocation job (QUEUE_CONNECTION is sync) — irrelevant to search and
-    // not available outside the local docker-compose stack (e.g. on CI).
     Bus::fake([RelocateUploadedImageJob::class]);
 });
 

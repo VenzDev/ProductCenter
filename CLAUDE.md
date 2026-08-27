@@ -38,6 +38,7 @@ infrastructure/k8s/payment/  Helm chart for the payment service
 infrastructure/k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
 e2e/  Playwright end-to-end tests, driving the frontend against the real stack
 docker-compose.yaml  local dev environment for all services
+docker-compose.test.yaml  overlay adding a dedicated opensearch-test, for backend tests only
 docker-compose.e2e.yaml  fully separate stack (own postgres/localstack) for running e2e/
 ```
 
@@ -69,13 +70,14 @@ Run everything — installs, tests, linters, one-off artisan/go/pip commands —
 
 **backend** (`services/backend`, Laravel 13 / PHP 8.5):
 ```bash
+docker compose -f docker-compose.yaml -f docker-compose.test.yaml up -d --wait opensearch-test   # once per session, before running tests
 docker compose exec backend composer install
 docker compose exec backend php artisan test              # or: composer test — runs full suite (Unit + Feature), via Pest
 docker compose exec backend php artisan test --filter=ExampleTest   # single test
 docker compose exec backend ./vendor/bin/pint              # code style (Laravel Pint)
 docker compose exec backend ./vendor/bin/phpstan analyse --memory-limit=512M   # static analysis (Larastan, level 8)
 ```
-Test env config lives inline in `phpunit.xml` (sqlite `:memory:`, array drivers) — no separate `.env.testing` needed. Test runner is Pest (PHPUnit-compatible — existing PHPUnit test classes run unmodified).
+Test env config lives inline in `phpunit.xml` (sqlite `:memory:`, array drivers) — no separate `.env.testing` needed. Test runner is Pest (PHPUnit-compatible — existing PHPUnit test classes run unmodified). Search feature tests need `opensearch-test` (from `docker-compose.test.yaml`) — a separate instance from dev's own `opensearch`, since (unlike Postgres, where tests just get their own `backend_test` database on the same server) OpenSearch has no equivalent per-tenant isolation, and tests delete the index they use. Same instance is used in CI (`backend-tests.yaml`).
 
 `phpmd/phpmd` was tried and dropped — `pdepend` (its dependency) only supports `symfony/dependency-injection` up to `^7.0`, while Laravel 13's `symfony/http-kernel` requires `^8.0`; no compatible version combination exists. Larastan (PHPStan + Laravel rules) was added instead, configured via `phpstan.neon`.
 

@@ -4,9 +4,11 @@ on:
   push:
     paths:
       - "services/backend/**"
+      - "docker-compose.test.yaml"
   pull_request:
     paths:
       - "services/backend/**"
+      - "docker-compose.test.yaml"
 
 jobs:
   test:
@@ -28,19 +30,6 @@ jobs:
           --health-interval 5s
           --health-timeout 5s
           --health-retries 5
-      opensearch:
-        image: opensearchproject/opensearch:2
-        env:
-          discovery.type: single-node
-          DISABLE_SECURITY_PLUGIN: "true"
-          OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
-        ports:
-          - "9200:9200"
-        options: >-
-          --health-cmd "curl -sf http://localhost:9200/_cluster/health"
-          --health-interval 5s
-          --health-timeout 5s
-          --health-retries 20
     steps:
       - uses: actions/checkout@v7
 
@@ -50,6 +39,10 @@ jobs:
           extensions: apcu, intl, zip, gd, pcntl, pdo_pgsql
           ini-values: apc.enable_cli=1
           coverage: none
+
+      # Dedicated test-only OpenSearch instance (see docker-compose.test.yaml) —
+      # same one used locally, so this doesn't drift from local dev again.
+      - run: docker compose -f ../../docker-compose.test.yaml up -d --wait opensearch-test
 
       - run: cp .env.example .env
 
@@ -62,6 +55,9 @@ jobs:
       - run: ./vendor/bin/pest
         env:
           DB_HOST: 127.0.0.1
-          OPENSEARCH_HOST: http://127.0.0.1:9200
+          OPENSEARCH_HOST: http://127.0.0.1:9201
 
       - run: ./vendor/bin/phpstan analyse --memory-limit=512M
+
+      - if: always()
+        run: docker compose -f ../../docker-compose.test.yaml down -v
