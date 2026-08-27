@@ -17,28 +17,4 @@
             <directory>app</directory>
         </include>
     </source>
-    <php>
-        <env name="APP_ENV" value="testing"/>
-        <env name="APP_KEY" value="base64:pVSXWhW1xbodhsTwmk/p0GiFAfwHWkueBRI6Vmxnaac="/>
-        <env name="APP_MAINTENANCE_DRIVER" value="file"/>
-        <env name="BCRYPT_ROUNDS" value="4"/>
-        <env name="BROADCAST_CONNECTION" value="null"/>
-        <env name="CACHE_STORE" value="array"/>
-        <env name="DB_CONNECTION" value="pgsql"/>
-        <env name="DB_HOST" value="postgres"/>
-        <env name="DB_PORT" value="5432"/>
-        <env name="DB_DATABASE" value="backend_test"/>
-        <env name="DB_USERNAME" value="backend"/>
-        <env name="DB_PASSWORD" value="backend"/>
-        <env name="DB_URL" value=""/>
-        <env name="JWT_SECRET" value="s7Q2vN9xW4tE6yB1uJ8mR3kL5cH0aFdP"/>
-        <env name="JWT_BLACKLIST_ENABLED" value="false"/>
-        <env name="MAIL_MAILER" value="array"/>
-        <env name="QUEUE_CONNECTION" value="sync"/>
-        <env name="SESSION_DRIVER" value="array"/>
-        <env name="PULSE_ENABLED" value="false"/>
-        <env name="TELESCOPE_ENABLED" value="false"/>
-        <env name="NIGHTWATCH_ENABLED" value="false"/>
-        <env name="OPENSEARCH_HOST" value="http://opensearch-test:9200"/>
-    </php>
 </phpunit>

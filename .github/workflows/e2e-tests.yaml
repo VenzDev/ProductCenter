@@ -7,13 +7,13 @@ on:
       - "e2e/**"
       - "services/frontend/**"
       - "services/backend/**"
-      - "docker-compose.e2e.yaml"
+      - "docker-compose.test.yaml"
   pull_request:
     paths:
       - "e2e/**"
       - "services/frontend/**"
       - "services/backend/**"
-      - "docker-compose.e2e.yaml"
+      - "docker-compose.test.yaml"
 
 jobs:
   test:
@@ -21,24 +21,22 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - run: cp services/backend/.env.example services/backend/.env
+      - run: docker compose -f docker-compose.test.yaml build backend_test frontend_test
 
-      - run: docker compose -f docker-compose.e2e.yaml build backend-e2e frontend-e2e
+      - run: docker compose -f docker-compose.test.yaml up -d --wait postgres_test redis_test opensearch_test localstack_test
 
-      - run: docker compose -f docker-compose.e2e.yaml up -d --wait postgres localstack
+      - run: docker compose -f docker-compose.test.yaml run --rm --entrypoint sh backend_test -c "composer install --no-interaction"
 
-      - run: docker compose -f docker-compose.e2e.yaml run --rm --entrypoint sh backend-e2e -c "composer install --no-interaction && php artisan key:generate --force && php artisan jwt:secret --force"
+      - run: docker compose -f docker-compose.test.yaml run --rm frontend_test npm ci
 
-      - run: docker compose -f docker-compose.e2e.yaml run --rm frontend-e2e npm ci
+      - run: docker compose -f docker-compose.test.yaml up -d --wait frontend_test backend_test
 
-      - run: docker compose -f docker-compose.e2e.yaml up -d --wait frontend-e2e backend-e2e
+      - run: docker compose -f docker-compose.test.yaml exec backend_test php artisan db:seed --class=BlogPostSeeder --force
 
-      - run: docker compose -f docker-compose.e2e.yaml exec backend-e2e php artisan db:seed --class=BlogPostSeeder --force
-
-      - run: docker compose -f docker-compose.e2e.yaml run --rm e2e
+      - run: docker compose -f docker-compose.test.yaml run --rm e2e
 
       - if: failure()
-        run: docker compose -f docker-compose.e2e.yaml logs
+        run: docker compose -f docker-compose.test.yaml logs
 
       - if: always()
-        run: docker compose -f docker-compose.e2e.yaml down -v
+        run: docker compose -f docker-compose.test.yaml down -v

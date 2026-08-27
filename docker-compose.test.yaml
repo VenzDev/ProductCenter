@@ -1,19 +1,120 @@
+name: product-center-test
+
+# Fully isolated copy of docker-compose.yaml's topology (own project, own network, no
+# host ports, no persistent volumes) plus a Playwright runner — used for both backend
+# feature tests and the e2e suite. _test-suffixed service names avoid any ambiguity
+# with dev's own containers. Config lives in services/backend/.env.testing (APP_ENV
+# must be exactly "testing" for Laravel's own test-mode detection, e.g. CSRF bypass,
+# to work — see the "backend" entry in CLAUDE.md's Per-service commands).
+
 services:
-  # Dedicated OpenSearch instance for tests. Unlike Postgres — where the same server
-  # just gets a second `backend_test` database — OpenSearch has no equivalent
-  # per-tenant isolation, so reusing the dev `opensearch` service would mean tests
-  # writing to (and deleting) the same `products` index real dev data lives in.
-  opensearch-test:
+  frontend_test:
+    build:
+      context: ./services/frontend
+      target: dev
+    environment:
+      BACKEND_URL: http://backend_test
+    volumes:
+      - ./services/frontend:/app
+      - frontend_test_next:/app/.next
+    depends_on:
+      backend_test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "--spider", "-q", "http://localhost:3000/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  payment_test:
+    build:
+      context: ./services/payment
+      target: dev
+    volumes:
+      - ./services/payment:/app
+
+  backend_test:
+    build:
+      context: ./services/backend
+      target: dev
+    environment:
+      APP_ENV: testing
+      SERVER_NAME: ":80"
+    volumes:
+      - ./services/backend:/app
+    depends_on:
+      postgres_test:
+        condition: service_healthy
+      localstack_test:
+        condition: service_healthy
+      redis_test:
+        condition: service_healthy
+      opensearch_test:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 20s
+
+  localstack_test:
+    image: localstack/localstack:4
+    environment:
+      SERVICES: s3
+    volumes:
+      - ./services/backend/docker/localstack-init-s3.sh:/etc/localstack/init/ready.d/init-s3.sh
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:4566/_localstack/health"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  redis_test:
+    image: redis:8-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  opensearch_test:
     image: opensearchproject/opensearch:2
     environment:
       discovery.type: single-node
       DISABLE_SECURITY_PLUGIN: "true"
       OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
-    ports:
-      - "9201:9200"
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health"]
       interval: 5s
       timeout: 5s
       retries: 20
       start_period: 30s
+
+  postgres_test:
+    image: pgvector/pgvector:pg17
+    environment:
+      POSTGRES_DB: backend_test
+      POSTGRES_USER: backend
+      POSTGRES_PASSWORD: backend
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U backend -d backend_test"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.62.1-noble
+    working_dir: /app
+    environment:
+      PLAYWRIGHT_BASE_URL: http://frontend_test:3000
+    volumes:
+      - ./e2e:/app
+    command: sh -c "npm ci && npx playwright test"
+    depends_on:
+      frontend_test:
+        condition: service_healthy
+
+volumes:
+  frontend_test_next:

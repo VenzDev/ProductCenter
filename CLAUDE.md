@@ -38,8 +38,7 @@ infrastructure/k8s/payment/  Helm chart for the payment service
 infrastructure/k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
 e2e/  Playwright end-to-end tests, driving the frontend against the real stack
 docker-compose.yaml  local dev environment for all services
-docker-compose.test.yaml  overlay adding a dedicated opensearch-test, for backend tests only
-docker-compose.e2e.yaml  fully separate stack (own postgres/localstack) for running e2e/
+docker-compose.test.yaml  fully separate copy of the stack (_test-suffixed services, own project), for backend tests and e2e/
 ```
 
 Target cloud is AWS. AWS services in the design (DynamoDB, S3, SQS) are simulated locally via LocalStack. S3 (product images, via the backend's `s3` filesystem disk) is wired into `docker-compose.yaml`; DynamoDB/SQS are not yet.
@@ -68,16 +67,19 @@ Every service exposes `GET /health` (liveness/readiness) and `GET /metrics` (Pro
 
 Run everything — installs, tests, linters, one-off artisan/go/pip commands — **inside the service's Docker container**, via `docker compose exec <service> <command>` (start it first with `docker compose up -d <service>` if it isn't running). The host has no PHP/Go/Python toolchain installed; any per-service `.venv` or similar on the host is IDE-only (autocomplete/type-checking), never used to actually run or test the service.
 
-**backend** (`services/backend`, Laravel 13 / PHP 8.5):
+**backend** (`services/backend`, Laravel 13 / PHP 8.5) — tests and static analysis run against the isolated `docker-compose.test.yaml` stack, not the dev one (see below), so they never touch real dev data:
 ```bash
-docker compose -f docker-compose.yaml -f docker-compose.test.yaml up -d --wait opensearch-test   # once per session, before running tests
-docker compose exec backend composer install
-docker compose exec backend php artisan test              # or: composer test — runs full suite (Unit + Feature), via Pest
-docker compose exec backend php artisan test --filter=ExampleTest   # single test
-docker compose exec backend ./vendor/bin/pint              # code style (Laravel Pint)
-docker compose exec backend ./vendor/bin/phpstan analyse --memory-limit=512M   # static analysis (Larastan, level 8)
+docker compose -f docker-compose.test.yaml build backend_test
+docker compose -f docker-compose.test.yaml up -d --wait postgres_test redis_test opensearch_test localstack_test
+docker compose -f docker-compose.test.yaml run --rm --entrypoint sh backend_test -c "composer install --no-interaction"   # once per session
+docker compose -f docker-compose.test.yaml up -d --wait backend_test
+docker compose -f docker-compose.test.yaml exec backend_test php artisan test              # or: composer test — runs full suite (Unit + Feature), via Pest
+docker compose -f docker-compose.test.yaml exec backend_test php artisan test --filter=ExampleTest   # single test
+docker compose -f docker-compose.test.yaml exec backend_test ./vendor/bin/pint              # code style (Laravel Pint)
+docker compose -f docker-compose.test.yaml exec backend_test ./vendor/bin/phpstan analyse --memory-limit=512M   # static analysis (Larastan, level 8)
+docker compose -f docker-compose.test.yaml down -v   # tear down when done — drops its own volumes only, dev stack is untouched
 ```
-Test env config lives inline in `phpunit.xml` (sqlite `:memory:`, array drivers) — no separate `.env.testing` needed. Test runner is Pest (PHPUnit-compatible — existing PHPUnit test classes run unmodified). Search feature tests need `opensearch-test` (from `docker-compose.test.yaml`) — a separate instance from dev's own `opensearch`, since (unlike Postgres, where tests just get their own `backend_test` database on the same server) OpenSearch has no equivalent per-tenant isolation, and tests delete the index they use. Same instance is used in CI (`backend-tests.yaml`).
+`backend_test` bind-mounts the same `./services/backend` dev's own `backend` does, but must never share dev's `.env` (which holds a real `APP_KEY`/`JWT_SECRET` — overwriting it would invalidate dev's sessions). `services/backend/.env.testing` is a separate, **committed** file (no real secrets, so unlike `.env` there's nothing to protect) that Laravel loads instead, because `APP_ENV: testing` is set on `backend_test` in `docker-compose.test.yaml` and Laravel's `LoadEnvironmentVariables` bootstrapper loads `.env.{APP_ENV}` when that variable is set (see `vendor/laravel/framework/.../Bootstrap/LoadEnvironmentVariables.php`). `.env.testing` — not `.env.test` — because `APP_ENV` must be exactly `testing` for Laravel's own framework-level test-mode detection (e.g. `VerifyCsrfToken::runningUnitTests()`, which every Filament/Livewire admin-panel test depends on) to kick in; a same-idea-but-differently-named `.env.test`/`APP_ENV=test` silently breaks CSRF handling and fails every Livewire form test with a misleading "field is required" error. `.env.testing` is now also the **only** place test env config lives — it replaced a duplicate set of overrides that used to live inline in `phpunit.xml`, since the container running Pest also runs `composer install`/phpstan, which need a real env file regardless. Test runner is Pest (PHPUnit-compatible — existing PHPUnit test classes run unmodified). `postgres_test`/`redis_test`/`opensearch_test`/`localstack_test` are each their own dedicated instance rather than dev's, because unlike Postgres (which could just get a second `backend_test` database on the same server) Redis/OpenSearch/LocalStack have no equivalent per-tenant isolation.
 
 `phpmd/phpmd` was tried and dropped — `pdepend` (its dependency) only supports `symfony/dependency-injection` up to `^7.0`, while Laravel 13's `symfony/http-kernel` requires `^8.0`; no compatible version combination exists. Larastan (PHPStan + Laravel rules) was added instead, configured via `phpstan.neon`.
 
@@ -98,20 +100,18 @@ docker compose exec frontend npm run build      # production build
 `tsc --noEmit` alone fails on a clean checkout with `Cannot find name 'LayoutProps'` — that global type is generated into `.next/types` by `next dev`/`next build`/`next typegen`, not shipped statically. Always run `next typegen` first if `.next/types` isn't already present (e.g. from a prior `next dev`/`build` in the same container).
 Skeleton only — no pages/features, no `/health` or `/metrics` yet, so it isn't deployable with the shared Helm chart pattern.
 
-**e2e** (`e2e`, Playwright, run via `docker-compose.e2e.yaml` — a fully separate compose project, not a profile on the main file):
+**e2e** (`e2e`, Playwright, run via `docker-compose.test.yaml` — the same isolated stack backend tests use, see above, not a profile on the main file):
 ```bash
-docker compose -f docker-compose.e2e.yaml up -d --wait frontend-e2e backend-e2e postgres localstack
-docker compose -f docker-compose.e2e.yaml exec backend-e2e php artisan db:seed --class=BlogPostSeeder --force   # blog.spec.ts needs a published post to browse
-docker compose -f docker-compose.e2e.yaml run --rm e2e   # npm ci + playwright test, headless chromium
-docker compose -f docker-compose.e2e.yaml down -v        # tear down + drop its own volumes only
+docker compose -f docker-compose.test.yaml build backend_test frontend_test
+docker compose -f docker-compose.test.yaml up -d --wait postgres_test redis_test opensearch_test localstack_test
+docker compose -f docker-compose.test.yaml run --rm --entrypoint sh backend_test -c "composer install --no-interaction"   # once per session
+docker compose -f docker-compose.test.yaml run --rm frontend_test npm ci   # once per session
+docker compose -f docker-compose.test.yaml up -d --wait frontend_test backend_test
+docker compose -f docker-compose.test.yaml exec backend_test php artisan db:seed --class=BlogPostSeeder --force   # blog.spec.ts needs a published post to browse
+docker compose -f docker-compose.test.yaml run --rm e2e   # npm ci + playwright test, headless chromium
+docker compose -f docker-compose.test.yaml down -v        # tear down — drops its own volumes only, dev stack is untouched
 ```
-Uses the official `mcr.microsoft.com/playwright` image (Debian-based) rather than the frontend's own Alpine image, since Playwright's browser binaries aren't officially supported on musl libc. This is its own compose project (`name: product-center-e2e`) with its own `postgres`/`localstack`, entirely disjoint from the main `docker-compose.yaml` project — so `down -v` here can never touch dev data, and it can run concurrently with the dev stack without port clashes (nothing here publishes a host port except through the `e2e` container's own network). `backend-e2e` and `frontend-e2e` bind-mount the same `./services/backend` and `./services/frontend` host directories as `backend`/`frontend` — including `vendor`/`node_modules`, so they share whatever's already installed there rather than reinstalling. They can still collide on writes to that shared filesystem: `frontend-e2e` gets a dedicated `.next` build-cache volume to avoid that (see `frontend_e2e_next`), while backend's writes (queue/session/cache) are DB-backed and route to `backend_test` on e2e's own postgres, not the dev one. Runs against `http://frontend-e2e:3000` — this requires `allowedDevOrigins: ["frontend-e2e"]` in `next.config.ts`, because Next's dev server otherwise 403s `/_next/*` asset requests from any origin other than localhost.
+Uses the official `mcr.microsoft.com/playwright` image (Debian-based) rather than the frontend's own Alpine image, since Playwright's browser binaries aren't officially supported on musl libc. `docker-compose.test.yaml` (`name: product-center-test`) is its own compose project, entirely disjoint from the main `docker-compose.yaml` project — so `down -v` here can never touch dev data, and it can run concurrently with the dev stack without port clashes (nothing here publishes a host port; everything talks over the project's own internal network). `backend_test` and `frontend_test` bind-mount the same `./services/backend` and `./services/frontend` host directories as dev's `backend`/`frontend` — including `vendor`/`node_modules`, so they share whatever's already installed there rather than reinstalling. They can still collide on writes to that shared filesystem: `frontend_test` gets a dedicated `.next` build-cache volume to avoid that (see `frontend_test_next`). Runs against `http://frontend_test:3000` — this requires `allowedDevOrigins: ["frontend_test"]` in `next.config.ts`, because Next's dev server otherwise 403s `/_next/*` asset requests from any origin other than localhost.
 `BlogPostSeeder` is only ever invoked explicitly like this — it's not part of `DatabaseSeeder::run()` — so it never runs against local dev or production data.
 
-On a fresh checkout (no local `vendor`/`node_modules`/`.env` yet — this is what CI does, see `.github/workflows/e2e-tests.yaml`) the command above alone will fail: `backend-e2e` needs `services/backend/.env` (copied from `.env.example`, since `.env` is gitignored) plus a generated `APP_KEY`/`JWT_SECRET`, and both `backend-e2e`/`frontend-e2e` need their deps installed onto the host once, e.g.:
-```bash
-cp services/backend/.env.example services/backend/.env
-docker compose -f docker-compose.e2e.yaml up -d --wait postgres localstack
-docker compose -f docker-compose.e2e.yaml run --rm --entrypoint sh backend-e2e -c "composer install --no-interaction && php artisan key:generate --force && php artisan jwt:secret --force"
-docker compose -f docker-compose.e2e.yaml run --rm frontend-e2e npm ci
-```
+On a fresh checkout (no local `vendor`/`node_modules` yet — this is what CI does, see `.github/workflows/e2e-tests.yaml` and `backend-tests.yaml`) no `.env` setup step is needed first, unlike the main dev stack — `services/backend/.env.testing` is already committed.
