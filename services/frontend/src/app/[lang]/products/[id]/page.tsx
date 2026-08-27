@@ -50,17 +50,39 @@ export default async function ProductPage({
         </nav>
 
         <div className="mt-6 grid gap-8 md:grid-cols-2">
-          <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
-            {imageSrc && (
-              <Image
-                src={imageSrc}
-                alt={product.name}
-                fill
-                className="object-cover"
-                sizes="(min-width: 768px) 50vw, 100vw"
-                priority
-                unoptimized
-              />
+          <div className="flex flex-col gap-3">
+            <div className="relative aspect-square overflow-hidden rounded-xl bg-muted">
+              {imageSrc && (
+                <Image
+                  src={imageSrc}
+                  alt={product.name}
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 768px) 50vw, 100vw"
+                  priority
+                  unoptimized
+                />
+              )}
+            </div>
+
+            {product.gallery && product.gallery.length > 0 && (
+              <div className="grid grid-cols-4 gap-3">
+                {product.gallery.map((image) => (
+                  <div
+                    key={image.thumbnail_webp_url}
+                    className="relative aspect-square overflow-hidden rounded-lg bg-muted"
+                  >
+                    <Image
+                      src={image.thumbnail_webp_url}
+                      alt={product.name}
+                      fill
+                      className="object-cover"
+                      sizes="12vw"
+                      unoptimized
+                    />
+                  </div>
+                ))}
+              </div>
             )}
           </div>
 

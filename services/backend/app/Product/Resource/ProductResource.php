@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Product\Resource;
 
 use App\Http\Resources\Concerns\HasRequestedIncludes;
+use App\Images\Support\ImageUrlResolver;
 use App\Models\Product;
+use App\Models\ProductImage;
+use App\Product\Support\ProductImageGalleryPaths;
 use App\Product\Support\ProductImagePaths;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @mixin Product
@@ -38,11 +40,13 @@ class ProductResource extends JsonResource
             'price_cents' => $this->price_cents,
             'currency' => $this->currency,
             'attributes' => $this->attributes,
-            'main_image' => $this->main_image ? [
-                'original_url' => Storage::disk('s3')->url($this->main_image),
-                'webp_url' => Storage::disk('s3')->url(ProductImagePaths::webp($this->id)),
-                'thumbnail_webp_url' => Storage::disk('s3')->url(ProductImagePaths::thumbnailWebp($this->id)),
-            ] : null,
+            'main_image' => $this->main_image
+                ? ImageUrlResolver::resolve(ProductImagePaths::class, $this->id)
+                : null,
+            'gallery' => $this->whenLoaded('images',
+                fn () => $this->images->map(fn (ProductImage $image) => ImageUrlResolver::resolve(
+                    ProductImageGalleryPaths::class, $image->id
+                ))),
         ];
     }
 }

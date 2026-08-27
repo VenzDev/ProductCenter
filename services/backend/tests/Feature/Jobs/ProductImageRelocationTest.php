@@ -30,7 +30,7 @@ function createProductWithoutImage(): Product
 function stageImage(Product $product, string $stagingKey): void
 {
     Storage::disk('s3')->put($stagingKey, fakeJpegBytes());
-    // saveQuietly avoids the real ProductObserver dispatch — these tests drive the job directly.
+    // saveQuietly avoids the real ProductImageObserver dispatch — these tests drive the job directly.
     $product->main_image = $stagingKey;
     $product->saveQuietly();
 }

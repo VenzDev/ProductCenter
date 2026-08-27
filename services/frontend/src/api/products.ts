@@ -8,10 +8,12 @@ export type Product = {
   price_cents: number;
   currency: string;
   main_image: {
-    original_url: string;
     webp_url: string;
     thumbnail_webp_url: string;
   } | null;
+  // Only present on the single-product endpoint — /products and /products/latest
+  // don't eager-load it, since list views only ever show main_image.
+  gallery?: { webp_url: string; thumbnail_webp_url: string }[];
 };
 
 export function getLatestProducts(): Promise<Product[]> {

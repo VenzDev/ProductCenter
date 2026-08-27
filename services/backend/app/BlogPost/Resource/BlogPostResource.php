@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\BlogPost\Resource;
 
 use App\BlogPost\Support\BlogPostImagePaths;
+use App\Images\Support\ImageUrlResolver;
 use App\Models\BlogPost;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @mixin BlogPost
@@ -26,10 +26,9 @@ class BlogPostResource extends JsonResource
             'slug' => $this->slug,
             'content' => $this->content,
             'published_at' => $this->published_at?->toIso8601String(),
-            'preview_image' => $this->preview_image ? [
-                'webp_url' => Storage::disk('s3')->url(BlogPostImagePaths::webp($this->id)),
-                'thumbnail_webp_url' => Storage::disk('s3')->url(BlogPostImagePaths::thumbnailWebp($this->id)),
-            ] : null,
+            'preview_image' => $this->preview_image
+                ? ImageUrlResolver::resolve(BlogPostImagePaths::class, $this->id)
+                : null,
         ];
     }
 }

@@ -26,7 +26,7 @@ function createBlogPostWithoutImage(): BlogPost
 function stageBlogPostImage(BlogPost $blogPost, string $stagingKey): void
 {
     Storage::disk('s3')->put($stagingKey, fakeBlogPostJpegBytes());
-    // saveQuietly avoids the real BlogPostObserver dispatch — these tests drive the job directly.
+    // saveQuietly avoids the real BlogPostImageObserver dispatch — these tests drive the job directly.
     $blogPost->preview_image = $stagingKey;
     $blogPost->saveQuietly();
 }

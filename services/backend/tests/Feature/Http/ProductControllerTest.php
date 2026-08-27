@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImage;
 
 function createProduct(): Product
 {
@@ -64,7 +65,7 @@ test('a single product can be retrieved', function () {
     ]);
 });
 
-test('a product with a main image exposes the original, webp and thumbnail URLs', function () {
+test('a product with a main image exposes the webp and thumbnail URLs', function () {
     $product = createProduct();
     $product->main_image = "product-images/{$product->id}/main-image.jpg";
     $product->saveQuietly();
@@ -72,7 +73,6 @@ test('a product with a main image exposes the original, webp and thumbnail URLs'
     $response = $this->getJson("/api/v1/products/{$product->id}");
 
     $response->assertOk();
-    $response->assertJsonPath('data.main_image.original_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image.jpg"));
     $response->assertJsonPath('data.main_image.webp_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image.webp"));
     $response->assertJsonPath('data.main_image.thumbnail_webp_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image-thumbnail.webp"));
 });
@@ -84,6 +84,49 @@ test('a product without a main image has a null main_image', function () {
 
     $response->assertOk();
     $response->assertJsonPath('data.main_image', null);
+});
+
+function createGalleryImageQuietly(Product $product, string $path, int $order = 0): ProductImage
+{
+    // saveQuietly avoids the real ProductGalleryObserver dispatch — these tests only
+    // care about how the API serializes an already-placed gallery image.
+    $image = new ProductImage(['product_id' => $product->id, 'path' => $path, 'order' => $order]);
+    $image->saveQuietly();
+
+    return $image;
+}
+
+test('a single product exposes its gallery images in order, with webp and thumbnail URLs', function () {
+    $product = createProduct();
+    $second = createGalleryImageQuietly($product, 'product-images/gallery/1/image.jpg', 1);
+    $first = createGalleryImageQuietly($product, 'product-images/gallery/2/image.png', 0);
+
+    $response = $this->getJson("/api/v1/products/{$product->id}");
+
+    $response->assertOk();
+    $response->assertJsonCount(2, 'data.gallery');
+    $response->assertJsonPath('data.gallery.0.webp_url', fn ($url) => str_ends_with($url, "product-images/gallery/{$first->id}/image.webp"));
+    $response->assertJsonPath('data.gallery.0.thumbnail_webp_url', fn ($url) => str_ends_with($url, "product-images/gallery/{$first->id}/image-thumbnail.webp"));
+    $response->assertJsonPath('data.gallery.1.webp_url', fn ($url) => str_ends_with($url, "product-images/gallery/{$second->id}/image.webp"));
+});
+
+test('a product without gallery images exposes an empty gallery array', function () {
+    $product = createProduct();
+
+    $response = $this->getJson("/api/v1/products/{$product->id}");
+
+    $response->assertOk();
+    $response->assertJsonPath('data.gallery', []);
+});
+
+test('the products index does not eager-load or expose the gallery', function () {
+    $product = createProduct();
+    createGalleryImageQuietly($product, 'product-images/gallery/1/image.jpg');
+
+    $response = $this->getJson('/api/v1/products');
+
+    $response->assertOk();
+    $response->assertJsonMissingPath('data.0.gallery');
 });
 
 test('retrieving a non-existent product returns 404', function () {

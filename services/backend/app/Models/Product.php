@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Product\Observers\ProductObserver;
+use App\Product\Observers\ProductImageObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
@@ -23,7 +23,7 @@ use Spatie\Translatable\HasTranslations;
  */
 #[Fillable(['category_id', 'name', 'description', 'price_cents', 'currency', 'attributes', 'main_image'])]
 #[Translatable(['name', 'description'])]
-#[ObservedBy(ProductObserver::class)]
+#[ObservedBy(ProductImageObserver::class)]
 class Product extends Model
 {
     use HasTranslations;
@@ -52,5 +52,13 @@ class Product extends Model
     public function attachments(): HasMany
     {
         return $this->hasMany(ProductAttachment::class);
+    }
+
+    /**
+     * @return HasMany<ProductImage, $this>
+     */
+    public function images(): HasMany
+    {
+        return $this->hasMany(ProductImage::class)->orderBy('order');
     }
 }

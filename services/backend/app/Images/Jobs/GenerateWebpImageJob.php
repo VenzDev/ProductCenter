@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Images\Jobs;
 
+use App\Images\Support\WebpImageNaming;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -36,14 +37,15 @@ class GenerateWebpImageJob implements ShouldQueue
 
         $directory = dirname($this->currentPath);
         $stem = pathinfo($this->currentPath, PATHINFO_FILENAME);
+        $stemPath = "{$directory}/{$stem}";
 
         $original = $disk->get($this->currentPath);
         $manager = new ImageManager(new Driver);
 
         $webp = $manager->read($original)->toWebp(quality: 85);
-        $disk->put("{$directory}/{$stem}.webp", (string) $webp, ['visibility' => 'public']);
+        $disk->put(WebpImageNaming::webp($stemPath), (string) $webp, ['visibility' => 'public']);
 
         $thumbnail = $manager->read($original)->cover(self::THUMBNAIL_SIZE, self::THUMBNAIL_SIZE)->toWebp(quality: 75);
-        $disk->put("{$directory}/{$stem}-thumbnail.webp", (string) $thumbnail, ['visibility' => 'public']);
+        $disk->put(WebpImageNaming::thumbnailWebp($stemPath), (string) $thumbnail, ['visibility' => 'public']);
     }
 }
