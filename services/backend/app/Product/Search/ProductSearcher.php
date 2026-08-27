@@ -26,6 +26,7 @@ class ProductSearcher
                         'multi_match' => [
                             'query' => $query,
                             'fields' => ['name.*', 'description.*'],
+                            'fuzziness' => 'AUTO',
                         ],
                     ],
                 ],

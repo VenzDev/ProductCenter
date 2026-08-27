@@ -97,13 +97,16 @@ services:
       retries: 5
 
   opensearch:
-    image: opensearchproject/opensearch:2
+    build:
+      context: ./services/backend/docker/opensearch
     environment:
       discovery.type: single-node
       DISABLE_SECURITY_PLUGIN: "true"
       OPENSEARCH_JAVA_OPTS: "-Xms512m -Xmx512m"
     ports:
       - "9200:9200"
+    volumes:
+      - ./services/backend/docker/opensearch/analysis:/usr/share/opensearch/config/analysis:ro
     healthcheck:
       test: ["CMD-SHELL", "curl -sf http://localhost:9200/_cluster/health"]
       interval: 5s
