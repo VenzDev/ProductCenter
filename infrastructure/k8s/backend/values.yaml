@@ -38,6 +38,14 @@ env:
       secretKeyRef:
         name: backend-secrets
         key: db-password
+  - name: CACHE_STORE
+    value: redis
+  - name: REDIS_CLIENT
+    value: phpredis
+  - name: REDIS_HOST
+    value: redis
+  - name: REDIS_PORT
+    value: "6379"
   - name: AWS_BUCKET
     value: "product-center-product-files"
   - name: AWS_DEFAULT_REGION

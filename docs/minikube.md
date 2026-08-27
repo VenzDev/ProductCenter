@@ -55,6 +55,7 @@ Te same charty co na EKS, ale z nadpisanym `image` (lokalny tag zamiast adresu E
 
 ```bash
 helm install payment infrastructure/k8s/payment -n product-center --set image=payment:local
+helm install redis infrastructure/k8s/redis -n product-center
 helm install backend infrastructure/k8s/backend -n product-center --set image=backend:local
 ```
 
@@ -73,7 +74,7 @@ kubectl run curl-test -n product-center --image=curlimages/curl --rm -i --restar
 
 ```bash
 # Usunąć tylko nasze release'y i namespace (zostawia resztę Minikube nietkniętą)
-helm uninstall payment backend -n product-center
+helm uninstall payment redis backend -n product-center
 kubectl delete namespace product-center
 
 # Zatrzymać całego Minikube (zwalnia zasoby hosta, zachowuje stan)

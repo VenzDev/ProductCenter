@@ -24,6 +24,12 @@ infrastructure/k8s/payment/
     deployment.yaml
     service.yaml
     servicemonitor.yaml
+infrastructure/k8s/redis/
+  Chart.yaml
+  values.yaml            # obraz, port — bez PVC, to tylko cache backendu, strata przy restarcie jest OK
+  templates/
+    deployment.yaml
+    service.yaml
 infrastructure/k8s/frontend/
   Chart.yaml
   values.yaml            # obraz, port, ingress host/cert
@@ -117,8 +123,10 @@ terraform output acm_certificate_arn
 # `<TERRAFORM_OUTPUT:frontend_acm_certificate_arn>` w infrastructure/k8s/frontend/values.yaml
 terraform output frontend_acm_certificate_arn
 
-# 8. Zainstaluj serwisy (osobny chart per serwis)
+# 8. Zainstaluj serwisy (osobny chart per serwis). redis przed backend — backend cache'uje
+#    przez niego lookup attribute-definitions (CACHE_STORE=redis).
 helm install payment infrastructure/k8s/payment
+helm install redis infrastructure/k8s/redis
 helm install backend infrastructure/k8s/backend
 helm install frontend infrastructure/k8s/frontend
 

@@ -1,0 +1,4 @@
+apiVersion: v2
+name: redis
+description: Helm chart for the in-cluster Redis cache (backend cache/session/queue store)
+version: 0.1.0
