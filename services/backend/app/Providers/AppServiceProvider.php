@@ -6,6 +6,8 @@ namespace App\Providers;
 
 use App\Ai\ProductAttachments\PrismProductAttachmentEmbedder;
 use App\Ai\ProductAttachments\ProductAttachmentEmbedderInterface;
+use App\Ai\ProductDescription\PrismProductDescriptionGenerator;
+use App\Ai\ProductDescription\ProductDescriptionGeneratorInterface;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
@@ -19,6 +21,7 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->bind(ProductAttachmentEmbedderInterface::class, PrismProductAttachmentEmbedder::class);
+        $this->app->bind(ProductDescriptionGeneratorInterface::class, PrismProductDescriptionGenerator::class);
     }
 
     /**
