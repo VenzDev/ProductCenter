@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\AttributeType;
+use App\Product\Observers\AttributeObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
+use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Translatable\Attributes\Translatable;
@@ -18,6 +20,7 @@ use Spatie\Translatable\HasTranslations;
  */
 #[Fillable(['key', 'name', 'type', 'options'])]
 #[Translatable(['name'])]
+#[ObservedBy(AttributeObserver::class)]
 class Attribute extends Model
 {
     use HasTranslations;

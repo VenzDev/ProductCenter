@@ -2,7 +2,7 @@ FROM dunglas/frankenphp:latest AS base
 
 RUN apt-get update && apt-get install --no-install-recommends -y unzip \
     && rm -rf /var/lib/apt/lists/* \
-    && install-php-extensions apcu pdo_pgsql intl zip gd pcntl
+    && install-php-extensions apcu pdo_pgsql intl zip gd pcntl redis
 
 COPY docker/php/conf.d/custom.ini /usr/local/etc/php/conf.d/custom.ini
 

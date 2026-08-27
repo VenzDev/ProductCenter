@@ -9,6 +9,7 @@ use App\Enums\Language;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
+use App\Product\Support\AttributeDefinitions;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -21,7 +22,6 @@ use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 
 class ProductForm
@@ -124,7 +124,7 @@ class ProductForm
             ->schema([
                 Select::make('key')
                     ->label('Attribute')
-                    ->options(fn () => self::attributesByKey()->map(fn (Attribute $attribute) => $attribute->name))
+                    ->options(fn () => AttributeDefinitions::all()->map(fn (Attribute $attribute) => $attribute->name))
                     ->required()
                     ->live()
                     ->searchable()
@@ -185,21 +185,13 @@ class ProductForm
                 ->all());
     }
 
-    /**
-     * @return Collection<string, Attribute>
-     */
-    private static function attributesByKey(): Collection
-    {
-        return once(fn () => Attribute::query()->get()->keyBy('key'));
-    }
-
     private static function attributeType(?string $key): ?AttributeType
     {
         if (! $key) {
             return null;
         }
 
-        return self::attributesByKey()->get($key)?->type;
+        return AttributeDefinitions::all()->get($key)?->type;
     }
 
     private static function isPlainValue(?string $key): bool
@@ -222,6 +214,6 @@ class ProductForm
      */
     private static function selectOptions(?string $key): array
     {
-        return ($key ? self::attributesByKey()->get($key) : null)?->translatedOptions() ?? [];
+        return ($key ? AttributeDefinitions::all()->get($key) : null)?->translatedOptions() ?? [];
     }
 }

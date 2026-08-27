@@ -8,6 +8,7 @@ services:
     environment:
       SERVER_NAME: ":80"
       DB_DATABASE: backend_test
+      CACHE_STORE: database
     volumes:
       - ./services/backend:/app
     depends_on:

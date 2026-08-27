@@ -5,15 +5,14 @@ declare(strict_types=1);
 namespace App\Product\Resource;
 
 use App\Images\Support\ImageUrlResolver;
-use App\Models\Attribute;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Product\ObjectValue\ProductAttributeValue;
+use App\Product\Support\AttributeDefinitions;
 use App\Product\Support\ProductImageGalleryPaths;
 use App\Product\Support\ProductImagePaths;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Collection;
 
 /**
  * @mixin Product
@@ -51,7 +50,7 @@ class ProductResource extends JsonResource
      */
     private function resolveAttributes(Request $request): array
     {
-        $definitions = self::attributeDefinitions();
+        $definitions = AttributeDefinitions::all();
 
         /** @var array<string, mixed> $rawAttributes */
         $rawAttributes = $this->attributes ?? [];
@@ -61,15 +60,5 @@ class ProductResource extends JsonResource
             ->values();
 
         return ProductAttributeResource::collection($values)->resolve($request);
-    }
-
-    /**
-     * Loaded once per request regardless of how many products this resource formats.
-     *
-     * @return Collection<string, Attribute>
-     */
-    private static function attributeDefinitions(): Collection
-    {
-        return once(fn () => Attribute::query()->get()->keyBy('key')->collect());
     }
 }
