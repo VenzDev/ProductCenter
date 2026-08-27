@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Ai\Jobs\GenerateProductDescriptionJob;
+use App\Ai\DescriptionGeneration\Job\GenerateProductDescriptionJob;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;

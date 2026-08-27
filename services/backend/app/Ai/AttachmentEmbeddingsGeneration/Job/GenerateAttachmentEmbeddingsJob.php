@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-namespace App\Ai\Jobs;
+namespace App\Ai\AttachmentEmbeddingsGeneration\Job;
 
-use App\Ai\ProductAttachments\ProductAttachmentEmbedderInterface;
+use App\Ai\AttachmentEmbeddingsGeneration\Embedder\ProductAttachmentEmbedderInterface;
+use App\Ai\AttachmentEmbeddingsGeneration\Splitter\ChunksSplitterInterface;
 use App\Models\ProductAttachment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -21,16 +22,14 @@ class GenerateAttachmentEmbeddingsJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
 
-    private const int CHUNK_SIZE = 1000;
-
-    private const int CHUNK_OVERLAP = 150;
-
     public function __construct(
         public readonly int $attachmentId,
     ) {}
 
-    public function handle(ProductAttachmentEmbedderInterface $ai): void
-    {
+    public function handle(
+        ProductAttachmentEmbedderInterface $ai,
+        ChunksSplitterInterface $splitter
+    ): void {
         $attachment = ProductAttachment::find($this->attachmentId);
 
         if (! $attachment) {
@@ -54,7 +53,7 @@ class GenerateAttachmentEmbeddingsJob implements ShouldQueue
         }
 
         $text = (new Parser)->parseContent($pdf)->getText();
-        $chunks = $this->splitIntoChunks($text);
+        $chunks = $splitter->split($text);
 
         if ($chunks === []) {
             Log::info("GenerateAttachmentEmbeddingsJob: attachment [{$this->attachmentId}] has no extractable text, skipping");
@@ -73,28 +72,5 @@ class GenerateAttachmentEmbeddingsJob implements ShouldQueue
                 ]);
             }
         });
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    private function splitIntoChunks(string $text): array
-    {
-        $text = trim(preg_replace('/\s+/', ' ', $text) ?? '');
-
-        if ($text === '') {
-            return [];
-        }
-
-        $chunks = [];
-        $length = mb_strlen($text);
-        $start = 0;
-
-        while ($start < $length) {
-            $chunks[] = trim(mb_substr($text, $start, self::CHUNK_SIZE));
-            $start += self::CHUNK_SIZE - self::CHUNK_OVERLAP;
-        }
-
-        return $chunks;
     }
 }

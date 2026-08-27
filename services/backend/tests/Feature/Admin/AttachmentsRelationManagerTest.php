@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Ai\Jobs\GenerateAttachmentEmbeddingsJob;
+use App\Ai\AttachmentEmbeddingsGeneration\Job\GenerateAttachmentEmbeddingsJob;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\RelationManagers\AttachmentsRelationManager;
 use Filament\Actions\Testing\TestAction;

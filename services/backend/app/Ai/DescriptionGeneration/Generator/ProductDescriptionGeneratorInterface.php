@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Ai\ProductDescription;
+namespace App\Ai\DescriptionGeneration\Generator;
 
 use Prism\Prism\ValueObjects\Media\Image;
 

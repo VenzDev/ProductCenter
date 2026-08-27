@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Ai\ProductAttachments\PrismProductAttachmentEmbedder;
-use App\Ai\ProductAttachments\ProductAttachmentEmbedderInterface;
-use App\Ai\ProductDescription\PrismProductDescriptionGenerator;
-use App\Ai\ProductDescription\ProductDescriptionGeneratorInterface;
+use App\Ai\AttachmentEmbeddingsGeneration\Embedder\PrismProductAttachmentEmbedder;
+use App\Ai\AttachmentEmbeddingsGeneration\Embedder\ProductAttachmentEmbedderInterface;
+use App\Ai\AttachmentEmbeddingsGeneration\Splitter\ChunksSplitterInterface;
+use App\Ai\AttachmentEmbeddingsGeneration\Splitter\MinimalChunksSplitter;
+use App\Ai\DescriptionGeneration\Generator\PrismProductDescriptionGenerator;
+use App\Ai\DescriptionGeneration\Generator\ProductDescriptionGeneratorInterface;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use SocialiteProviders\Manager\SocialiteWasCalled;
@@ -22,6 +24,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(ProductAttachmentEmbedderInterface::class, PrismProductAttachmentEmbedder::class);
         $this->app->bind(ProductDescriptionGeneratorInterface::class, PrismProductDescriptionGenerator::class);
+        $this->app->bind(ChunksSplitterInterface::class, MinimalChunksSplitter::class);
     }
 
     /**

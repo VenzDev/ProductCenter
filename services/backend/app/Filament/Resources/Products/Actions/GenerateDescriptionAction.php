@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\Actions;
 
-use App\Ai\Jobs\GenerateProductDescriptionJob;
+use App\Ai\DescriptionGeneration\Job\GenerateProductDescriptionJob;
 use App\Enums\Language;
 use App\Models\Product;
 use Filament\Actions\Action;

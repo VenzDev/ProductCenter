@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Ai\ProductAttachments;
+namespace App\Ai\AttachmentEmbeddingsGeneration\Embedder;
 
 use Prism\Prism\Enums\Provider;
 use Prism\Prism\Facades\Prism;

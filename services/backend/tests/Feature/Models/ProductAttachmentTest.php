@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Ai\Jobs\GenerateAttachmentEmbeddingsJob;
+use App\Ai\AttachmentEmbeddingsGeneration\Job\GenerateAttachmentEmbeddingsJob;
 use Illuminate\Support\Facades\Bus;
 use Tests\Factories\ProductFactory;
 

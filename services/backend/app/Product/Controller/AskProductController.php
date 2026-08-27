@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-namespace App\Ai\Controller;
+namespace App\Product\Controller;
 
-use App\Ai\ProductAttachments\ProductAttachmentEmbedderInterface;
+use App\Ai\AttachmentEmbeddingsGeneration\Embedder\ProductAttachmentEmbedderInterface;
 use App\Http\Controllers\Controller;
 use App\Models\Product;
 use App\Models\ProductAttachmentChunk;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Ai\ProductAttachments;
+namespace App\Ai\AttachmentEmbeddingsGeneration\Embedder;
 
 interface ProductAttachmentEmbedderInterface
 {

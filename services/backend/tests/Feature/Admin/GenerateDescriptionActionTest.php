@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use App\Ai\Jobs\GenerateProductDescriptionJob;
+use App\Ai\DescriptionGeneration\Job\GenerateProductDescriptionJob;
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\Pages\ViewProduct;
 use Illuminate\Support\Facades\Queue;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Ai\Jobs\GenerateAttachmentEmbeddingsJob;
+use App\Ai\AttachmentEmbeddingsGeneration\Job\GenerateAttachmentEmbeddingsJob;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,7 +18,6 @@ class ProductAttachment extends Model
 
     protected static function booted(): void
     {
-        // Only PDFs go through the embedding pipeline (see GenerateAttachmentEmbeddingsJob).
         static::created(function (ProductAttachment $attachment): void {
             if (Str::endsWith(Str::lower($attachment->path), '.pdf')) {
                 GenerateAttachmentEmbeddingsJob::dispatch($attachment->id);

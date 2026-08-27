@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use App\Ai\Controller\AskProductController;
 use App\Auth\Jwt\Controller\AuthController;
 use App\BlogPost\Controller\BlogPostController;
 use App\Category\Controller\CategoryController;
 use App\Http\Middleware\SetLocaleFromHeader;
+use App\Product\Controller\AskProductController;
 use App\Product\Controller\ProductController;
 use Illuminate\Support\Facades\Route;
 

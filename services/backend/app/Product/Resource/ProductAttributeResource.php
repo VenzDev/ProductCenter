@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace App\Product\Resource;
 
-use App\Enums\AttributeType;
-use App\Models\Attribute;
 use App\Product\ObjectValue\ProductAttributeValue;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -24,44 +22,13 @@ class ProductAttributeResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $attribute = $this->attribute;
-        $value = $this->value;
-
-        if ($attribute?->type === AttributeType::TextTranslatable && is_array($value)) {
-            $value = self::translatedText($value);
-        }
+        $locale = app()->getLocale();
 
         return [
             'key' => $this->key,
-            'name' => $attribute !== null ? $attribute->name : $this->key,
-            'value' => $value,
-            'value_label' => self::valueLabel($attribute, $value),
+            'name' => $this->resolvedName($locale),
+            'value' => $this->resolvedValue($locale),
+            'value_label' => $this->resolvedValueLabel($locale),
         ];
-    }
-
-    private static function valueLabel(?Attribute $attribute, mixed $value): mixed
-    {
-        if (! $attribute?->type->hasOptions()) {
-            return $value;
-        }
-
-        $options = $attribute->translatedOptions();
-
-        if (is_array($value)) {
-            return collect($value)->map(fn ($option) => $options[$option] ?? $option)->all();
-        }
-
-        return $options[$value] ?? $value;
-    }
-
-    /**
-     * @param  array<string, string|null>  $value
-     */
-    private static function translatedText(array $value): ?string
-    {
-        $locale = app()->getLocale();
-        $fallback = config('app.fallback_locale');
-
-        return $value[$locale] ?? $value[$fallback] ?? null;
     }
 }
