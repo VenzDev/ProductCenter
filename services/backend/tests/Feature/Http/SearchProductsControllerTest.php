@@ -2,10 +2,19 @@
 
 declare(strict_types=1);
 
+use App\Images\Jobs\RelocateUploadedImageJob;
 use App\Models\Category;
 use App\Models\Product;
+use Illuminate\Support\Facades\Bus;
 use OpenSearch\Client;
 use Tests\Factories\ProductFactory;
+
+beforeEach(function () {
+    // ProductFactory sets main_image, which makes ProductImageObserver dispatch a
+    // real S3 relocation job (QUEUE_CONNECTION is sync) — irrelevant to search and
+    // not available outside the local docker-compose stack (e.g. on CI).
+    Bus::fake([RelocateUploadedImageJob::class]);
+});
 
 afterEach(function () {
     app(Client::class)->indices()->delete(['index' => 'products', 'client' => ['ignore' => [404]]]);
