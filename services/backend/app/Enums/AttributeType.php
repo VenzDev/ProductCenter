@@ -8,6 +8,7 @@ enum AttributeType: string
 {
     case Number = 'number';
     case Text = 'text';
+    case TextTranslatable = 'text_translatable';
     case Select = 'select';
     case MultiSelect = 'multiselect';
 
@@ -16,6 +17,7 @@ enum AttributeType: string
         return match ($this) {
             self::Number => 'Number',
             self::Text => 'Text',
+            self::TextTranslatable => 'Text (translatable)',
             self::Select => 'Select',
             self::MultiSelect => 'Multi-select',
         };
@@ -24,5 +26,10 @@ enum AttributeType: string
     public function hasOptions(): bool
     {
         return $this === self::Select || $this === self::MultiSelect;
+    }
+
+    public function isTranslatable(): bool
+    {
+        return $this === self::TextTranslatable;
     }
 }

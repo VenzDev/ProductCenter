@@ -6,8 +6,8 @@ namespace App\Filament\Resources\Attributes\Schemas;
 
 use App\Enums\AttributeType;
 use App\Enums\Language;
+use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
@@ -40,8 +40,27 @@ class AttributeForm
                     ))
                     ->required()
                     ->live(),
-                TagsInput::make('options')
-                    ->helperText('The selectable values for this attribute.')
+                Repeater::make('options')
+                    ->columnSpanFull()
+                    ->helperText('The selectable values for this attribute, translated per language.')
+                    ->schema([
+                        TextInput::make('key')
+                            ->required()
+                            ->alphaDash(),
+                        ...collect(Language::cases())->map(
+                            fn (Language $language) => TextInput::make("name.{$language->value}")
+                                ->label($language->label())
+                                ->required($language->isFallback())
+                        )->all(),
+                    ])
+                    ->columns([
+                        'default' => 2,
+                        'md' => 3,
+                        'xl' => 1 + count(Language::cases()),
+                    ])
+                    ->addActionLabel('Add option')
+                    ->reorderable(false)
+                    ->defaultItems(0)
                     ->visible(fn (Get $get) => AttributeType::tryFrom($get('type') ?? '')?->hasOptions())
                     ->required(fn (Get $get) => AttributeType::tryFrom($get('type') ?? '')?->hasOptions()),
             ]);

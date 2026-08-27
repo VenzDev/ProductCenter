@@ -14,7 +14,7 @@ use Spatie\Translatable\HasTranslations;
 /**
  * @property-read string $name
  * @property AttributeType $type
- * @property array<int, string>|null $options
+ * @property array<int, array{key: string, name: array<string, string>}>|null $options
  */
 #[Fillable(['key', 'name', 'type', 'options'])]
 #[Translatable(['name'])]
@@ -39,5 +39,23 @@ class Attribute extends Model
     public function categories(): BelongsToMany
     {
         return $this->belongsToMany(Category::class);
+    }
+
+    /**
+     * Resolves each option's translated name to the current app locale, falling back
+     * to the app's fallback locale, then the option key itself.
+     *
+     * @return array<string, string> option key => label
+     */
+    public function translatedOptions(): array
+    {
+        $locale = app()->getLocale();
+        $fallback = config('app.fallback_locale');
+
+        return collect($this->options ?? [])
+            ->mapWithKeys(fn (array $option) => [
+                $option['key'] => $option['name'][$locale] ?? $option['name'][$fallback] ?? $option['key'],
+            ])
+            ->all();
     }
 }

@@ -1,5 +1,12 @@
 import { fetchApi, fetchApiItem } from "@/api/api";
 
+export type ProductAttribute = {
+  key: string;
+  name: string;
+  value: string | number | string[] | number[];
+  value_label: string | number | string[] | number[];
+};
+
 export type Product = {
   id: number;
   category: { id: number; name: string | null };
@@ -7,6 +14,7 @@ export type Product = {
   description: string | null;
   price_cents: number;
   currency: string;
+  attributes: ProductAttribute[];
   main_image: {
     webp_url: string;
     thumbnail_webp_url: string;

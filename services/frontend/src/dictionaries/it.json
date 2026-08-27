@@ -1,0 +1,127 @@
+{
+  "common": {
+    "siteName": "Product Center",
+    "cart": "Carrello"
+  },
+  "nav": {
+    "products": "Prodotti",
+    "categories": "Categorie",
+    "blog": "Blog",
+    "openMenu": "Apri menu",
+    "productLinks": {
+      "newArrivals": {
+        "title": "Novità",
+        "description": "Articoli aggiunti di recente, aggiornati ogni settimana."
+      },
+      "bestSellers": {
+        "title": "Più venduti",
+        "description": "I prodotti più acquistati dai nostri clienti."
+      },
+      "onSale": {
+        "title": "In offerta",
+        "description": "Articoli scontati in tutto il negozio."
+      },
+      "allProducts": {
+        "title": "Tutti i prodotti",
+        "description": "Sfoglia l'intero catalogo."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "© {year} Product Center. Tutti i diritti riservati.",
+    "shop": {
+      "heading": "Negozio",
+      "products": "Prodotti",
+      "categories": "Categorie",
+      "cart": "Carrello"
+    },
+    "company": {
+      "heading": "Azienda",
+      "about": "Chi siamo",
+      "contact": "Contatti"
+    },
+    "legal": {
+      "heading": "Informazioni legali",
+      "privacy": "Informativa sulla privacy",
+      "terms": "Termini e condizioni"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "twitter": "Twitter",
+      "github": "GitHub"
+    }
+  },
+  "auth": {
+    "login": "Accedi",
+    "profile": "Profilo",
+    "logout": "Esci",
+    "genericError": "Qualcosa è andato storto.",
+    "loginForm": {
+      "title": "Accedi",
+      "subtitle": "Bentornato. Inserisci i tuoi dati per continuare.",
+      "email": "E-mail",
+      "password": "Password",
+      "submit": "Accedi",
+      "noAccount": "Non hai un account?",
+      "createAccount": "Crea account"
+    },
+    "registerForm": {
+      "title": "Crea account",
+      "subtitle": "Inserisci i tuoi dati per creare un nuovo account.",
+      "name": "Nome",
+      "email": "E-mail",
+      "password": "Password",
+      "submit": "Crea account",
+      "haveAccount": "Hai già un account?",
+      "login": "Accedi"
+    }
+  },
+  "search": {
+    "placeholder": "Cerca prodotti...",
+    "dialogTitle": "Cerca prodotti",
+    "dialogDescription": "La ricerca è per ora solo una demo — i risultati non sono ancora collegati.",
+    "noResults": "Nessun risultato trovato.",
+    "suggestionsHeading": "Suggerimenti",
+    "suggestions": ["Elettronica", "Abbigliamento", "Casa e giardino", "Novità", "Più venduti"]
+  },
+  "home": {
+    "meta": {
+      "title": "Product Center — Acquista prodotti di qualità online",
+      "description": "Scopri le novità, i più venduti e le offerte in tutto il nostro catalogo prodotti."
+    },
+    "hero": {
+      "slides": [
+        { "alt": "Moda bambini — ulteriore 50% di sconto, acquista ora" },
+        { "alt": "Saldi sui saldi — 25% di sconto su tutto, acquista ora" },
+        { "alt": "Festa della mamma — fino al 30% di sconto, acquista ora" }
+      ],
+      "goToSlide": "Vai alla slide {n}"
+    },
+    "products": {
+      "heading": "Prodotti per te",
+      "subtitle": "Alcune selezioni che pensiamo ti piaceranno."
+    },
+    "news": {
+      "heading": "Notizie",
+      "subtitle": "Aggiornamenti e storie dal team."
+    }
+  },
+  "product": {
+    "breadcrumbHome": "Home",
+    "specificationsHeading": "Specifiche",
+    "relatedHeading": "Potrebbe piacerti anche",
+    "decreaseQuantity": "Diminuisci quantità",
+    "increaseQuantity": "Aumenta quantità",
+    "addToCart": "Aggiungi al carrello"
+  },
+  "blog": {
+    "meta": {
+      "title": "Blog — Product Center",
+      "description": "Notizie, aggiornamenti e storie dal team di Product Center."
+    },
+    "heading": "Blog",
+    "subtitle": "Notizie, aggiornamenti e storie dal nostro team.",
+    "empty": "Ancora nessun articolo — torna presto a trovarci.",
+    "breadcrumbHome": "Home"
+  }
+}

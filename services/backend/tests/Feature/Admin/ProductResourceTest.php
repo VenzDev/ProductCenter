@@ -159,7 +159,10 @@ test('selecting a category on create preinitializes the attributes repeater from
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $weight = Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
-    $color = Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => ['red', 'blue']]);
+    $color = Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => [
+        ['key' => 'red', 'name' => ['en' => 'Red', 'pl' => 'Czerwony']],
+        ['key' => 'blue', 'name' => ['en' => 'Blue', 'pl' => 'Niebieski']],
+    ]]);
     $category->attributes()->sync([$weight->id, $color->id]);
     $this->actingAs($admin, 'admin');
 
@@ -191,7 +194,9 @@ test('changing the category on an existing product does not touch its saved attr
         ->fillForm(['category_id' => $otherCategory->id]);
 
     expect(array_values($component->get('data.attributes')))->toBe([
-        ['key' => 'weight_kg', 'value' => '1.2'],
+        ['key' => 'weight_kg', 'value' => '1.2', 'value_translations' => [
+            'en' => null, 'pl' => null, 'de' => null, 'fr' => null, 'it' => null,
+        ]],
     ]);
 });
 
@@ -199,7 +204,10 @@ test('an admin can create a product with a number and a select attribute value',
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
-    Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => ['red', 'blue']]);
+    Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => [
+        ['key' => 'red', 'name' => ['en' => 'Red', 'pl' => 'Czerwony']],
+        ['key' => 'blue', 'name' => ['en' => 'Blue', 'pl' => 'Niebieski']],
+    ]]);
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateProduct::class)
@@ -222,10 +230,42 @@ test('an admin can create a product with a number and a select attribute value',
         ->toBe(['color' => 'red', 'weight_kg' => 1.2]);
 });
 
+test('a non-translatable attribute value survives even with an empty value_translations row', function () {
+    // Regression test: the 'value_translations' Grid's fields are individually
+    // dehydrated(false) for a non-translatable attribute, but Filament still leaves an
+    // empty 'value_translations' array on the row — not null. A row must still save its
+    // 'value' in that case, rather than a `$row['value_translations'] ?? $row['value']`
+    // style fallback silently picking the empty array over the real value.
+    $admin = Admin::factory()->create();
+    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+    Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
+    $this->actingAs($admin, 'admin');
+
+    Livewire::test(CreateProduct::class)
+        ->fillForm([
+            'category_id' => $category->id,
+            'name.en' => 'Widget',
+            'price_cents' => 1999,
+            'currency' => 'PLN',
+            'attributes' => [
+                ['key' => 'weight_kg', 'value' => '1.2', 'value_translations' => []],
+            ],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $product = Product::first();
+    expect($product->attributes)->toBe(['weight_kg' => 1.2]);
+});
+
 test('an admin can create a product with a multiselect attribute value', function () {
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    Attribute::create(['key' => 'materials', 'name' => 'Materials', 'type' => AttributeType::MultiSelect, 'options' => ['wood', 'metal', 'plastic']]);
+    Attribute::create(['key' => 'materials', 'name' => 'Materials', 'type' => AttributeType::MultiSelect, 'options' => [
+        ['key' => 'wood', 'name' => ['en' => 'Wood', 'pl' => 'Drewno']],
+        ['key' => 'metal', 'name' => ['en' => 'Metal', 'pl' => 'Metal']],
+        ['key' => 'plastic', 'name' => ['en' => 'Plastic', 'pl' => 'Plastik']],
+    ]]);
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateProduct::class)
@@ -243,6 +283,31 @@ test('an admin can create a product with a multiselect attribute value', functio
 
     $product = Product::first();
     expect($product->attributes)->toBe(['materials' => ['wood', 'metal']]);
+});
+
+test('an admin can create a product with a translatable text attribute value', function () {
+    $admin = Admin::factory()->create();
+    $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
+    Attribute::create(['key' => 'material', 'name' => 'Material', 'type' => AttributeType::TextTranslatable]);
+    $this->actingAs($admin, 'admin');
+
+    Livewire::test(CreateProduct::class)
+        ->fillForm([
+            'category_id' => $category->id,
+            'name.en' => 'Widget',
+            'price_cents' => 1999,
+            'currency' => 'PLN',
+            'attributes' => [
+                ['key' => 'material', 'value_translations' => ['en' => 'Cotton', 'pl' => 'Bawełna']],
+            ],
+        ])
+        ->call('create')
+        ->assertHasNoFormErrors();
+
+    $product = Product::first();
+    expect($product->attributes)->toBe([
+        'material' => ['de' => null, 'en' => 'Cotton', 'fr' => null, 'it' => null, 'pl' => 'Bawełna'],
+    ]);
 });
 
 test('an admin can remove an attribute row before creating a product', function () {
@@ -280,6 +345,8 @@ test('editing a product pre-fills the attributes repeater from its saved values'
     $component = Livewire::test(EditProduct::class, ['record' => $product->getRouteKey()]);
 
     expect(array_values($component->get('data.attributes')))->toBe([
-        ['key' => 'weight_kg', 'value' => '1.2'],
+        ['key' => 'weight_kg', 'value' => '1.2', 'value_translations' => [
+            'en' => null, 'pl' => null, 'de' => null, 'fr' => null, 'it' => null,
+        ]],
     ]);
 });

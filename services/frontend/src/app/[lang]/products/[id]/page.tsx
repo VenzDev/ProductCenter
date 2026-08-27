@@ -101,6 +101,25 @@ export default async function ProductPage({
             {product.description && (
               <p className="text-muted-foreground">{product.description}</p>
             )}
+            {product.attributes.length > 0 && (
+              <div>
+                <h2 className="text-sm font-medium text-muted-foreground">
+                  {dict.product.specificationsHeading}
+                </h2>
+                <dl className="mt-2 grid grid-cols-[auto_1fr] gap-x-4 gap-y-1 text-sm">
+                  {product.attributes.map((attribute) => (
+                    <div key={attribute.key} className="contents">
+                      <dt className="text-muted-foreground">{attribute.name}</dt>
+                      <dd>
+                        {Array.isArray(attribute.value_label)
+                          ? attribute.value_label.join(", ")
+                          : attribute.value_label}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </div>
+            )}
             <div className="mt-2 border-t pt-4">
               <QuantityAddToCart dict={dict.product} />
             </div>

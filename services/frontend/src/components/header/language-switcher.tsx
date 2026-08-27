@@ -18,6 +18,9 @@ import { locales, localizedHref, type Locale } from "@/i18n/config";
 const LOCALE_LABELS: Record<Locale, string> = {
   en: "English",
   pl: "Polski",
+  de: "Deutsch",
+  fr: "Français",
+  it: "Italiano",
 };
 
 export function LanguageSwitcher() {

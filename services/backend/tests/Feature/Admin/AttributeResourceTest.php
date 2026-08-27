@@ -54,7 +54,7 @@ test('a select attribute requires its options', function () {
         ->assertHasFormErrors(['options']);
 });
 
-test('an admin can create a select attribute with options', function () {
+test('an admin can create a select attribute with translated options', function () {
     $admin = Admin::factory()->create();
     $this->actingAs($admin, 'admin');
 
@@ -63,13 +63,19 @@ test('an admin can create a select attribute with options', function () {
             'key' => 'color',
             'name.en' => 'Color',
             'type' => AttributeType::Select->value,
-            'options' => ['red', 'blue'],
+            'options' => [
+                ['key' => 'red', 'name' => ['en' => 'Red', 'pl' => 'Czerwony']],
+                ['key' => 'blue', 'name' => ['en' => 'Blue', 'pl' => 'Niebieski']],
+            ],
         ])
         ->call('create')
         ->assertHasNoFormErrors();
 
     $attribute = Attribute::where('key', 'color')->first();
-    expect($attribute->options)->toBe(['red', 'blue']);
+    expect($attribute->options)->toBe([
+        ['key' => 'red', 'name' => ['de' => null, 'en' => 'Red', 'fr' => null, 'it' => null, 'pl' => 'Czerwony']],
+        ['key' => 'blue', 'name' => ['de' => null, 'en' => 'Blue', 'fr' => null, 'it' => null, 'pl' => 'Niebieski']],
+    ]);
 });
 
 test('a multiselect attribute requires its options', function () {
@@ -87,7 +93,7 @@ test('a multiselect attribute requires its options', function () {
         ->assertHasFormErrors(['options']);
 });
 
-test('an admin can create a multiselect attribute with options', function () {
+test('an admin can create a multiselect attribute with translated options', function () {
     $admin = Admin::factory()->create();
     $this->actingAs($admin, 'admin');
 
@@ -96,14 +102,20 @@ test('an admin can create a multiselect attribute with options', function () {
             'key' => 'materials',
             'name.en' => 'Materials',
             'type' => AttributeType::MultiSelect->value,
-            'options' => ['wood', 'metal'],
+            'options' => [
+                ['key' => 'wood', 'name' => ['en' => 'Wood', 'pl' => 'Drewno']],
+                ['key' => 'metal', 'name' => ['en' => 'Metal', 'pl' => 'Metal']],
+            ],
         ])
         ->call('create')
         ->assertHasNoFormErrors();
 
     $attribute = Attribute::where('key', 'materials')->first();
     expect($attribute->type)->toBe(AttributeType::MultiSelect);
-    expect($attribute->options)->toBe(['wood', 'metal']);
+    expect($attribute->options)->toBe([
+        ['key' => 'wood', 'name' => ['de' => null, 'en' => 'Wood', 'fr' => null, 'it' => null, 'pl' => 'Drewno']],
+        ['key' => 'metal', 'name' => ['de' => null, 'en' => 'Metal', 'fr' => null, 'it' => null, 'pl' => 'Metal']],
+    ]);
 });
 
 test('an admin can update an attribute', function () {

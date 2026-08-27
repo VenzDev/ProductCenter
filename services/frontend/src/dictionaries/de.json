@@ -1,0 +1,127 @@
+{
+  "common": {
+    "siteName": "Product Center",
+    "cart": "Warenkorb"
+  },
+  "nav": {
+    "products": "Produkte",
+    "categories": "Kategorien",
+    "blog": "Blog",
+    "openMenu": "Menü öffnen",
+    "productLinks": {
+      "newArrivals": {
+        "title": "Neuheiten",
+        "description": "Frisch hinzugefügte Artikel, jede Woche aktualisiert."
+      },
+      "bestSellers": {
+        "title": "Bestseller",
+        "description": "Die Produkte, die unsere Kunden am häufigsten kaufen."
+      },
+      "onSale": {
+        "title": "Im Angebot",
+        "description": "Reduzierte Artikel im gesamten Shop."
+      },
+      "allProducts": {
+        "title": "Alle Produkte",
+        "description": "Den gesamten Katalog durchsuchen."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "© {year} Product Center. Alle Rechte vorbehalten.",
+    "shop": {
+      "heading": "Shop",
+      "products": "Produkte",
+      "categories": "Kategorien",
+      "cart": "Warenkorb"
+    },
+    "company": {
+      "heading": "Unternehmen",
+      "about": "Über uns",
+      "contact": "Kontakt"
+    },
+    "legal": {
+      "heading": "Rechtliches",
+      "privacy": "Datenschutzerklärung",
+      "terms": "AGB"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "twitter": "Twitter",
+      "github": "GitHub"
+    }
+  },
+  "auth": {
+    "login": "Anmelden",
+    "profile": "Profil",
+    "logout": "Abmelden",
+    "genericError": "Etwas ist schiefgelaufen.",
+    "loginForm": {
+      "title": "Anmelden",
+      "subtitle": "Willkommen zurück. Gib deine Daten ein, um fortzufahren.",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Anmelden",
+      "noAccount": "Noch kein Konto?",
+      "createAccount": "Konto erstellen"
+    },
+    "registerForm": {
+      "title": "Konto erstellen",
+      "subtitle": "Gib deine Daten ein, um ein neues Konto zu erstellen.",
+      "name": "Name",
+      "email": "E-Mail",
+      "password": "Passwort",
+      "submit": "Konto erstellen",
+      "haveAccount": "Du hast bereits ein Konto?",
+      "login": "Anmelden"
+    }
+  },
+  "search": {
+    "placeholder": "Produkte suchen...",
+    "dialogTitle": "Produkte suchen",
+    "dialogDescription": "Die Suche ist derzeit nur ein Mockup — es sind noch keine Ergebnisse angebunden.",
+    "noResults": "Keine Ergebnisse gefunden.",
+    "suggestionsHeading": "Vorschläge",
+    "suggestions": ["Elektronik", "Kleidung", "Haus & Garten", "Neuheiten", "Bestseller"]
+  },
+  "home": {
+    "meta": {
+      "title": "Product Center — Hochwertige Produkte online kaufen",
+      "description": "Entdecke Neuheiten, Bestseller und Angebote in unserem gesamten Produktkatalog."
+    },
+    "hero": {
+      "slides": [
+        { "alt": "Kindermode — zusätzlich 50% Rabatt, jetzt einkaufen" },
+        { "alt": "Sale im Sale — 25% Rabatt auf alles, jetzt einkaufen" },
+        { "alt": "Muttertagsangebot — bis zu 30% Rabatt, jetzt einkaufen" }
+      ],
+      "goToSlide": "Zu Folie {n} wechseln"
+    },
+    "products": {
+      "heading": "Produkte für dich",
+      "subtitle": "Ein paar Empfehlungen, die dir gefallen könnten."
+    },
+    "news": {
+      "heading": "Neuigkeiten",
+      "subtitle": "Updates und Geschichten aus dem Team."
+    }
+  },
+  "product": {
+    "breadcrumbHome": "Startseite",
+    "specificationsHeading": "Spezifikationen",
+    "relatedHeading": "Das könnte dir auch gefallen",
+    "decreaseQuantity": "Menge verringern",
+    "increaseQuantity": "Menge erhöhen",
+    "addToCart": "In den Warenkorb"
+  },
+  "blog": {
+    "meta": {
+      "title": "Blog — Product Center",
+      "description": "Neuigkeiten, Updates und Geschichten vom Product-Center-Team."
+    },
+    "heading": "Blog",
+    "subtitle": "Neuigkeiten, Updates und Geschichten von unserem Team.",
+    "empty": "Noch keine Beiträge — schau bald wieder vorbei.",
+    "breadcrumbHome": "Startseite"
+  }
+}

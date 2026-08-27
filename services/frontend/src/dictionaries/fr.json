@@ -1,0 +1,127 @@
+{
+  "common": {
+    "siteName": "Product Center",
+    "cart": "Panier"
+  },
+  "nav": {
+    "products": "Produits",
+    "categories": "Catégories",
+    "blog": "Blog",
+    "openMenu": "Ouvrir le menu",
+    "productLinks": {
+      "newArrivals": {
+        "title": "Nouveautés",
+        "description": "Articles récemment ajoutés, mis à jour chaque semaine."
+      },
+      "bestSellers": {
+        "title": "Meilleures ventes",
+        "description": "Les produits les plus achetés par nos clients."
+      },
+      "onSale": {
+        "title": "En promotion",
+        "description": "Articles à prix réduit dans tout le magasin."
+      },
+      "allProducts": {
+        "title": "Tous les produits",
+        "description": "Parcourir tout le catalogue."
+      }
+    }
+  },
+  "footer": {
+    "tagline": "© {year} Product Center. Tous droits réservés.",
+    "shop": {
+      "heading": "Boutique",
+      "products": "Produits",
+      "categories": "Catégories",
+      "cart": "Panier"
+    },
+    "company": {
+      "heading": "Entreprise",
+      "about": "À propos",
+      "contact": "Contact"
+    },
+    "legal": {
+      "heading": "Mentions légales",
+      "privacy": "Politique de confidentialité",
+      "terms": "Conditions générales"
+    },
+    "social": {
+      "instagram": "Instagram",
+      "twitter": "Twitter",
+      "github": "GitHub"
+    }
+  },
+  "auth": {
+    "login": "Connexion",
+    "profile": "Profil",
+    "logout": "Déconnexion",
+    "genericError": "Une erreur est survenue.",
+    "loginForm": {
+      "title": "Se connecter",
+      "subtitle": "Content de vous revoir. Entrez vos informations pour continuer.",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "submit": "Se connecter",
+      "noAccount": "Vous n'avez pas de compte ?",
+      "createAccount": "Créer un compte"
+    },
+    "registerForm": {
+      "title": "Créer un compte",
+      "subtitle": "Renseignez vos informations pour créer un nouveau compte.",
+      "name": "Nom",
+      "email": "E-mail",
+      "password": "Mot de passe",
+      "submit": "Créer un compte",
+      "haveAccount": "Vous avez déjà un compte ?",
+      "login": "Se connecter"
+    }
+  },
+  "search": {
+    "placeholder": "Rechercher des produits...",
+    "dialogTitle": "Rechercher des produits",
+    "dialogDescription": "La recherche est pour l'instant une maquette — aucun résultat n'est encore connecté.",
+    "noResults": "Aucun résultat trouvé.",
+    "suggestionsHeading": "Suggestions",
+    "suggestions": ["Électronique", "Vêtements", "Maison & Jardin", "Nouveautés", "Meilleures ventes"]
+  },
+  "home": {
+    "meta": {
+      "title": "Product Center — Achetez des produits de qualité en ligne",
+      "description": "Découvrez les nouveautés, les meilleures ventes et les offres de tout notre catalogue de produits."
+    },
+    "hero": {
+      "slides": [
+        { "alt": "Mode enfant — 50% de réduction supplémentaire, achetez maintenant" },
+        { "alt": "Soldes sur les soldes — 25% de réduction sur tout, achetez maintenant" },
+        { "alt": "Fête des Mères — jusqu'à 30% de réduction, achetez maintenant" }
+      ],
+      "goToSlide": "Aller à la diapositive {n}"
+    },
+    "products": {
+      "heading": "Des produits pour vous",
+      "subtitle": "Quelques sélections qui devraient vous plaire."
+    },
+    "news": {
+      "heading": "Actualités",
+      "subtitle": "Mises à jour et actualités de l'équipe."
+    }
+  },
+  "product": {
+    "breadcrumbHome": "Accueil",
+    "specificationsHeading": "Caractéristiques",
+    "relatedHeading": "Vous pourriez aussi aimer",
+    "decreaseQuantity": "Diminuer la quantité",
+    "increaseQuantity": "Augmenter la quantité",
+    "addToCart": "Ajouter au panier"
+  },
+  "blog": {
+    "meta": {
+      "title": "Blog — Product Center",
+      "description": "Actualités, mises à jour et histoires de l'équipe Product Center."
+    },
+    "heading": "Blog",
+    "subtitle": "Actualités, mises à jour et histoires de notre équipe.",
+    "empty": "Pas encore d'articles — revenez bientôt.",
+    "breadcrumbHome": "Accueil"
+  }
+}

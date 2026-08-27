@@ -90,7 +90,9 @@ test('editing a category from the tree page pre-fills the name for each locale',
 
     Livewire::test(CategoryTree::class)
         ->call('mountTreeAction', 'edit', (string) $category->getKey())
-        ->assertSchemaStateSet(['name' => ['en' => 'Electronics', 'pl' => 'Elektronika']]);
+        ->assertSchemaStateSet(['name' => [
+            'en' => 'Electronics', 'pl' => 'Elektronika', 'de' => null, 'fr' => null, 'it' => null,
+        ]]);
 });
 
 test('an admin can update a category name per locale from the tree page', function () {
@@ -115,7 +117,10 @@ test('an admin can assign attributes to a category from the tree page', function
     $admin = Admin::factory()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $weight = Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
-    $color = Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => ['red', 'blue']]);
+    $color = Attribute::create(['key' => 'color', 'name' => 'Color', 'type' => AttributeType::Select, 'options' => [
+        ['key' => 'red', 'name' => ['en' => 'Red', 'pl' => 'Czerwony']],
+        ['key' => 'blue', 'name' => ['en' => 'Blue', 'pl' => 'Niebieski']],
+    ]]);
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CategoryTree::class)
