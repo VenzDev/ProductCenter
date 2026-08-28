@@ -20,6 +20,29 @@ export async function fetchApi<T>(path: string): Promise<T[]> {
   }
 }
 
+export type PaginatedResponse<T, F> = {
+  data: T[];
+  meta: { current_page: number; last_page: number; total: number };
+  filters: F;
+};
+
+// Unlike fetchApi/fetchApiItem, keeps `meta`/`filters` alongside `data` — needed by any
+// endpoint that paginates and returns facets (category browsing, product search).
+export async function fetchApiPaginated<T, F>(
+  path: string,
+): Promise<PaginatedResponse<T, F> | null> {
+  try {
+    const response = await fetch(`${BASE_URL}${path}`, {
+      headers: await localeHeaders(),
+    });
+    if (!response.ok) return null;
+
+    return (await response.json()) as PaginatedResponse<T, F>;
+  } catch {
+    return null;
+  }
+}
+
 export async function fetchApiItem<T>(path: string): Promise<T | null> {
   try {
     const response = await fetch(`${BASE_URL}${path}`, {

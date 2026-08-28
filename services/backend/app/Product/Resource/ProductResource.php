@@ -7,8 +7,6 @@ namespace App\Product\Resource;
 use App\Images\Support\ImageUrlResolver;
 use App\Models\Product;
 use App\Models\ProductImage;
-use App\Product\ObjectValue\ProductAttributeValue;
-use App\Product\Support\AttributeDefinitions;
 use App\Product\Support\ProductImageGalleryPaths;
 use App\Product\Support\ProductImagePaths;
 use Illuminate\Http\Request;
@@ -50,15 +48,6 @@ class ProductResource extends JsonResource
      */
     private function resolveAttributes(Request $request): array
     {
-        $definitions = AttributeDefinitions::all();
-
-        /** @var array<string, mixed> $rawAttributes */
-        $rawAttributes = $this->attributes ?? [];
-
-        $values = collect($rawAttributes)
-            ->map(fn (mixed $value, string $key) => new ProductAttributeValue($key, $value, $definitions->get($key)))
-            ->values();
-
-        return ProductAttributeResource::collection($values)->resolve($request);
+        return ProductAttributeResource::collection($this->getAttributeCollection()->get())->resolve($request);
     }
 }

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Auth\Jwt\Controller\AuthController;
 use App\BlogPost\Controller\BlogPostController;
 use App\Category\Controller\CategoryController;
+use App\Category\Controller\CategoryProductsController;
 use App\Http\Middleware\SetLocaleFromHeader;
 use App\Product\Controller\AskProductController;
 use App\Product\Controller\ProductController;
@@ -23,6 +24,8 @@ Route::prefix('v1')->name('v1.')->middleware(SetLocaleFromHeader::class)->group(
 
     Route::get('/categories', [CategoryController::class, 'index']);
     Route::get('/categories/{category}', [CategoryController::class, 'show']);
+    Route::get('/categories/{category:slug}/products', [CategoryProductsController::class, 'index'])
+        ->where('category', '.*');
 
     Route::get('/blog-posts', [BlogPostController::class, 'index']);
     Route::get('/blog-posts/{blogPost:slug}', [BlogPostController::class, 'show']);

@@ -79,10 +79,32 @@
   "search": {
     "placeholder": "Szukaj produktów...",
     "dialogTitle": "Szukaj produktów",
-    "dialogDescription": "Wyszukiwanie to na razie makieta — wyniki nie są jeszcze podłączone.",
+    "dialogDescription": "Szukaj produktów w całym katalogu.",
     "noResults": "Brak wyników.",
     "suggestionsHeading": "Sugestie",
-    "suggestions": ["Elektronika", "Odzież", "Dom i ogród", "Nowości", "Bestsellery"]
+    "suggestions": ["Elektronika", "Odzież", "Dom i ogród", "Nowości", "Bestsellery"],
+    "searchFor": "Szukaj \"{query}\"",
+    "heading": "Wyniki wyszukiwania dla \"{query}\"",
+    "promptHeading": "Wyszukaj produkty",
+    "promptSubtitle": "Wpisz coś w polu wyszukiwania, aby zacząć."
+  },
+  "catalog": {
+    "breadcrumbHome": "Strona główna",
+    "filtersHeading": "Filtry",
+    "priceHeading": "Cena",
+    "priceMinPlaceholder": "Od",
+    "priceMaxPlaceholder": "Do",
+    "applyPrice": "Zastosuj",
+    "clearFilters": "Wyczyść filtry",
+    "sortHeading": "Sortuj według",
+    "sortRelevance": "Trafność",
+    "sortPriceAsc": "Cena: od najniższej",
+    "sortPriceDesc": "Cena: od najwyższej",
+    "categoriesHeading": "Kategorie",
+    "subcategoriesHeading": "Podkategorie",
+    "previous": "Poprzednia",
+    "next": "Następna",
+    "empty": "Żaden produkt nie pasuje do wybranych filtrów."
   },
   "home": {
     "meta": {

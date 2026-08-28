@@ -7,6 +7,7 @@ namespace App\Filament\Resources\Attributes\Tables;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
+use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 
@@ -22,6 +23,8 @@ class AttributesTable
                     ->searchable(),
                 TextColumn::make('type')
                     ->badge(),
+                IconColumn::make('filterable')
+                    ->boolean(),
                 TextColumn::make('created_at')
                     ->dateTime()
                     ->sortable()

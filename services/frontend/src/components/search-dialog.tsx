@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { SearchIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -13,6 +14,7 @@ import {
   CommandItem,
   CommandList,
 } from "@/components/ui/command";
+import { localizedHref } from "@/i18n/config";
 
 type SearchDialogDict = {
   placeholder: string;
@@ -21,21 +23,39 @@ type SearchDialogDict = {
   noResults: string;
   suggestionsHeading: string;
   suggestions: string[];
+  searchFor: string;
 };
 
-export function SearchDialog({ dict }: { dict: SearchDialogDict }) {
+export function SearchDialog({
+  dict,
+  locale,
+}: {
+  dict: SearchDialogDict;
+  locale: string;
+}) {
   const [open, setOpen] = useState(false);
+  const [value, setValue] = useState("");
+  const router = useRouter();
 
   useEffect(() => {
     function onKeyDown(event: KeyboardEvent) {
       if (event.key === "k" && (event.metaKey || event.ctrlKey)) {
         event.preventDefault();
-        setOpen((value) => !value);
+        setOpen((current) => !current);
       }
     }
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
   }, []);
+
+  function runSearch(query: string) {
+    const trimmed = query.trim();
+    if (!trimmed) return;
+
+    setOpen(false);
+    setValue("");
+    router.push(`${localizedHref(locale, "/search")}?q=${encodeURIComponent(trimmed)}`);
+  }
 
   return (
     <>
@@ -57,12 +77,23 @@ export function SearchDialog({ dict }: { dict: SearchDialogDict }) {
         description={dict.dialogDescription}
       >
         <Command>
-          <CommandInput placeholder={dict.placeholder} />
+          <CommandInput
+            placeholder={dict.placeholder}
+            value={value}
+            onValueChange={setValue}
+          />
           <CommandList>
             <CommandEmpty>{dict.noResults}</CommandEmpty>
+            {value.trim() && (
+              <CommandGroup>
+                <CommandItem onSelect={() => runSearch(value)}>
+                  {dict.searchFor.replace("{query}", value.trim())}
+                </CommandItem>
+              </CommandGroup>
+            )}
             <CommandGroup heading={dict.suggestionsHeading}>
               {dict.suggestions.map((item) => (
-                <CommandItem key={item} onSelect={() => setOpen(false)}>
+                <CommandItem key={item} onSelect={() => runSearch(item)}>
                   {item}
                 </CommandItem>
               ))}

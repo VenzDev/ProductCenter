@@ -27,7 +27,7 @@ export async function Header() {
         </Link>
         <DesktopNav categories={categories} />
         <div className="ml-auto flex items-center gap-2">
-          <SearchDialog dict={dict.search} />
+          <SearchDialog dict={dict.search} locale={locale} />
           <Button
             variant="ghost"
             size="icon"

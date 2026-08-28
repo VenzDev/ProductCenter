@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Console\Commands;
 
 use App\Models\Product;
-use App\Product\Search\ProductSearchIndexer;
+use App\Product\Search\Index\ProductSearchIndexer;
 use Illuminate\Console\Command;
 
 class ReindexProducts extends Command

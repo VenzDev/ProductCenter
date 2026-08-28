@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Product\Collection\ProductAttributeCollection;
 use App\Product\Observers\ProductImageObserver;
 use App\Product\Observers\ProductSearchObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
@@ -61,5 +62,10 @@ class Product extends Model
     public function images(): HasMany
     {
         return $this->hasMany(ProductImage::class)->orderBy('order');
+    }
+
+    public function getAttributeCollection(): ProductAttributeCollection
+    {
+        return new ProductAttributeCollection($this->getAttribute('attributes') ?? []);
     }
 }

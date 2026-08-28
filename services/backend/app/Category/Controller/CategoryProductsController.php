@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-namespace App\Product\Controller;
+namespace App\Category\Controller;
 
 use App\Http\Controllers\Controller;
 use App\Models\Attribute;
 use App\Models\Category;
-use App\Product\Request\SearchProductsRequest;
+use App\Product\Request\ListCategoryProductsRequest;
 use App\Product\Resource\ProductResource;
 use App\Product\Search\Formatter\AttributeFacetFormatter;
-use App\Product\Search\Formatter\CategoryFacetFormatter;
+use App\Product\Search\Formatter\SubcategoryFacetFormatter;
 use App\Product\Search\Hydrator\ProductHydrator;
 use App\Product\Search\Search\ProductFilterSearcher;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
 use Illuminate\Pagination\LengthAwarePaginator;
 
-class SearchProductsController extends Controller
+class CategoryProductsController extends Controller
 {
     private const int PER_PAGE = 15;
 
@@ -26,27 +26,22 @@ class SearchProductsController extends Controller
     ) {}
 
     /**
-     * Full-text product search, optionally narrowed to one category. The categories
-     * matched by `q` (with counts) are always returned under `filters.categories` — mirrors
-     * a typical storefront search page, which lists matching categories alongside results
-     * before the user picks one. Attribute filter options only appear once `category_id`
-     * narrows the search, since attribute sets are per-category and aren't comparable
-     * across a broad, multi-category result set.
+     * List a category's products — including its subcategories' products, if it has any —
+     * filtered by price range and/or attribute values, with the available filter options
+     * (and their counts) returned alongside under `filters`. `filters.subcategories` lists
+     * each direct subcategory with its own product count — reflecting any active price or
+     * attribute filters, same as the other facets — so a category page can offer further
+     * drill-down.
      *
-     * Query params: `q` (required), `category_id`, `price_min`, `price_max`,
-     * `attr[<key>][]=<value>` (repeatable per attribute, only applied once `category_id`
-     * is set), `sort` (relevance, the default, price_asc, or price_desc), `page`.
+     * Query params: `price_min`, `price_max`, `attr[<key>][]=<value>` (repeatable per
+     * attribute), `sort` (price_asc, the default, or price_desc), `page`.
      */
-    public function __invoke(SearchProductsRequest $request): AnonymousResourceCollection
+    public function index(ListCategoryProductsRequest $request, Category $category): AnonymousResourceCollection
     {
         $data = $request->validated();
 
-        $category = isset($data['category_id']) ? Category::find((int) $data['category_id']) : null;
-        $categoryIds = $category?->selfAndChildIds() ?? [];
-
-        $filterableAttributes = $category !== null
-            ? Attribute::filterableForCategories($categoryIds)
-            : collect();
+        $categoryIds = $category->selfAndChildIds();
+        $filterableAttributes = Attribute::filterableForCategories($categoryIds);
 
         /** @var list<string> $filterableKeys */
         $filterableKeys = $filterableAttributes->pluck('key')->values()->all();
@@ -59,13 +54,13 @@ class SearchProductsController extends Controller
         $from = ($page - 1) * self::PER_PAGE;
 
         $result = $this->searcher->search(
-            query: $data['q'],
+            query: null,
             categoryIds: $categoryIds,
             filterableAttributeKeys: $filterableKeys,
             selectedAttributeFilters: $selectedAttributeFilters,
             priceMin: isset($data['price_min']) ? (int) $data['price_min'] : null,
             priceMax: isset($data['price_max']) ? (int) $data['price_max'] : null,
-            sort: $data['sort'] ?? 'relevance',
+            sort: $data['sort'] ?? 'price_asc',
             from: $from,
             size: self::PER_PAGE,
         );
@@ -82,13 +77,13 @@ class SearchProductsController extends Controller
 
         return ProductResource::collection($paginator)->additional([
             'filters' => [
-                'categories' => CategoryFacetFormatter::format($result->categoryBuckets),
                 'price' => $result->priceStats,
                 'attributes' => $filterableAttributes->map(fn (Attribute $attribute) => [
                     'key' => $attribute->key,
                     'name' => $attribute->name,
                     'options' => AttributeFacetFormatter::format($attribute, $result->attributeBuckets[$attribute->key] ?? []),
                 ])->values(),
+                'subcategories' => SubcategoryFacetFormatter::format($category->children, $result->categoryBuckets),
             ],
         ]);
     }

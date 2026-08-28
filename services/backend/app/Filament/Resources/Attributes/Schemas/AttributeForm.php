@@ -9,6 +9,7 @@ use App\Enums\Language;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Components\Utilities\Get;
@@ -40,6 +41,10 @@ class AttributeForm
                     ))
                     ->required()
                     ->live(),
+                Toggle::make('filterable')
+                    ->helperText('Whether this attribute can be used as a product listing filter.')
+                    ->visible(fn (Get $get) => AttributeType::tryFrom($get('type') ?? '')?->isFilterable())
+                    ->dehydrated(fn (Get $get) => AttributeType::tryFrom($get('type') ?? '')?->isFilterable()),
                 Repeater::make('options')
                     ->columnSpanFull()
                     ->helperText('The selectable values for this attribute, translated per language.')

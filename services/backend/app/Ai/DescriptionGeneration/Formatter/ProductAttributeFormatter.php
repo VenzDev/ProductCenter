@@ -6,23 +6,18 @@ namespace App\Ai\DescriptionGeneration\Formatter;
 
 use App\Models\Product;
 use App\Product\ObjectValue\ProductAttributeValue;
-use App\Product\Support\AttributeDefinitions;
 
 class ProductAttributeFormatter
 {
     public function format(Product $product, string $locale): string
     {
-        /** @var array<string, mixed> $rawAttributes */
-        $rawAttributes = $product->attributes ?? [];
+        $attributes = $product->getAttributeCollection()->get();
 
-        if ($rawAttributes === []) {
+        if ($attributes->isEmpty()) {
             return 'None specified.';
         }
 
-        $definitions = AttributeDefinitions::all();
-
-        return collect($rawAttributes)
-            ->map(fn (mixed $value, string $key) => new ProductAttributeValue($key, $value, $definitions->get($key)))
+        return $attributes
             ->map(fn (ProductAttributeValue $attribute) => $this->formatAttribute($attribute, $locale))
             ->implode("\n");
     }

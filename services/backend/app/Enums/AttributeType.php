@@ -32,4 +32,9 @@ enum AttributeType: string
     {
         return $this === self::TextTranslatable;
     }
+
+    public function isFilterable(): bool
+    {
+        return $this === self::Number || $this->hasOptions();
+    }
 }

@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Category\Observers\CategoryObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -18,6 +19,7 @@ use Spatie\Translatable\HasTranslations;
  * @property-read string $name
  * @property int $parent_id
  * @property int $order
+ * @property-read Collection<int, Category> $children
  */
 // parent_id/order are listed explicitly rather than relying on ModelTree's
 // initializeModelTree() auto-merge: that merge only fires if getFillable() is
@@ -51,5 +53,16 @@ class Category extends Model
     public function determineTitleColumnName(): string
     {
         return 'name';
+    }
+
+    /**
+     * @return list<int>
+     */
+    public function selfAndChildIds(): array
+    {
+        /** @var list<int> $childIds */
+        $childIds = $this->children()->pluck('id')->all();
+
+        return [(int) $this->id, ...$childIds];
     }
 }

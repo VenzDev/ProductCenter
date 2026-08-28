@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace App\Product\Search;
+namespace App\Product\Search\Index;
 
 use App\Models\Product;
 use OpenSearch\Client;
@@ -19,10 +19,11 @@ class ProductSearchIndexer
             'index' => self::INDEX,
             'id' => (string) $product->id,
             'body' => [
-                // Indexed per-locale (spatie/laravel-translatable) so a query can match
-                // either language without needing the per-language analyzer setup yet.
                 'name' => $product->getTranslations('name'),
                 'description' => $product->getTranslations('description'),
+                'category_id' => $product->category_id,
+                'price_cents' => $product->price_cents,
+                'attributes' => $product->getAttributeCollection()->filterable()->getRaw(),
             ],
         ]);
     }
