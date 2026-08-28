@@ -11,6 +11,10 @@ ingress:
   # predictable in advance the same way the S3 role ARN above is.
   certificateArn: "<TERRAFORM_OUTPUT:acm_certificate_arn>"
 env:
+  # Explicit, not relied on as Laravel's implicit default (env('APP_ENV', 'production')) —
+  # AppServiceProvider branches OpenSearch auth on this (see app()->environment() there).
+  - name: APP_ENV
+    value: production
   - name: SERVER_NAME
     value: ":80"
   - name: LOG_CHANNEL
@@ -46,6 +50,19 @@ env:
     value: redis
   - name: REDIS_PORT
     value: "6379"
+  - name: OPENSEARCH_HOST
+    value: https://opensearch:9200
+  - name: OPENSEARCH_USERNAME
+    value: admin
+  - name: OPENSEARCH_PASSWORD
+    valueFrom:
+      secretKeyRef:
+        name: opensearch-secrets
+        key: admin-password
+  - name: OPENSEARCH_SSL_VERIFY
+    # OpenSearch's security plugin auto-generates a self-signed demo cert (no external CA
+    # for cluster-internal traffic) — see infrastructure/k8s/opensearch/templates/deployment.yaml.
+    value: "false"
   - name: AWS_BUCKET
     value: "product-center-product-files"
   - name: AWS_DEFAULT_REGION

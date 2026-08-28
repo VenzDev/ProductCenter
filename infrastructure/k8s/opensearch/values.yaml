@@ -1,0 +1,10 @@
+image: 222634367938.dkr.ecr.eu-central-1.amazonaws.com/opensearch:latest
+port: 9200
+javaOpts: "-Xms512m -Xmx512m"
+resources:
+  requests:
+    cpu: 250m
+    memory: 768Mi
+  limits:
+    cpu: "1"
+    memory: 1Gi

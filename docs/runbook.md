@@ -30,6 +30,16 @@ infrastructure/k8s/redis/
   templates/
     deployment.yaml
     service.yaml
+infrastructure/k8s/opensearch/
+  Chart.yaml
+  values.yaml            # obraz (custom, z pluginem analysis-stempel — patrz services/backend/docker/opensearch),
+                          # port, java opts, resources — bez PVC, indeks odbudowywalny przez `php artisan products:reindex`.
+                          # Security plugin WŁĄCZONY (inaczej niż lokalnie/e2e) — TLS (self-signed demo cert) +
+                          # basic auth, hasło z Secret `opensearch-secrets` (krok 5a), backend loguje się tym
+                          # samym adminem (OPENSEARCH_USERNAME/PASSWORD w infrastructure/k8s/backend/values.yaml)
+  templates/
+    deployment.yaml
+    service.yaml
 infrastructure/k8s/frontend/
   Chart.yaml
   values.yaml            # obraz, port, ingress host/cert
@@ -64,6 +74,13 @@ docker build --platform linux/amd64 --target prod \
   services/<serwis>
 docker push 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest
 
+# opensearch: obraz custom (plugin analysis-stempel + słowniki synonimów), nie ma stage'y
+# dev/prod jak reszta serwisów, więc bez --target
+docker build --platform linux/amd64 \
+  -t 222634367938.dkr.ecr.eu-central-1.amazonaws.com/opensearch:latest \
+  services/backend/docker/opensearch
+docker push 222634367938.dkr.ecr.eu-central-1.amazonaws.com/opensearch:latest
+
 # 4. Wypełnij placeholder `<TERRAFORM_OUTPUT:rds_endpoint>` w infrastructure/k8s/backend/values.yaml
 #    (host RDS jest generowany przez AWS, nie da się przewidzieć przed apply — nazwa
 #    bucketu S3 i ARN roli IRSA są deterministyczne, więc są już wpisane na sztywno)
@@ -86,6 +103,14 @@ kubectl create secret generic backend-secrets \
   --from-literal=azure-tenant-id="<z Azure App Registration>" \
   --from-literal=azure-client-secret="<z Azure App Registration>" \
   --from-literal=azure-redirect-uri="https://admin.bechta.pl/auth/microsoft/callback"
+
+# 5a. Hasło admina OpenSeark — ten sam Secret czytają oba charty: opensearch (ustawia
+#     hasło na starcie, OPENSEARCH_INITIAL_ADMIN_PASSWORD) i backend (loguje się nim jako
+#     admin, OPENSEARCH_PASSWORD). OpenSearch odrzuca słabe hasła (wymaga wielkiej/małej
+#     litery, cyfry, znaku specjalnego i nie może przypominać "admin") — losowe base64
+#     zawsze przechodzi tę walidację.
+kubectl create secret generic opensearch-secrets \
+  --from-literal=admin-password="$(openssl rand -base64 24)"
 
 # 6. Monitoring: Prometheus + Grafana. Musi być PRZED krokiem 8 — każdy serwis ma
 #    metrics.enabled: true domyślnie (values/<serwis>.yaml), czyli renderuje
@@ -123,10 +148,12 @@ terraform output acm_certificate_arn
 # `<TERRAFORM_OUTPUT:frontend_acm_certificate_arn>` w infrastructure/k8s/frontend/values.yaml
 terraform output frontend_acm_certificate_arn
 
-# 8. Zainstaluj serwisy (osobny chart per serwis). redis przed backend — backend cache'uje
-#    przez niego lookup attribute-definitions (CACHE_STORE=redis).
+# 8. Zainstaluj serwisy (osobny chart per serwis). redis i opensearch przed backend —
+#    backend cache'uje przez redis lookup attribute-definitions (CACHE_STORE=redis) i
+#    indeksuje produkty w opensearch przy każdym zapisie (ProductSearchObserver).
 helm install payment infrastructure/k8s/payment
 helm install redis infrastructure/k8s/redis
+helm install opensearch infrastructure/k8s/opensearch
 helm install backend infrastructure/k8s/backend
 helm install frontend infrastructure/k8s/frontend
 
@@ -182,7 +209,7 @@ aws route53 change-resource-record-sets \
 
 Przy zmianie w templatce/values (bez nowego klastra): `helm upgrade <nazwa> infrastructure/k8s/<nazwa>`. Renderowanie manifestów do podglądu bez dotykania klastra: `helm template <nazwa> infrastructure/k8s/<nazwa>`.
 
-**Uwaga:** `--platform linux/amd64` jest obowiązkowe przy buildzie na Macu z Apple Silicon — node'y EKS to x86_64 (`ami_type = AL2023_x86_64_STANDARD`). Domyślny `node_instance_type` (`t3.large`) mieści oba stacki naraz bez zmian.
+**Uwaga:** `--platform linux/amd64` jest obowiązkowe przy buildzie na Macu z Apple Silicon — node'y EKS to x86_64 (`ami_type = AL2023_x86_64_STANDARD`). Domyślny `node_instance_type` to `t3.xlarge` (4 vCPU/16GB) — `t3.large` starczał na payment+backend+frontend+redis, ale OpenSearch (JVM heap `-Xms512m -Xmx512m` + narzut poza-sterty) już się na nim ciasno mieścił, stąd bump zamiast dokładania drugiego node'a.
 
 Dostęp do Grafany:
 
@@ -251,8 +278,8 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 ## 5. Rzeczy, które NIE przetrwają `terraform destroy`
 
 - **Wszystko w klastrze** (pody, Service'y, Secrets) — Kubernetes żyje tylko wewnątrz klastra, destroy usuwa cały klaster.
-- **`backend-secrets`** — musi być stworzony ręcznie na nowo po każdym świeżym `terraform apply` (krok 5 w sekcji 1). Nie jest zarządzany przez Terraform ani przez pliki w `infrastructure/k8s/`.
-- **Obrazy w ECR** — repozytoria (`payment`, `backend`, `frontend`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
+- **`backend-secrets`** i **`opensearch-secrets`** — muszą być stworzone ręcznie na nowo po każdym świeżym `terraform apply` (kroki 5 i 5a w sekcji 1). Nie są zarządzane przez Terraform ani przez pliki w `infrastructure/k8s/`.
+- **Obrazy w ECR** — repozytoria (`payment`, `backend`, `frontend`, `opensearch`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
 - **Pliki w S3** (`product-files`) — bucket ma `force_destroy = true`, więc `terraform destroy` kasuje go razem z zawartością (uploadowane zdjęcia produktów). Nie ma osobnego backupu.
 - **Baza RDS** (`skip_final_snapshot = true`) i jej hasło w Secrets Manager (`manage_master_user_password`, zarządzane przez `aws_db_instance`) — obie znikają bez śladu przy `destroy`, żadnego snapshotu na wyjściu.
 - **Rekordy Route53 `admin.bechta.pl` i `shop.bechta.pl`** — tworzone imperatywnie (krok 9), nie przez Terraform, więc `terraform destroy` ich nie usuwa; wskazują na ALB, które znikną razem z klastrem, więc zostają jako martwe aliasy dopóki nie zrobi się `aws route53 change-resource-record-sets` z `"Action": "DELETE"` ręcznie dla każdego.

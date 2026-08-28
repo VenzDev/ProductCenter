@@ -1,0 +1,4 @@
+apiVersion: v2
+name: opensearch
+description: Helm chart for the in-cluster OpenSearch product search index (custom image with the Polish analysis-stempel plugin — AWS OpenSearch Service doesn't allow custom plugins)
+version: 0.1.0

@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: opensearch
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: opensearch
+  template:
+    metadata:
+      labels:
+        app: opensearch
+    spec:
+      containers:
+        - name: opensearch
+          image: {{ .Values.image }}
+          env:
+            - name: discovery.type
+              value: single-node
+            - name: OPENSEARCH_JAVA_OPTS
+              value: {{ .Values.javaOpts | quote }}
+            # Security plugin stays enabled (unlike local dev/e2e, see docker-compose.yaml) —
+            # this sets the admin password on first boot and auto-generates a self-signed
+            # demo TLS cert (see docs/runbook.md for how the secret is created). The backend
+            # authenticates as this same admin user (OPENSEARCH_USERNAME/PASSWORD in its own
+            # chart) — single consumer, no need for a separate least-privilege user yet.
+            - name: OPENSEARCH_INITIAL_ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: opensearch-secrets
+                  key: admin-password
+          ports:
+            - containerPort: {{ .Values.port }}
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+          # exec, not httpGet: /_cluster/health requires auth now, and httpGet probes can't
+          # read a Secret for the Authorization header — the env var above is visible to a
+          # command running inside the container, so exec can use it. -k: self-signed cert.
+          readinessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -sk -f -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" https://localhost:{{ .Values.port }}/_cluster/health
+            initialDelaySeconds: 30
+            periodSeconds: 5
+          livenessProbe:
+            exec:
+              command:
+                - sh
+                - -c
+                - curl -sk -f -u "admin:$OPENSEARCH_INITIAL_ADMIN_PASSWORD" https://localhost:{{ .Values.port }}/_cluster/health
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 6
