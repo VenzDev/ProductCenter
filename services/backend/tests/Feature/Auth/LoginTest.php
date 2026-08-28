@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use App\Models\User;
+use Tests\Factories\UserFactory;
 
 test('a user can log in with correct credentials and receives a jwt', function () {
-    User::factory()->create([
+    UserFactory::new()->create([
         'email' => 'jane@example.com',
         'password' => 'secret1234',
     ]);
@@ -19,7 +19,7 @@ test('a user can log in with correct credentials and receives a jwt', function (
 });
 
 test('login fails with an incorrect password', function () {
-    User::factory()->create([
+    UserFactory::new()->create([
         'email' => 'jane@example.com',
         'password' => 'secret1234',
     ]);
@@ -33,7 +33,7 @@ test('login fails with an incorrect password', function () {
 });
 
 test('an authenticated user can fetch their own profile via /me', function () {
-    $user = User::factory()->create();
+    $user = UserFactory::new()->create();
     $token = auth('api')->login($user);
 
     $response = $this->getJson('/api/v1/me', ['Authorization' => "Bearer {$token}"]);

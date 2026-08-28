@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\BlogPost\Observers\BlogPostImageObserver;
-use Database\Factories\BlogPostFactory;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -20,9 +18,6 @@ use Illuminate\Support\Carbon;
 #[ObservedBy(BlogPostImageObserver::class)]
 class BlogPost extends Model
 {
-    /** @use HasFactory<BlogPostFactory> */
-    use HasFactory;
-
     /**
      * @return array<string, string>
      */

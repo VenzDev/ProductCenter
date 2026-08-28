@@ -31,7 +31,7 @@ jobs:
 
       - run: docker compose -f docker-compose.test.yaml up -d --wait frontend_test backend_test
 
-      - run: docker compose -f docker-compose.test.yaml exec backend_test php artisan db:seed --class=BlogPostSeeder --force
+      - run: docker compose -f docker-compose.test.yaml exec backend_test php artisan demo:seed --products=12
 
       - run: docker compose -f docker-compose.test.yaml run --rm e2e
 

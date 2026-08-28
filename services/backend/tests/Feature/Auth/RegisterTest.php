@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Models\User;
+use Tests\Factories\UserFactory;
 
 test('a user can register and receives a jwt', function () {
     $response = $this->postJson('/api/v1/register', [
@@ -17,7 +18,7 @@ test('a user can register and receives a jwt', function () {
 });
 
 test('registration fails with a duplicate email', function () {
-    User::factory()->create(['email' => 'jane@example.com']);
+    UserFactory::new()->create(['email' => 'jane@example.com']);
 
     $response = $this->postJson('/api/v1/register', [
         'name' => 'Jane Doe',
