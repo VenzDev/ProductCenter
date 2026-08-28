@@ -19,6 +19,7 @@ return new class extends Migration
             $table->jsonb('name');
             $table->string('type');
             $table->jsonb('options')->nullable();
+            $table->boolean('filterable')->default(false);
             $table->timestamps();
         });
     }

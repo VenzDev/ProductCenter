@@ -18,10 +18,9 @@ return new class extends Migration
             $table->foreignId('product_id')->constrained()->cascadeOnDelete();
             $table->string('path');
             $table->string('label')->nullable();
-            $table->string('locale', 5)->nullable(); // NULL = attachment independent of language
             $table->timestamp('created_at')->useCurrent();
 
-            $table->index(['product_id', 'locale']);
+            $table->index('product_id');
         });
     }
 

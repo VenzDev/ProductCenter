@@ -17,6 +17,9 @@ return new class extends Migration
             $table->id();
             $table->jsonb('name');
             $table->string('slug')->unique();
+            // No FK constraint: -1 (root) is a sentinel value, not a real category id.
+            $table->integer('parent_id')->default(-1)->index();
+            $table->integer('order')->default(0);
             $table->timestamps();
         });
     }
