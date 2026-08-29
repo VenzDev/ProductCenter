@@ -1,12 +1,17 @@
-name: backend tests
+name: test · e2e
 
 on:
+  workflow_dispatch:
   push:
     paths:
+      - "e2e/**"
+      - "services/frontend/**"
       - "services/backend/**"
       - "docker-compose.test.yaml"
   pull_request:
     paths:
+      - "e2e/**"
+      - "services/frontend/**"
       - "services/backend/**"
       - "docker-compose.test.yaml"
 
@@ -16,17 +21,19 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      - run: docker compose -f docker-compose.test.yaml build backend_test
+      - run: docker compose -f docker-compose.test.yaml build backend_test frontend_test
 
       - run: docker compose -f docker-compose.test.yaml up -d --wait postgres_test redis_test opensearch_test localstack_test
 
       - run: docker compose -f docker-compose.test.yaml run --rm --entrypoint sh backend_test -c "composer install --no-interaction"
 
-      - run: docker compose -f docker-compose.test.yaml up -d --wait backend_test
+      - run: docker compose -f docker-compose.test.yaml run --rm frontend_test npm ci
 
-      - run: docker compose -f docker-compose.test.yaml exec backend_test php artisan test
+      - run: docker compose -f docker-compose.test.yaml up -d --wait frontend_test backend_test
 
-      - run: docker compose -f docker-compose.test.yaml exec backend_test ./vendor/bin/phpstan analyse --memory-limit=512M
+      - run: docker compose -f docker-compose.test.yaml exec backend_test php artisan demo:seed --products=12
+
+      - run: docker compose -f docker-compose.test.yaml run --rm e2e
 
       - if: failure()
         run: docker compose -f docker-compose.test.yaml logs

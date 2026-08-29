@@ -13,11 +13,6 @@ output "configure_kubectl" {
   value       = "aws eks update-kubeconfig --name ${module.eks.cluster_name} --region ${var.region}"
 }
 
-output "ecr_repository_urls" {
-  description = "ECR repository URLs per service"
-  value       = { for name, repo in aws_ecr_repository.this : name => repo.repository_url }
-}
-
 output "s3_bucket_name" {
   description = "S3 bucket for product files — paste into infrastructure/k8s/chart/values/backend.yaml (AWS_BUCKET)"
   value       = aws_s3_bucket.product_files.bucket
