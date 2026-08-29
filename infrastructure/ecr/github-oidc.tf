@@ -3,10 +3,15 @@
 # IRSA roles in infrastructure/eks/iam.tf. The trust policy is scoped to this one
 # repository; the role can only push/pull the four ECR repositories, nothing else.
 
+# GitHub rewrites the OIDC `sub` claim to the immutable `login@id` / `name@id` form for any
+# account or repo that has been renamed (this one was), and keeps it that way permanently — so
+# the subject is `repo:VenzDev@44263739/ProductCenter@1309212235:...`, not the plain slug. AWS
+# also requires the trust policy to constrain `sub` (or `job_workflow_ref`), so we match against
+# that exact renamed subject.
 variable "github_repository" {
-  description = "owner/repo whose GitHub Actions may assume the ECR push role"
+  description = "GitHub repo in OIDC-subject form (login@id/name@id for github.com/VenzDev/ProductCenter) allowed to assume the ECR push role"
   type        = string
-  default     = "VenzDev/ProductCenter"
+  default     = "VenzDev@44263739/ProductCenter@1309212235"
 }
 
 # AWS validates GitHub's OIDC token against its own trust store, so thumbprint_list is

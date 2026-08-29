@@ -31,7 +31,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(OpenSearchClient::class, function () {
             $builder = OpenSearchClientBuilder::create()->setHosts([config('opensearch.host')]);
 
-            if (app()->environment(['production'])) {
+            // Secured connection is driven by whether credentials are configured, not by the
+            // environment name: the prod image is built with APP_ENV unset (so it defaults to
+            // "production") but no OpenSearch env, which an app()->environment() check would
+            // send down the authenticated path with null credentials and fatal. Local/testing
+            // set no username and talk to a plain http OpenSearch.
+            if (config('opensearch.username') !== null) {
                 $builder
                     ->setBasicAuthentication(config('opensearch.username'), config('opensearch.password'))
                     ->setSSLVerification(config('opensearch.ssl_verification'));
