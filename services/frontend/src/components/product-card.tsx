@@ -13,8 +13,8 @@ export async function ProductCard({ product }: { product: Product }) {
   const locale = await lang();
 
   return (
-    <Link href={localizedHref(locale, `/products/${product.id}`)}>
-      <Card className="gap-0 py-0">
+    <Link href={localizedHref(locale, `/products/${product.id}`)} className="block h-full">
+      <Card className="h-full gap-0 py-0">
         <div className="relative aspect-square overflow-hidden rounded-t-xl bg-muted">
           {imageSrc && (
             <Image
@@ -27,17 +27,17 @@ export async function ProductCard({ product }: { product: Product }) {
             />
           )}
         </div>
-        <CardContent className="flex flex-col gap-2 p-4">
+        <CardContent className="flex h-full flex-col gap-2 p-4">
           {product.category.name && (
             <Badge variant="outline" className="w-fit">
               {product.category.name}
             </Badge>
           )}
-          <h3 className="font-semibold">{product.name}</h3>
-          <p className="text-sm text-muted-foreground">
+          <h3 className="line-clamp-2 font-semibold">{product.name}</h3>
+          <p className="line-clamp-3 text-sm text-muted-foreground">
             {product.description}
           </p>
-          <span className="font-semibold">
+          <span className="mt-auto font-semibold">
             {formatPrice(product.price_cents, product.currency)}
           </span>
         </CardContent>
