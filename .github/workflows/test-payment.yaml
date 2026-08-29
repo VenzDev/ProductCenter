@@ -1,4 +1,4 @@
-name: payment tests
+name: test · payment
 
 on:
   push:

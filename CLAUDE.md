@@ -32,7 +32,8 @@ services/
   backend/    PHP, Laravel (FrankenPHP) — main business logic / API
   frontend/   TypeScript, Next.js (App Router) + shadcn/ui — skeleton, no pages/features yet
   payment/    Go, Gin — payment handling
-infrastructure/eks/  Terraform — EKS cluster (VPC, node group, ECR, addons)
+infrastructure/ecr/  Terraform — ECR repos + GitHub Actions OIDC push role (separate root module, stands up on its own)
+infrastructure/eks/  Terraform — EKS cluster (VPC, node group, addons)
 infrastructure/k8s/backend/  Helm chart for the backend service
 infrastructure/k8s/payment/  Helm chart for the payment service
 infrastructure/k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
@@ -113,4 +114,4 @@ docker compose -f docker-compose.test.yaml down -v        # tear down — drops 
 ```
 Uses the official `mcr.microsoft.com/playwright` image (Debian-based) rather than the frontend's own Alpine image, since Playwright's browser binaries aren't officially supported on musl libc. `docker-compose.test.yaml` (`name: product-center-test`) is its own compose project, entirely disjoint from the main `docker-compose.yaml` project — so `down -v` here can never touch dev data, and it can run concurrently with the dev stack without port clashes (nothing here publishes a host port; everything talks over the project's own internal network). `backend_test` and `frontend_test` bind-mount the same `./services/backend` and `./services/frontend` host directories as dev's `backend`/`frontend` — including `vendor`/`node_modules`, so they share whatever's already installed there rather than reinstalling. They can still collide on writes to that shared filesystem: `frontend_test` gets a dedicated `.next` build-cache volume to avoid that (see `frontend_test_next`). Runs against `http://frontend_test:3000` — this requires `allowedDevOrigins: ["frontend_test"]` in `next.config.ts`, because Next's dev server otherwise 403s `/_next/*` asset requests from any origin other than localhost.
 
-On a fresh checkout (no local `vendor`/`node_modules` yet — this is what CI does, see `.github/workflows/e2e-tests.yaml` and `backend-tests.yaml`) no `.env` setup step is needed first, unlike the main dev stack — `services/backend/.env.testing` is already committed.
+On a fresh checkout (no local `vendor`/`node_modules` yet — this is what CI does, see `.github/workflows/test-e2e.yaml` and `test-backend.yaml`) no `.env` setup step is needed first, unlike the main dev stack — `services/backend/.env.testing` is already committed.

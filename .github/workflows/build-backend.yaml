@@ -1,0 +1,42 @@
+name: build · backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Image tag to push alongside the commit SHA"
+        default: latest
+
+permissions:
+  id-token: write # assume the ECR-push role via OIDC
+  contents: read
+
+jobs:
+  build-push:
+    runs-on: ubuntu-latest
+    env:
+      AWS_REGION: eu-central-1
+      AWS_ROLE_ARN: arn:aws:iam::222634367938:role/product-center-github-actions-ecr
+      ECR_REPOSITORY: backend
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Build and push
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          TAG: ${{ inputs.tag }}
+        run: |
+          docker build --target prod \
+            -t "$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA" \
+            -t "$REGISTRY/$ECR_REPOSITORY:$TAG" \
+            services/backend
+          docker push "$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
+          docker push "$REGISTRY/$ECR_REPOSITORY:$TAG"

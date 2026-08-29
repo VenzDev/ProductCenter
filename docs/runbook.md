@@ -55,9 +55,15 @@ Nowy serwis to nowy katalog chartu, nie nowy plik values do istniejącego wspól
 ## 1. Kolejność: terraform apply → deploy
 
 ```bash
+# 0. ECR repos + rola OIDC dla GitHub Actions — osobny root module (własny state),
+#    stawiany niezależnie od reszty; obrazy da się budować i pushować bez VPC/EKS/RDS.
+cd infrastructure/ecr
+terraform apply
+cd ..
+
 cd infrastructure/eks
 
-# 1. Infrastruktura (VPC, EKS, node group, addony, ECR, S3, RDS, rola IRSA)
+# 1. Infrastruktura (VPC, EKS, node group, addony, S3, RDS, rola IRSA)
 terraform apply
 
 # 2. Podłącz kubectl do nowego klastra (to też przełącza current-context na EKS)
@@ -69,6 +75,13 @@ aws eks update-kubeconfig --name product-center --region eu-central-1
 kubectl config current-context   # powinno pokazać arn:aws:eks:...:cluster/product-center
 
 # 3. Build + push obrazów (dla payment, backend i frontend)
+#
+# Alternatywa do komend niżej: workflowy `.github/workflows/build-<serwis>.yaml`
+# (workflow_dispatch, jeden na serwis, plus opensearch) — budują i pushują do ECR z
+# runnera x86_64, uwierzytelnienie przez OIDC (rola `product-center-github-actions-ecr`
+# z `infrastructure/ecr/github-oidc.tf`, ARN w output `github_actions_ecr_role_arn`;
+# jeśli ARN się zmieni, podmień `AWS_ROLE_ARN` w tych plikach). Obraz jest tagowany
+# commit SHA + tagiem z inputu (domyślnie `latest`).
 docker build --platform linux/amd64 --target prod \
   -t 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest \
   services/<serwis>
@@ -268,7 +281,7 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 | 5 | `backend` restart w pętli, `Readiness probe failed: ... tls: internal error` | FrankenPHP bez `SERVER_NAME` domyślnie włącza auto-HTTPS z self-signed certem; port 80 tylko przekierowuje na HTTPS, sonda idzie za redirectem i wpada na zły cert | env `SERVER_NAME: ":80"` | `infrastructure/k8s/backend/values.yaml` |
 | 6 | `backend` HTTP 500, log: `Class "Laravel\Pail\PailServiceProvider" not found` (czasem ukryte pod wtórnym błędem `Target class [translator] does not exist`) | Stary lokalny cache `bootstrap/cache/packages.php` (wygenerowany gdy były zainstalowane dev-deps z Pailem) trafiał do obrazu prod przez `COPY . .`; `composer install --no-scripts --no-dev` w prod stage go nie odświeża | Dodać `bootstrap/cache/*.php` do `.dockerignore` | `services/backend/.dockerignore` |
 | 7 | `backend` HTTP 500 (po naprawieniu #6) | Brak `APP_KEY` — `.env` celowo poza obrazem (`.dockerignore`), Laravel wywala się na `EncryptCookies` | Kubernetes Secret `backend-secrets` (imperatywnie, nigdy nie commitować realnej wartości do gita), referencja przez `secretKeyRef` | `infrastructure/k8s/backend/values.yaml` + krok 5 w sekcji 1 |
-| 8 | `terraform destroy` odmawia usunąć repozytoria ECR | Repozytoria zawierają obrazy, domyślnie `force_delete = false` | `force_delete = true` na `aws_ecr_repository` | `infrastructure/eks/ecr.tf` |
+| 8 | `terraform destroy` odmawia usunąć repozytoria ECR | Repozytoria zawierają obrazy, domyślnie `force_delete = false` | `force_delete = true` na `aws_ecr_repository` | `infrastructure/ecr/ecr.tf` |
 | 9 | Kubernetes 1.33 zbliżało się do końca standard support (koszt x6 na extended support) | — | Wersja `1.35` | `infrastructure/eks/eks.tf` |
 | 10 | `backend` restart w pętli na świeżym RDS, `HTTP probe failed with statuscode: 500` na `/health` mimo że handler nic nie robi z DB | Obraz `prod` nigdy nie uruchamia migracji (tylko `dev-entrypoint.sh` to robi, i to tylko w `dev`) — świeża baza nie ma tabeli `sessions`, a domyślna grupa middleware `web` (którą dostaje KAŻDA trasa, łącznie z `/health`) startuje sesję, więc wywala się na każdym requeście | Helm hook `pre-install,pre-upgrade` (`Job` uruchamiający `php artisan migrate --force` przed rollout Deployment) | `infrastructure/k8s/backend/templates/migrate-job.yaml` |
 | 11 | (przy naprawianiu #10) Świeży `helm install` wisi, `job-controller` event: `serviceaccount "backend" not found` | Hooki (`pre-install`) wykonują się PRZED zwykłymi zasobami release'u — `ServiceAccount` (`serviceaccount.yaml`, zwykły szablon, nie hook) jeszcze nie istnieje, gdy Job próbuje go użyć | Job migracji nie ustawia `serviceAccountName` — używa domyślnego SA namespace'u; i tak nie potrzebuje uprawnień S3/IRSA, tylko łączności z DB | `infrastructure/k8s/backend/templates/migrate-job.yaml` |
@@ -279,7 +292,7 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 
 - **Wszystko w klastrze** (pody, Service'y, Secrets) — Kubernetes żyje tylko wewnątrz klastra, destroy usuwa cały klaster.
 - **`backend-secrets`** i **`opensearch-secrets`** — muszą być stworzone ręcznie na nowo po każdym świeżym `terraform apply` (kroki 5 i 5a w sekcji 1). Nie są zarządzane przez Terraform ani przez pliki w `infrastructure/k8s/`.
-- **Obrazy w ECR** — repozytoria (`payment`, `backend`, `frontend`, `opensearch`) są usuwane razem z resztą dzięki `force_delete = true`. Po kolejnym `apply` trzeba je zbudować i wypchnąć na nowo.
+- **Obrazy w ECR** — same repozytoria (`payment`, `backend`, `frontend`, `opensearch`) i rola OIDC GitHub Actions to osobny root module (`infrastructure/ecr`, własny state), więc `terraform destroy` w `infrastructure/eks` ich NIE rusza — przeżywają teardown klastra. Jeśli chcesz je też skasować: osobny `terraform destroy` w `infrastructure/ecr` (`force_delete = true` usunie repo mimo obrazów w środku).
 - **Pliki w S3** (`product-files`) — bucket ma `force_destroy = true`, więc `terraform destroy` kasuje go razem z zawartością (uploadowane zdjęcia produktów). Nie ma osobnego backupu.
 - **Baza RDS** (`skip_final_snapshot = true`) i jej hasło w Secrets Manager (`manage_master_user_password`, zarządzane przez `aws_db_instance`) — obie znikają bez śladu przy `destroy`, żadnego snapshotu na wyjściu.
 - **Rekordy Route53 `admin.bechta.pl` i `shop.bechta.pl`** — tworzone imperatywnie (krok 9), nie przez Terraform, więc `terraform destroy` ich nie usuwa; wskazują na ALB, które znikną razem z klastrem, więc zostają jako martwe aliasy dopóki nie zrobi się `aws route53 change-resource-record-sets` z `"Action": "DELETE"` ręcznie dla każdego.
