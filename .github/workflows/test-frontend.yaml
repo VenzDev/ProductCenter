@@ -1,9 +1,6 @@
 name: test · frontend
 
 on:
-  push:
-    paths:
-      - "services/frontend/**"
   pull_request:
     paths:
       - "services/frontend/**"

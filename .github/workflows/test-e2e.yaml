@@ -3,12 +3,8 @@ name: test · e2e
 on:
   workflow_dispatch:
   push:
-    paths:
-      - "e2e/**"
-      - "services/frontend/**"
-      - "services/backend/**"
-      - "docker-compose.test.yaml"
-  pull_request:
+    branches:
+      - main
     paths:
       - "e2e/**"
       - "services/frontend/**"
