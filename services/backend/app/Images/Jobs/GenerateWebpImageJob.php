@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Images\Jobs;
 
 use App\Images\Support\WebpImageNaming;
+use App\Storage\StorageDisk;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -29,7 +30,7 @@ class GenerateWebpImageJob implements ShouldQueue
 
     public function handle(): void
     {
-        $disk = Storage::disk('s3');
+        $disk = Storage::disk(StorageDisk::S3);
 
         if (! $disk->exists($this->currentPath)) {
             return;

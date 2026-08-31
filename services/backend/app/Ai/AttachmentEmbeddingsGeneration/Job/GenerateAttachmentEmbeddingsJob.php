@@ -7,6 +7,7 @@ namespace App\Ai\AttachmentEmbeddingsGeneration\Job;
 use App\Ai\AttachmentEmbeddingsGeneration\Embedder\ProductAttachmentEmbedderInterface;
 use App\Ai\AttachmentEmbeddingsGeneration\Splitter\ChunksSplitterInterface;
 use App\Models\ProductAttachment;
+use App\Storage\StorageDisk;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -44,7 +45,7 @@ class GenerateAttachmentEmbeddingsJob implements ShouldQueue
             return;
         }
 
-        $pdf = Storage::disk('s3')->get($attachment->path);
+        $pdf = Storage::disk(StorageDisk::S3)->get($attachment->path);
 
         if ($pdf === null) {
             Log::info("GenerateAttachmentEmbeddingsJob: attachment [{$this->attachmentId}] file missing from S3, skipping");

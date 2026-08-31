@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\BlogPost\Support\BlogPostImagePaths;
 use App\Images\Jobs\RelocateUploadedImageJob;
 use App\Models\BlogPost;
+use App\Storage\StorageDisk;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
@@ -25,7 +26,7 @@ function createBlogPostWithoutImage(): BlogPost
 
 function stageBlogPostImage(BlogPost $blogPost, string $stagingKey): void
 {
-    Storage::disk('s3')->put($stagingKey, fakeBlogPostJpegBytes());
+    Storage::disk(StorageDisk::S3)->put($stagingKey, fakeBlogPostJpegBytes());
     // saveQuietly avoids the real BlogPostImageObserver dispatch — these tests drive the job directly.
     $blogPost->preview_image = $stagingKey;
     $blogPost->saveQuietly();
@@ -39,7 +40,7 @@ function relocateBlogPostImage(BlogPost $blogPost): void
 }
 
 test('handling the job relocates a staged upload and generates both webp variants', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $post = createBlogPostWithoutImage();
     stageBlogPostImage($post, 'blog-post-images/tmp/abc123.jpg');
 
@@ -48,14 +49,14 @@ test('handling the job relocates a staged upload and generates both webp variant
     $fresh = $post->fresh();
     expect($fresh->preview_image)->toBe("blog-post-images/{$post->id}/preview-image.jpg");
 
-    Storage::disk('s3')->assertMissing('blog-post-images/tmp/abc123.jpg');
-    Storage::disk('s3')->assertExists($fresh->preview_image);
-    Storage::disk('s3')->assertExists(BlogPostImagePaths::webp($post->id));
-    Storage::disk('s3')->assertExists(BlogPostImagePaths::thumbnailWebp($post->id));
+    Storage::disk(StorageDisk::S3)->assertMissing('blog-post-images/tmp/abc123.jpg');
+    Storage::disk(StorageDisk::S3)->assertExists($fresh->preview_image);
+    Storage::disk(StorageDisk::S3)->assertExists(BlogPostImagePaths::webp($post->id));
+    Storage::disk(StorageDisk::S3)->assertExists(BlogPostImagePaths::thumbnailWebp($post->id));
 });
 
 test('replacing the image removes the stale canonical original when the extension changes', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $post = createBlogPostWithoutImage();
     stageBlogPostImage($post, "blog-post-images/{$post->id}/uploads/first.jpg");
     relocateBlogPostImage($post);
@@ -66,8 +67,8 @@ test('replacing the image removes the stale canonical original when the extensio
 
     $fresh = $post->fresh();
     expect($fresh->preview_image)->toBe("blog-post-images/{$post->id}/preview-image.png");
-    Storage::disk('s3')->assertMissing("blog-post-images/{$post->id}/preview-image.jpg");
-    Storage::disk('s3')->assertExists("blog-post-images/{$post->id}/preview-image.png");
+    Storage::disk(StorageDisk::S3)->assertMissing("blog-post-images/{$post->id}/preview-image.jpg");
+    Storage::disk(StorageDisk::S3)->assertExists("blog-post-images/{$post->id}/preview-image.png");
 });
 
 test('a job for a blog post that no longer exists does nothing without throwing', function () {

@@ -10,6 +10,7 @@ use App\Models\Attribute;
 use App\Models\BlogPost;
 use App\Models\Category;
 use App\Models\Product;
+use App\Storage\StorageDisk;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Http;
@@ -194,7 +195,7 @@ class SeedDemoData extends Command
         for ($i = 0; $i < $total; $i++) {
             $subcategory = $subcategories[$i % count($subcategories)];
             $imageKey = 'product-images/tmp/'.Str::uuid()->toString().'.jpg';
-            Storage::disk('s3')->put($imageKey, $this->fetchDummyImageBytes());
+            Storage::disk(StorageDisk::S3)->put($imageKey, $this->fetchDummyImageBytes());
 
             Product::query()->create([
                 'category_id' => $subcategory['category']->id,
@@ -224,7 +225,7 @@ class SeedDemoData extends Command
             }
 
             $imageKey = 'blog-post-images/tmp/'.Str::uuid()->toString().'.jpg';
-            Storage::disk('s3')->put($imageKey, $this->fetchDummyImageBytes());
+            Storage::disk(StorageDisk::S3)->put($imageKey, $this->fetchDummyImageBytes());
 
             BlogPost::query()->create([
                 'title' => $title,

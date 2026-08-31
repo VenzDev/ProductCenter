@@ -6,6 +6,7 @@ namespace App\Filament\Resources\Products\Schemas;
 
 use App\Enums\Language;
 use App\Models\Product;
+use App\Storage\StorageDisk;
 use Filament\Infolists\Components\ImageEntry;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
@@ -56,7 +57,7 @@ class ProductInfolist
                         Tab::make('Media')
                             ->schema([
                                 ImageEntry::make('main_image')
-                                    ->disk('s3')
+                                    ->disk(StorageDisk::S3)
                                     ->visibility('public')
                                     ->placeholder('-'),
                             ]),

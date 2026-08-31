@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Images\Support;
 
 use App\Images\Contracts\HasImagePaths;
+use App\Storage\StorageDisk;
 use Illuminate\Support\Facades\Storage;
 
 class ImageUrlResolver
@@ -16,8 +17,8 @@ class ImageUrlResolver
     public static function resolve(string $paths, int $id): array
     {
         return [
-            'webp_url' => Storage::disk('s3')->url($paths::webp($id)),
-            'thumbnail_webp_url' => Storage::disk('s3')->url($paths::thumbnailWebp($id)),
+            'webp_url' => Storage::disk(StorageDisk::S3)->url($paths::webp($id)),
+            'thumbnail_webp_url' => Storage::disk(StorageDisk::S3)->url($paths::thumbnailWebp($id)),
         ];
     }
 }

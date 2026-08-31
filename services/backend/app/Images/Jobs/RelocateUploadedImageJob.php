@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Images\Jobs;
 
 use App\Images\Contracts\HasImagePaths;
+use App\Storage\StorageDisk;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,7 +51,7 @@ class RelocateUploadedImageJob implements ShouldQueue
             return;
         }
 
-        $disk = Storage::disk('s3');
+        $disk = Storage::disk(StorageDisk::S3);
         $paths = $this->imagePathsClass;
         $canonicalPath = $paths::original($this->modelId, pathinfo($currentPath, PATHINFO_EXTENSION));
 

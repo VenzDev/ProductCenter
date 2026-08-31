@@ -6,6 +6,7 @@ use App\BlogPost\Support\BlogPostImagePaths;
 use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
 use App\Models\BlogPost;
+use App\Storage\StorageDisk;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -69,7 +70,7 @@ test('an admin can update a blog post', function () {
 });
 
 test('an admin can upload a blog post preview image to the s3 disk', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
 
     $admin = AdminFactory::new()->create();
     $this->actingAs($admin, 'admin');
@@ -87,11 +88,11 @@ test('an admin can upload a blog post preview image to the s3 disk', function ()
 
     $post = BlogPost::where('slug', 'hello-world')->first();
     expect($post->preview_image)->toBe("blog-post-images/{$post->id}/preview-image.jpg");
-    Storage::disk('s3')->assertExists($post->preview_image);
+    Storage::disk(StorageDisk::S3)->assertExists($post->preview_image);
 
     // RelocateUploadedImageJob and the GenerateWebpImageJob it dispatches both run
     // synchronously (sync queue driver in tests), so their output is already in place
     // once the form submission above returns.
-    Storage::disk('s3')->assertExists(BlogPostImagePaths::webp($post->id));
-    Storage::disk('s3')->assertExists(BlogPostImagePaths::thumbnailWebp($post->id));
+    Storage::disk(StorageDisk::S3)->assertExists(BlogPostImagePaths::webp($post->id));
+    Storage::disk(StorageDisk::S3)->assertExists(BlogPostImagePaths::thumbnailWebp($post->id));
 });

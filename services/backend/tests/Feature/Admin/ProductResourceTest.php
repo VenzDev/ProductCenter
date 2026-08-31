@@ -9,6 +9,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Product\Support\ProductImagePaths;
+use App\Storage\StorageDisk;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Livewire;
@@ -25,7 +26,7 @@ test('an admin can list products', function () {
 });
 
 test('an admin can create a product with translations for both locales', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $this->actingAs($admin, 'admin');
@@ -70,8 +71,8 @@ test('editing a product pre-fills the name/description for each locale tab', fun
 });
 
 test('an admin can update a product name/description per locale', function () {
-    Storage::fake('s3');
-    Storage::disk('s3')->put('product-images/placeholder/main-image.jpg', 'fake-bytes');
+    Storage::fake(StorageDisk::S3);
+    Storage::disk(StorageDisk::S3)->put('product-images/placeholder/main-image.jpg', 'fake-bytes');
 
     $admin = AdminFactory::new()->create();
     $product = ProductFactory::new()->createQuietly();
@@ -103,7 +104,7 @@ test('viewing a product shows the name/description for both locales', function (
 });
 
 test('an admin can upload a product image to the s3 disk', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
 
     $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
@@ -123,13 +124,13 @@ test('an admin can upload a product image to the s3 disk', function () {
 
     $product = Product::first();
     expect($product->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
-    Storage::disk('s3')->assertExists($product->main_image);
+    Storage::disk(StorageDisk::S3)->assertExists($product->main_image);
 
     // RelocateUploadedImageJob and the GenerateWebpImageJob it dispatches both run
     // synchronously (sync queue driver in tests), so their output is already in place
     // once the form submission above returns.
-    Storage::disk('s3')->assertExists(ProductImagePaths::webp($product->id));
-    Storage::disk('s3')->assertExists(ProductImagePaths::thumbnailWebp($product->id));
+    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::webp($product->id));
+    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::thumbnailWebp($product->id));
 });
 
 test('the attributes repeater starts empty on create before a category is chosen', function () {
@@ -180,7 +181,7 @@ test('changing the category on an existing product does not touch its saved attr
 });
 
 test('an admin can create a product with a number and a select attribute value', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
@@ -217,7 +218,7 @@ test('a non-translatable attribute value survives even with an empty value_trans
     // empty 'value_translations' array on the row — not null. A row must still save its
     // 'value' in that case, rather than a `$row['value_translations'] ?? $row['value']`
     // style fallback silently picking the empty array over the real value.
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create(['key' => 'weight_kg', 'name' => 'Weight', 'type' => AttributeType::Number]);
@@ -249,7 +250,7 @@ test('an admin can create a product with a multiselect attribute value', functio
         ['key' => 'metal', 'name' => ['en' => 'Metal', 'pl' => 'Metal']],
         ['key' => 'plastic', 'name' => ['en' => 'Plastic', 'pl' => 'Plastik']],
     ]]);
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateProduct::class)
@@ -274,7 +275,7 @@ test('an admin can create a product with a translatable text attribute value', f
     $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     Attribute::create(['key' => 'material', 'name' => 'Material', 'type' => AttributeType::TextTranslatable]);
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $this->actingAs($admin, 'admin');
 
     Livewire::test(CreateProduct::class)
@@ -298,7 +299,7 @@ test('an admin can create a product with a translatable text attribute value', f
 });
 
 test('an admin can remove an attribute row before creating a product', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $admin = AdminFactory::new()->create();
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
     $this->actingAs($admin, 'admin');

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Images\Jobs\RelocateUploadedImageJob;
 use App\Models\Product;
 use App\Product\Support\ProductImagePaths;
+use App\Storage\StorageDisk;
 use Illuminate\Support\Facades\Storage;
 use Intervention\Image\Drivers\Gd\Driver;
 use Intervention\Image\ImageManager;
@@ -17,14 +18,14 @@ function fakeJpegBytes(): string
 
 function createProductWithStagedImage(string $stagingKey): Product
 {
-    Storage::disk('s3')->put($stagingKey, fakeJpegBytes());
+    Storage::disk(StorageDisk::S3)->put($stagingKey, fakeJpegBytes());
 
     return ProductFactory::new()->createQuietly(['main_image' => $stagingKey]);
 }
 
 function restageProductImage(Product $product, string $stagingKey): void
 {
-    Storage::disk('s3')->put($stagingKey, fakeJpegBytes());
+    Storage::disk(StorageDisk::S3)->put($stagingKey, fakeJpegBytes());
     // saveQuietly avoids the real ProductImageObserver dispatch — these tests drive the job directly.
     $product->main_image = $stagingKey;
     $product->saveQuietly();
@@ -38,7 +39,7 @@ function relocateProductImage(Product $product): void
 }
 
 test('handling the job relocates a staged upload and generates both webp variants', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $product = createProductWithStagedImage('product-images/tmp/abc123.jpg');
 
     relocateProductImage($product);
@@ -46,14 +47,14 @@ test('handling the job relocates a staged upload and generates both webp variant
     $fresh = $product->fresh();
     expect($fresh->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
 
-    Storage::disk('s3')->assertMissing('product-images/tmp/abc123.jpg');
-    Storage::disk('s3')->assertExists($fresh->main_image);
-    Storage::disk('s3')->assertExists(ProductImagePaths::webp($product->id));
-    Storage::disk('s3')->assertExists(ProductImagePaths::thumbnailWebp($product->id));
+    Storage::disk(StorageDisk::S3)->assertMissing('product-images/tmp/abc123.jpg');
+    Storage::disk(StorageDisk::S3)->assertExists($fresh->main_image);
+    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::webp($product->id));
+    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::thumbnailWebp($product->id));
 });
 
 test('replacing the image removes the stale canonical original when the extension changes', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $product = createProductWithStagedImage('product-images/tmp/first.jpg');
     relocateProductImage($product);
 
@@ -63,8 +64,8 @@ test('replacing the image removes the stale canonical original when the extensio
 
     $fresh = $product->fresh();
     expect($fresh->main_image)->toBe("product-images/{$product->id}/main-image.png");
-    Storage::disk('s3')->assertMissing("product-images/{$product->id}/main-image.jpg");
-    Storage::disk('s3')->assertExists("product-images/{$product->id}/main-image.png");
+    Storage::disk(StorageDisk::S3)->assertMissing("product-images/{$product->id}/main-image.jpg");
+    Storage::disk(StorageDisk::S3)->assertExists("product-images/{$product->id}/main-image.png");
 });
 
 test('a job for a product that no longer exists does nothing without throwing', function () {

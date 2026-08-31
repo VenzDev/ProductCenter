@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\Tables;
 
+use App\Storage\StorageDisk;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -28,7 +29,7 @@ class ProductsTable
                 TextColumn::make('currency')
                     ->searchable(),
                 ImageColumn::make('main_image')
-                    ->disk('s3')
+                    ->disk(StorageDisk::S3)
                     ->visibility('public'),
                 TextColumn::make('created_at')
                     ->dateTime()

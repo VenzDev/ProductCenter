@@ -6,13 +6,14 @@ use App\Ai\DescriptionGeneration\Job\GenerateProductDescriptionJob;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
+use App\Storage\StorageDisk;
 use Illuminate\Support\Facades\Storage;
 use Prism\Prism\Facades\Prism;
 use Prism\Prism\Testing\TextResponseFake;
 use Tests\Factories\ProductFactory;
 
 test('handling the job writes the AI-generated description in the requested locale onto the product', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     Prism::fake([
         TextResponseFake::make()->withText('Gadżet to lekkie i wytrzymałe urządzenie.'),
     ]);
@@ -29,8 +30,8 @@ test('handling the job writes the AI-generated description in the requested loca
 });
 
 test('handling the job includes the main image when one is stored on S3', function () {
-    Storage::fake('s3');
-    Storage::disk('s3')->put('product-images/1/main-image.webp', 'fake-webp-bytes');
+    Storage::fake(StorageDisk::S3);
+    Storage::disk(StorageDisk::S3)->put('product-images/1/main-image.webp', 'fake-webp-bytes');
     Prism::fake([
         TextResponseFake::make()->withText('A sturdy, lightweight widget.'),
     ]);
@@ -61,7 +62,7 @@ test('handling the job resolves attribute names and option labels in the request
         ],
     ]);
 
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $fake = Prism::fake([
         TextResponseFake::make()->withText('Opis produktu.'),
     ]);

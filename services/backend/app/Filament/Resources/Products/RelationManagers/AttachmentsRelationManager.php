@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Products\RelationManagers;
 
 use App\Models\ProductAttachment;
+use App\Storage\StorageDisk;
 use Filament\Actions\Action;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -27,7 +28,7 @@ class AttachmentsRelationManager extends RelationManager
             ->components([
                 FileUpload::make('path')
                     ->label('File')
-                    ->disk('s3')
+                    ->disk(StorageDisk::S3)
                     ->directory('products/attachments')
                     ->visibility('public')
                     ->acceptedFileTypes(['application/pdf'])
@@ -54,7 +55,7 @@ class AttachmentsRelationManager extends RelationManager
                 Action::make('download')
                     ->label('Download')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn (ProductAttachment $record) => Storage::disk('s3')->url($record->path))
+                    ->url(fn (ProductAttachment $record) => Storage::disk(StorageDisk::S3)->url($record->path))
                     ->openUrlInNewTab(),
                 EditAction::make(),
                 DeleteAction::make(),

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Ai\AttachmentEmbeddingsGeneration\Job\GenerateAttachmentEmbeddingsJob;
+use App\Storage\StorageDisk;
 use Illuminate\Support\Facades\Bus;
 use Illuminate\Support\Facades\Storage;
 use Pgvector\Laravel\Vector;
@@ -12,8 +13,8 @@ use Prism\Prism\ValueObjects\Embedding;
 use Tests\Factories\ProductFactory;
 
 test('handling the job extracts pdf text and stores an embedding per chunk', function () {
-    Storage::fake('s3');
-    Storage::disk('s3')->put(
+    Storage::fake(StorageDisk::S3);
+    Storage::disk(StorageDisk::S3)->put(
         'products/attachments/manual.pdf',
         file_get_contents(__DIR__.'/../../Fixtures/sample-manual.pdf'),
     );
@@ -46,8 +47,8 @@ test('a job for an attachment that no longer exists does nothing without throwin
 });
 
 test('a job for an attachment that already has embeddings skips re-processing', function () {
-    Storage::fake('s3');
-    Storage::disk('s3')->put(
+    Storage::fake(StorageDisk::S3);
+    Storage::disk(StorageDisk::S3)->put(
         'products/attachments/manual.pdf',
         file_get_contents(__DIR__.'/../../Fixtures/sample-manual.pdf'),
     );

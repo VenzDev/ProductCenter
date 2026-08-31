@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\BlogPosts\Tables;
 
+use App\Storage\StorageDisk;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -18,7 +19,7 @@ class BlogPostsTable
         return $table
             ->columns([
                 ImageColumn::make('preview_image')
-                    ->disk('s3')
+                    ->disk(StorageDisk::S3)
                     ->visibility('public'),
                 TextColumn::make('title')
                     ->searchable(),

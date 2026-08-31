@@ -5,6 +5,7 @@ declare(strict_types=1);
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\RelationManagers\ImagesRelationManager;
 use App\Models\ProductImage;
+use App\Storage\StorageDisk;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -13,7 +14,7 @@ use Tests\Factories\AdminFactory;
 use Tests\Factories\ProductFactory;
 
 test('an admin can upload a gallery image to the s3 disk', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
 
     $admin = AdminFactory::new()->create();
     $product = ProductFactory::new()->createQuietly();
@@ -32,11 +33,11 @@ test('an admin can upload a gallery image to the s3 disk', function () {
     $galleryImage = $product->images()->first();
     expect($galleryImage)->not->toBeNull();
     expect($galleryImage->path)->toBe("product-images/gallery/{$galleryImage->id}/image.jpg");
-    Storage::disk('s3')->assertExists($galleryImage->path);
+    Storage::disk(StorageDisk::S3)->assertExists($galleryImage->path);
 });
 
 test('an admin can delete a gallery image', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
 
     $admin = AdminFactory::new()->create();
     $product = ProductFactory::new()->createQuietly();

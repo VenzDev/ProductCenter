@@ -6,13 +6,14 @@ use App\Models\Category;
 use App\Product\Action\CreateProduct;
 use App\Product\ObjectValue\NewProduct;
 use App\Product\Support\ProductImagePaths;
+use App\Storage\StorageDisk;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
 
 test('it persists a product from a NewProduct input', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    Storage::disk('s3')->put('product-images/tmp/upload.jpg', UploadedFile::fake()->image('upload.jpg')->getContent());
+    Storage::disk(StorageDisk::S3)->put('product-images/tmp/upload.jpg', UploadedFile::fake()->image('upload.jpg')->getContent());
 
     $product = (new CreateProduct)->handle(new NewProduct(
         categoryId: $category->id,
@@ -33,9 +34,9 @@ test('it persists a product from a NewProduct input', function () {
 });
 
 test('it runs the image pipeline via the product observers', function () {
-    Storage::fake('s3');
+    Storage::fake(StorageDisk::S3);
     $category = Category::create(['name' => 'Electronics', 'slug' => 'electronics']);
-    Storage::disk('s3')->put('product-images/tmp/upload.jpg', UploadedFile::fake()->image('upload.jpg')->getContent());
+    Storage::disk(StorageDisk::S3)->put('product-images/tmp/upload.jpg', UploadedFile::fake()->image('upload.jpg')->getContent());
 
     $product = (new CreateProduct)->handle(new NewProduct(
         categoryId: $category->id,
@@ -46,5 +47,5 @@ test('it runs the image pipeline via the product observers', function () {
 
     // RelocateUploadedImageJob + GenerateWebpImageJob run synchronously (sync queue in tests).
     expect($product->refresh()->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
-    Storage::disk('s3')->assertExists(ProductImagePaths::webp($product->id));
+    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::webp($product->id));
 });

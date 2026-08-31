@@ -10,6 +10,7 @@ use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Product\Support\AttributeDefinitions;
+use App\Storage\StorageDisk;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
@@ -106,7 +107,7 @@ class ProductForm
             FileUpload::make('main_image')
                 ->image()
                 ->required()
-                ->disk('s3')
+                ->disk(StorageDisk::S3)
                 ->directory(fn (?Product $record) => $record ? "product-images/{$record->id}/uploads" : 'product-images/tmp')
                 ->visibility('public'),
         ];

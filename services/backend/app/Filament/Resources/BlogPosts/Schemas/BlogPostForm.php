@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\BlogPosts\Schemas;
 
 use App\Models\BlogPost;
+use App\Storage\StorageDisk;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\RichEditor;
@@ -33,13 +34,13 @@ class BlogPostForm
                     ->unique(ignoreRecord: true),
                 FileUpload::make('preview_image')
                     ->image()
-                    ->disk('s3')
+                    ->disk(StorageDisk::S3)
                     ->directory(fn (?BlogPost $record) => $record ? "blog-post-images/{$record->id}/uploads" : 'blog-post-images/tmp')
                     ->visibility('public'),
                 RichEditor::make('content')
                     ->required()
                     ->resizableImages()
-                    ->fileAttachmentsDisk('s3')
+                    ->fileAttachmentsDisk(StorageDisk::S3)
                     ->fileAttachmentsDirectory('blog-images')
                     ->fileAttachmentsVisibility('public')
                     ->columnSpanFull(),

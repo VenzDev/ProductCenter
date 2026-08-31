@@ -6,6 +6,7 @@ namespace App\Mcp\Tools;
 
 use App\Product\Action\CreateProduct;
 use App\Product\ObjectValue\NewProduct;
+use App\Storage\StorageDisk;
 use Illuminate\Contracts\JsonSchema\JsonSchema;
 use Illuminate\Http\Client\ConnectionException;
 use Illuminate\JsonSchema\Types\Type;
@@ -125,7 +126,7 @@ class CreateProductTool extends Tool
         }
 
         $path = 'product-images/tmp/'.Str::uuid()->toString().'.'.$extension;
-        Storage::disk('s3')->put($path, $response->body());
+        Storage::disk(StorageDisk::S3)->put($path, $response->body());
 
         return $path;
     }
