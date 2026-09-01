@@ -11,8 +11,23 @@ class MicrosoftAdminResolver implements ResolverInterface
 {
     public function resolve(SocialiteUser $microsoftUser): ?Admin
     {
-        return Admin::where('microsoft_id', $microsoftUser->getId())->first()
-            ?? $this->provision($microsoftUser);
+        return $this->resolveFromClaims(
+            $microsoftUser->getId(),
+            $microsoftUser->getEmail(),
+            $microsoftUser->getName(),
+        );
+    }
+
+    /**
+     * Match (or just-in-time provision) an Admin from identity claims — shared by
+     * the browser SSO flow above and the MCP bearer-token guard
+     * (App\Mcp\Http\EntraTokenAuthenticator). `$microsoftId` is the Entra object
+     * id (`oid` / Graph `id`).
+     */
+    public function resolveFromClaims(string $microsoftId, ?string $email, ?string $name): ?Admin
+    {
+        return Admin::where('microsoft_id', $microsoftId)->first()
+            ?? $this->provision($microsoftId, $email, $name);
     }
 
     // Just-in-time provisioning: the OAuth app registration is already single-tenant
@@ -21,19 +36,18 @@ class MicrosoftAdminResolver implements ResolverInterface
     // rather than the `mail` claim because UPN is always populated and, for B2B guests,
     // takes the form `user_otherdomain.com#EXT#@tenant...` — which won't match a plain
     // domain suffix, so guests are naturally excluded too.
-    private function provision(SocialiteUser $microsoftUser): ?Admin
+    private function provision(string $microsoftId, ?string $email, ?string $name): ?Admin
     {
         $allowedDomain = config('services.microsoft.allowed_domain');
-        $email = $microsoftUser->getEmail();
 
         if (! $allowedDomain || ! $email || ! str_ends_with(strtolower($email), '@'.strtolower($allowedDomain))) {
             return null;
         }
 
         return Admin::create([
-            'name' => $microsoftUser->getName() ?? $email,
+            'name' => $name ?? $email,
             'email' => $email,
-            'microsoft_id' => $microsoftUser->getId(),
+            'microsoft_id' => $microsoftId,
         ]);
     }
 }

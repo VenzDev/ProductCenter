@@ -55,6 +55,14 @@ return [
             'driver' => 'session',
             'provider' => 'admins',
         ],
+
+        // Stateless guard for the web MCP server — authenticates each request
+        // from a Microsoft Entra bearer token (see App\Providers\AppServiceProvider
+        // and App\Mcp\Http\EntraTokenAuthenticator). Resolves to an Admin.
+        'mcp' => [
+            'driver' => 'entra-mcp',
+            'provider' => 'admins',
+        ],
     ],
 
     /*

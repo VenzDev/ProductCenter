@@ -10,6 +10,9 @@ use App\Ai\AttachmentEmbeddingsGeneration\Splitter\ChunksSplitterInterface;
 use App\Ai\AttachmentEmbeddingsGeneration\Splitter\MinimalChunksSplitter;
 use App\Ai\DescriptionGeneration\Generator\PrismProductDescriptionGenerator;
 use App\Ai\DescriptionGeneration\Generator\ProductDescriptionGeneratorInterface;
+use App\Mcp\Http\EntraTokenAuthenticator;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use OpenSearch\Client as OpenSearchClient;
@@ -52,5 +55,8 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Event::listen(SocialiteWasCalled::class, MicrosoftExtendSocialite::class);
+
+        // Backs the 'mcp' auth guard used by the web MCP server (routes/ai.php).
+        Auth::viaRequest('entra-mcp', fn (Request $request) => app(EntraTokenAuthenticator::class)->authenticate($request));
     }
 }

@@ -297,3 +297,93 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 - **Baza RDS** (`skip_final_snapshot = true`) i jej hasło w Secrets Manager (`manage_master_user_password`, zarządzane przez `aws_db_instance`) — obie znikają bez śladu przy `destroy`, żadnego snapshotu na wyjściu.
 - **Rekordy Route53 `admin.bechta.pl` i `shop.bechta.pl`** — tworzone imperatywnie (krok 9), nie przez Terraform, więc `terraform destroy` ich nie usuwa; wskazują na ALB, które znikną razem z klastrem, więc zostają jako martwe aliasy dopóki nie zrobi się `aws route53 change-resource-record-sets` z `"Action": "DELETE"` ręcznie dla każdego.
 - **Same ALB** — tworzone imperatywnie przez AWS Load Balancer Controller (nie Terraform) w reakcji na Ingress. Trzeba je usunąć PRZED `terraform destroy` (`helm uninstall backend`, `helm uninstall frontend` i poczekać aż kontroler je sprzątnie), inaczej `destroy` wywali się próbując usunąć subnety/IGW, na których ALB nadal ma ENI — patrz błąd #13.
+- **Rejestracje aplikacji w Entra** (`Product Center MCP API`, `Claude MCP Client`) — zakładane ręcznie w portalu (sekcja 6), nie przez Terraform; przeżywają teardown klastra, ale ich wartości trzeba na nowo wpisać do `values.yaml` / connectora Claude po świeżym `apply`.
+
+## 6. MCP przez HTTP + Microsoft Entra
+
+Serwer MCP (`ProductCenterServer`, tools `list-categories` / `create-product`) jest wystawiony
+po HTTP pod `https://admin.bechta.pl/mcp` (`services/backend/routes/ai.php` → `Mcp::web`).
+Backend jest tu wyłącznie **OAuth 2.1 resource serverem** (RFC 9728): waliduje token dostępowy
+wystawiony przez Entrę, sam nie prowadzi OAuth (patrz `docs/adl.md` i `config/mcp_auth.php`).
+Ten sam tenant co SSO panelu admina, ale **osobna para rejestracji**. Klient (Claude) robi
+flow auth code + PKCE bezpośrednio z Entrą.
+
+### 6a. Rejestracje w Entra (portal, jednorazowo)
+
+**Dlaczego `resource` = pełny URL, a nie `api://<guid>`:** MCP wymaga (RFC 8707), żeby klient
+wysłał do authorization servera parametr `resource` = kanoniczny URL serwera MCP, a strict-klienci
+(`@modelcontextprotocol` SDK, `mcp-remote`, prawdopodobnie connector Claude) **weryfikują**, że
+`resource` w metadanych jest prefiksem URL-a, pod który się łączą. Jednocześnie Entra przyjmuje
+w `resource` tylko zarejestrowane *Application ID URI* i musi ono pasować do żądanego scope
+(inaczej **AADSTS9010010**). Jedyny sposób pogodzenia obu: ustawić *Application ID URI* appki API
+na dokładnie `https://admin.bechta.pl/mcp` — co wymaga zweryfikowanej domeny w Entra.
+
+0. **Zweryfikuj domenę `bechta.pl` w Entra** (jeśli jeszcze nie): Entra ID → *Custom domain names*
+   → *Add custom domain* → dodaj rekord TXT w Route53 (`bechta.pl`) → *Verify*. Subdomeny
+   (`admin.bechta.pl`) są wtedy dozwolone jako host w Application ID URI.
+
+1. **App registration „Product Center MCP API”** (resource server):
+   - *Expose an API* → *Application ID URI* → ustaw na **`https://admin.bechta.pl/mcp`** (nie domyślne `api://<guid>`).
+   - *Add a scope*: `mcp.use`, *Who can consent* = Admins and users. Pełna nazwa scope: `https://admin.bechta.pl/mcp/mcp.use`.
+   - *Manifest*: `requestedAccessTokenVersion: 2` (token v2 → `iss` = `https://login.microsoftonline.com/<tenant>/v2.0`).
+   - Do `infrastructure/k8s/backend/values.yaml`:
+     - `MCP_ENTRA_AUDIENCE` = `https://admin.bechta.pl/mcp` **i** *Application (client) ID* GUID po przecinku (lista przyjmuje oba warianty `aud`).
+     - `MCP_ENTRA_SCOPE_URI` = `https://admin.bechta.pl/mcp/mcp.use`.
+     - `MCP_ENTRA_RESOURCE` — zostaw **puste**, fallback to `url('/mcp')` = `https://admin.bechta.pl/mcp`.
+     - `MCP_ENTRA_TENANT_ID` czyta ten sam Secret `backend-secrets/azure-tenant-id` co SSO — nic nowego.
+   - W razie wątpliwości: wklej realny token na `jwt.ms` i sprawdź `aud` / `iss` / `scp`.
+
+2. **App registration „Claude MCP Client”** (klient, bo Entra nie ma użytecznego DCR):
+   - Platforma *Web*, redirect URIs: `https://claude.ai/api/mcp/auth_callback` i `https://claude.com/api/mcp/auth_callback`.
+   - *Certificates & secrets* → nowy client secret (zanotuj wartość, pokazana raz).
+   - *API permissions* → *My APIs* → „Product Center MCP API” → delegated `mcp.use` → **Grant admin consent**.
+   - Zanotuj *Application (client) ID* i secret — idą do Claude, nie do backendu.
+
+> **Test lokalny (`http://localhost:8081/mcp`) pełnym klientem nie zadziała** — Entra nie przyjmie
+> `http://localhost/...` jako Application ID URI, a strict-klient nie zaakceptuje `resource` innego
+> niż URL połączenia (`mcp-remote`: *"Protected resource … does not match expected http://localhost…"*).
+> Lokalnie testuj logikę backendu ręcznym tokenem (6c, wariant B) albo MCP Inspectorem z wklejonym
+> tokenem. Pełny flow klienta weryfikuj dopiero na wdrożonym `https://admin.bechta.pl/mcp`.
+
+### 6b. Podłączenie w Claude
+
+Claude → Settings → Connectors → *Add custom connector*:
+- URL: `https://admin.bechta.pl/mcp`
+- *Advanced* → OAuth Client ID / Client Secret = wartości z „Claude MCP Client” (krok 2).
+
+Claude sam: dostaje 401 z `WWW-Authenticate: … resource_metadata=…` → czyta metadane → odkrywa Entrę →
+przeprowadza logowanie w przeglądarce → dostaje token → woła `/mcp` z `Authorization: Bearer`.
+Konto `Admin` zakładane JIT przy pierwszym wywołaniu, jeśli e-mail należy do
+`AZURE_OPENID_ALLOWED_DOMAIN` (ta sama reguła co SSO panelu).
+
+### 6c. Weryfikacja
+
+**Wariant A — bez tokenu (trasy + nagłówek), działa też lokalnie:**
+```bash
+curl -s http://localhost:8081/.well-known/oauth-protected-resource | jq   # authorization_servers → tenant Entry
+curl -s -i -X POST http://localhost:8081/mcp \
+  -H 'Accept: application/json' -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"ping"}' | grep -iE '^HTTP|^www-authenticate'   # 401 + resource_metadata
+```
+
+**Wariant B — ręczny token Entry (JWKS + iss/aud/scp + JIT), lokalnie:**
+```bash
+az login --allow-no-subscriptions
+API=https://admin.bechta.pl/mcp                       # = Application ID URI appki API
+TOKEN=$(az account get-access-token --scope "$API/.default" --query accessToken -o tsv)
+# AADSTS65001? → w appce API: Expose an API → Add a client application →
+#   04b07795-8ddb-461a-bbee-02f9e1bf7b46 (Azure CLI) + zaznacz scope, potem powtórz.
+curl -s -X POST http://localhost:8081/mcp -H "Authorization: Bearer $TOKEN" \
+  -H 'Accept: application/json' -H 'Content-Type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}' | jq        # 200 + lista tools
+docker compose exec backend php artisan tinker --execute="App\Models\Admin::latest()->first()?->only(['email','microsoft_id'])"
+```
+(Wariant B lokalnie działa mimo że `resource` w metadanych to `http://localhost:8081/mcp` —
+`az` nie wysyła parametru `resource`, opiera się na scope.)
+
+**Wariant C — pełny flow klienta, tylko na wdrożeniu:**
+```bash
+curl -s https://admin.bechta.pl/.well-known/oauth-protected-resource | jq
+# Dodaj connector w Claude (6b) → zaloguj się → w rozmowie sprawdź list-categories / create-product
+kubectl logs deploy/backend | grep -i 'MCP Entra token rejected'   # puste = OK
+```
