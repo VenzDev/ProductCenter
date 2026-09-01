@@ -87,6 +87,16 @@ env:
       secretKeyRef:
         name: backend-secrets
         key: azure-redirect-uri
+  # Email domain allowed to self-provision an Admin on first login — the browser SSO
+  # (MicrosoftAdminResolver) and the MCP bearer-token guard both gate JIT on it. Unset
+  # ⇒ JIT is off and every Admin must be created by hand. Not a secret, but kept in
+  # backend-secrets with the rest of the AZURE_OPENID_* group.
+  - name: AZURE_OPENID_ALLOWED_DOMAIN
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: azure-allowed-domain
+        optional: true
   # Web MCP server (/mcp) — validates Microsoft Entra access tokens as an OAuth 2.1
   # resource server (see docs/runbook.md section 6, config/mcp_auth.php). Same tenant
   # as the admin SSO above, dedicated "Product Center MCP API" registration whose

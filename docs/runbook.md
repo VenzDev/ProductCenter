@@ -105,6 +105,11 @@ terraform output rds_endpoint
 #    (AZURE_OPENID_*) — osobna rejestracja aplikacji w Entra, nie generowane tutaj.
 #    azure-redirect-uri wymaga publicznego, HTTPS URL-a backendu — od kroku 6a niżej
 #    to https://admin.bechta.pl/auth/microsoft/callback.
+#    azure-allowed-domain — domena maili, których właściciele mogą się sami
+#    zaprovisionować jako Admin przy pierwszym logowaniu (SSO panelu ORAZ guard MCP).
+#    Puste ⇒ JIT wyłączony i każdego Admina zakłada się ręcznie (patrz niżej).
+#    secretKeyRef jest optional, więc pominięcie klucza nie wywala poda — ale wtedy
+#    JIT nie działa.
 DB_PASSWORD=$(aws secretsmanager get-secret-value \
   --secret-id "$(terraform output -raw rds_master_user_secret_arn)" \
   --query SecretString --output text | jq -r .password)
@@ -115,7 +120,14 @@ kubectl create secret generic backend-secrets \
   --from-literal=azure-client-id="<z Azure App Registration>" \
   --from-literal=azure-tenant-id="<z Azure App Registration>" \
   --from-literal=azure-client-secret="<z Azure App Registration>" \
-  --from-literal=azure-redirect-uri="https://admin.bechta.pl/auth/microsoft/callback"
+  --from-literal=azure-redirect-uri="https://admin.bechta.pl/auth/microsoft/callback" \
+  --from-literal=azure-allowed-domain="<domena tenanta, np. bechta.pl — albo pominąć>"
+
+# Konta spoza azure-allowed-domain (np. personal MSA @outlook.com) trzeba dodać ręcznie —
+# świeży RDS ma zero adminów:
+#   kubectl exec deployment/backend -c backend -- php artisan tinker --execute='
+#     App\Models\Admin::firstOrCreate(["microsoft_id"=>"<oid z tokenu / jwt.ms>"],
+#       ["email"=>"<mail>","name"=>"<imię>"]);'
 
 # 5a. Hasło admina OpenSeark — ten sam Secret czytają oba charty: opensearch (ustawia
 #     hasło na starcie, OPENSEARCH_INITIAL_ADMIN_PASSWORD) i backend (loguje się nim jako
