@@ -102,6 +102,6 @@ env:
   - name: MCP_ENTRA_AUDIENCE
     # Accepted token "aud" values, comma-separated — the API app's Application ID URI
     # and its client-id GUID (Entra v2 uses the GUID; listing both is safe).
-    value: "https://admin.bechta.pl/mcp,<ENTRA:mcp-api-client-id>"
+    value: "https://admin.bechta.pl/mcp,60742fc7-7be4-433b-9f05-ac54c34794c5"
   - name: MCP_ENTRA_SCOPE_URI
     value: "https://admin.bechta.pl/mcp/mcp.use"
