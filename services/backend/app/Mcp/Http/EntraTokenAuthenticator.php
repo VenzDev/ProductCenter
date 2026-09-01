@@ -104,6 +104,8 @@ class EntraTokenAuthenticator
                 ->json()
         );
 
-        return JWK::parseKeySet($jwks);
+        // Entra's JWKS entries carry no "alg" field, so firebase/php-jwt needs a
+        // default algorithm — Entra signs its v2 access tokens with RS256.
+        return JWK::parseKeySet($jwks, 'RS256');
     }
 }

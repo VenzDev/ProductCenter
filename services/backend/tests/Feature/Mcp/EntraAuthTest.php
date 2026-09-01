@@ -22,11 +22,12 @@ beforeEach(function () {
 
     $b64url = fn (string $bin): string => rtrim(strtr(base64_encode($bin), '+/', '-_'), '=');
 
+    // No "alg" on the key — Entra's JWKS omits it, and the authenticator must
+    // still parse the set (JWK::parseKeySet with a default algorithm).
     Cache::forget('mcp.entra.jwks');
     Cache::put('mcp.entra.jwks', ['keys' => [[
         'kty' => 'RSA',
         'use' => 'sig',
-        'alg' => 'RS256',
         'kid' => 'test-key',
         'n' => $b64url($details['rsa']['n']),
         'e' => $b64url($details['rsa']['e']),
