@@ -87,3 +87,31 @@ env:
       secretKeyRef:
         name: backend-secrets
         key: azure-redirect-uri
+  # Email domain allowed to self-provision an Admin on first login — the browser SSO
+  # (MicrosoftAdminResolver) and the MCP bearer-token guard both gate JIT on it. Unset
+  # ⇒ JIT is off and every Admin must be created by hand. Not a secret, but kept in
+  # backend-secrets with the rest of the AZURE_OPENID_* group.
+  - name: AZURE_OPENID_ALLOWED_DOMAIN
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: azure-allowed-domain
+        optional: true
+  # Web MCP server (/mcp) — validates Microsoft Entra access tokens as an OAuth 2.1
+  # resource server (see docs/runbook.md section 6, config/mcp_auth.php). Same tenant
+  # as the admin SSO above, dedicated "Product Center MCP API" registration whose
+  # Application ID URI is set to this exact URL (needs a verified domain in Entra) so
+  # that strict MCP clients and Entra agree on the RFC 8707 resource. Not secrets —
+  # also published in the public protected-resource metadata. MCP_ENTRA_RESOURCE is
+  # left unset: it falls back to url('/mcp') = https://admin.bechta.pl/mcp.
+  - name: MCP_ENTRA_TENANT_ID
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: azure-tenant-id
+  - name: MCP_ENTRA_AUDIENCE
+    # Accepted token "aud" values, comma-separated — the API app's Application ID URI
+    # and its client-id GUID (Entra v2 uses the GUID; listing both is safe).
+    value: "https://admin.bechta.pl/mcp,60742fc7-7be4-433b-9f05-ac54c34794c5"
+  - name: MCP_ENTRA_SCOPE_URI
+    value: "https://admin.bechta.pl/mcp/mcp.use"
