@@ -1,7 +1,13 @@
 {
   "common": {
-    "siteName": "Product Center",
-    "cart": "Cart"
+    "siteName": "Product Center"
+  },
+  "cart": {
+    "title": "Cart",
+    "openCart": "Open cart",
+    "empty": "Your cart is empty.",
+    "goToCart": "Go to cart",
+    "pagePlaceholder": "Cart page coming soon."
   },
   "nav": {
     "products": "Products",

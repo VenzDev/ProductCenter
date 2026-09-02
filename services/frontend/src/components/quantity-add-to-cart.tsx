@@ -4,6 +4,8 @@ import { useState } from "react";
 import { MinusIcon, PlusIcon } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useCart } from "@/hooks/use-cart";
+import type { Product } from "@/api/products";
 
 type QuantityAddToCartDict = {
   decreaseQuantity: string;
@@ -11,8 +13,15 @@ type QuantityAddToCartDict = {
   addToCart: string;
 };
 
-export function QuantityAddToCart({ dict }: { dict: QuantityAddToCartDict }) {
+export function QuantityAddToCart({
+  product,
+  dict,
+}: {
+  product: Product;
+  dict: QuantityAddToCartDict;
+}) {
   const [quantity, setQuantity] = useState(1);
+  const { addItem } = useCart();
 
   return (
     <div className="flex items-center gap-3">
@@ -39,7 +48,22 @@ export function QuantityAddToCart({ dict }: { dict: QuantityAddToCartDict }) {
           <span className="sr-only">{dict.increaseQuantity}</span>
         </Button>
       </div>
-      <Button className="flex-1" size="lg">
+      <Button
+        className="flex-1"
+        size="lg"
+        onClick={() =>
+          addItem(
+            {
+              productId: product.id,
+              name: product.name,
+              image: product.main_image?.thumbnail_webp_url ?? null,
+              priceCents: product.price_cents,
+              currency: product.currency,
+            },
+            quantity,
+          )
+        }
+      >
         {dict.addToCart}
       </Button>
     </div>
