@@ -47,7 +47,7 @@ export async function NewsSection() {
                 <h3 className="line-clamp-2 font-semibold">{post.title}</h3>
                 {post.published_at && (
                   <p className="text-sm text-muted-foreground">
-                    {formatDate(post.published_at)}
+                    {formatDate(post.published_at, locale)}
                   </p>
                 )}
               </CardContent>

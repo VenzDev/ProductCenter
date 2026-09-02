@@ -63,7 +63,7 @@ export default async function BlogPage({
                   <CardContent className="flex flex-col gap-2 p-4">
                     {post.published_at && (
                       <span className="text-sm text-muted-foreground">
-                        {formatDate(post.published_at)}
+                        {formatDate(post.published_at, lang)}
                       </span>
                     )}
                     <h2 className="line-clamp-2 font-semibold">
