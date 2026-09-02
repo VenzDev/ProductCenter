@@ -70,7 +70,7 @@ export default async function BlogPostPage({
         </h1>
         {post.published_at && (
           <p className="mt-1 text-sm text-muted-foreground">
-            {formatDate(post.published_at)}
+            {formatDate(post.published_at, lang)}
           </p>
         )}
 

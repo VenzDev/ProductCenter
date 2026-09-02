@@ -27,9 +27,9 @@ test('an admin can create a blog post with a wysiwyg body', function () {
 
     Livewire::test(CreateBlogPost::class)
         ->fillForm([
-            'title' => 'Hello World',
+            'title.en' => 'Hello World',
             'slug' => 'hello-world',
-            'content' => '<p>Hi</p>',
+            'content.en' => '<p>Hi</p>',
         ])
         ->call('create')
         ->assertHasNoFormErrors();
@@ -48,9 +48,9 @@ test('a blog post slug must be unique', function () {
 
     Livewire::test(CreateBlogPost::class)
         ->fillForm([
-            'title' => 'Hello World Again',
+            'title.en' => 'Hello World Again',
             'slug' => 'hello-world',
-            'content' => '<p>Hi again</p>',
+            'content.en' => '<p>Hi again</p>',
         ])
         ->call('create')
         ->assertHasFormErrors(['slug']);
@@ -62,7 +62,7 @@ test('an admin can update a blog post', function () {
     $this->actingAs($admin, 'admin');
 
     Livewire::test(EditBlogPost::class, ['record' => $post->getRouteKey()])
-        ->fillForm(['content' => '<p>Updated</p>'])
+        ->fillForm(['content.en' => '<p>Updated</p>'])
         ->call('save')
         ->assertHasNoFormErrors();
 
@@ -78,9 +78,9 @@ test('an admin can upload a blog post preview image to the s3 disk', function ()
 
     Livewire::test(CreateBlogPost::class)
         ->fillForm([
-            'title' => 'Hello World',
+            'title.en' => 'Hello World',
             'slug' => 'hello-world',
-            'content' => '<p>Hi</p>',
+            'content.en' => '<p>Hi</p>',
             'preview_image' => $image,
         ])
         ->call('create')

@@ -71,6 +71,28 @@ test('a single published blog post can be retrieved by its slug', function () {
     ]);
 });
 
+test('the Accept-Language header switches the translated title and content', function () {
+    $post = createPublishedBlogPost();
+    $post->setTranslation('title', 'pl', 'Witaj świecie');
+    $post->setTranslation('content', 'pl', '<p>Cześć</p>');
+    $post->save();
+
+    $response = $this->getJson('/api/v1/blog-posts/hello-world', ['Accept-Language' => 'pl']);
+
+    $response->assertOk();
+    $response->assertJsonPath('data.title', 'Witaj świecie');
+    $response->assertJsonPath('data.content', '<p>Cześć</p>');
+});
+
+test('an unsupported Accept-Language falls back to the default locale', function () {
+    createPublishedBlogPost();
+
+    $response = $this->getJson('/api/v1/blog-posts/hello-world', ['Accept-Language' => 'de']);
+
+    $response->assertOk();
+    $response->assertJsonPath('data.title', 'Hello World');
+});
+
 test('a draft blog post returns 404', function () {
     BlogPost::create(['title' => 'Draft', 'slug' => 'draft', 'content' => '<p>Draft</p>']);
 

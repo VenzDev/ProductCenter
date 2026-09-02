@@ -10,14 +10,24 @@ use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Spatie\Translatable\Attributes\Translatable;
+use Spatie\Translatable\HasTranslations;
 
 /**
+ * HasTranslations stores title/content as a {locale: string} JSON map but resolves
+ * them to a plain string in the current app locale on read (see App\Models\Product).
+ *
+ * @property-read string $title
+ * @property-read string $content
  * @property-read Carbon|null $published_at
  */
 #[Fillable(['title', 'slug', 'content', 'published_at', 'preview_image'])]
+#[Translatable(['title', 'content'])]
 #[ObservedBy(BlogPostImageObserver::class)]
 class BlogPost extends Model
 {
+    use HasTranslations;
+
     /**
      * @return array<string, string>
      */
