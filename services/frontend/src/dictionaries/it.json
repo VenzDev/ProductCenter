@@ -1,7 +1,13 @@
 {
   "common": {
-    "siteName": "Product Center",
-    "cart": "Carrello"
+    "siteName": "Product Center"
+  },
+  "cart": {
+    "title": "Carrello",
+    "openCart": "Apri il carrello",
+    "empty": "Il tuo carrello è vuoto.",
+    "goToCart": "Vai al carrello",
+    "pagePlaceholder": "Pagina del carrello in arrivo."
   },
   "nav": {
     "products": "Prodotti",

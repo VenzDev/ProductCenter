@@ -121,7 +121,7 @@ export default async function ProductPage({
               </div>
             )}
             <div className="mt-2 border-t pt-4">
-              <QuantityAddToCart dict={dict.product} />
+              <QuantityAddToCart product={product} dict={dict.product} />
             </div>
           </div>
         </div>

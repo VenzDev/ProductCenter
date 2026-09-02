@@ -1,7 +1,13 @@
 {
   "common": {
-    "siteName": "Product Center",
-    "cart": "Panier"
+    "siteName": "Product Center"
+  },
+  "cart": {
+    "title": "Panier",
+    "openCart": "Ouvrir le panier",
+    "empty": "Votre panier est vide.",
+    "goToCart": "Aller au panier",
+    "pagePlaceholder": "Page du panier bientôt disponible."
   },
   "nav": {
     "products": "Produits",

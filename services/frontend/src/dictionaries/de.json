@@ -1,7 +1,13 @@
 {
   "common": {
-    "siteName": "Product Center",
-    "cart": "Warenkorb"
+    "siteName": "Product Center"
+  },
+  "cart": {
+    "title": "Warenkorb",
+    "openCart": "Warenkorb öffnen",
+    "empty": "Dein Warenkorb ist leer.",
+    "goToCart": "Zum Warenkorb",
+    "pagePlaceholder": "Warenkorb-Seite folgt in Kürze."
   },
   "nav": {
     "products": "Produkte",
