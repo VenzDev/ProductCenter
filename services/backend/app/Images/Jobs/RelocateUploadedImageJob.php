@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Images\Jobs;
 
 use App\Images\Contracts\HasImagePaths;
+use App\Images\Support\StaleOriginalCleaner;
 use App\Storage\StorageDisk;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Filesystem\Filesystem;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -56,24 +56,12 @@ class RelocateUploadedImageJob implements ShouldQueue
         $canonicalPath = $paths::original($this->modelId, pathinfo($currentPath, PATHINFO_EXTENSION));
 
         if ($currentPath !== $canonicalPath) {
-            $this->deleteStaleOriginal($disk, $canonicalPath);
+            StaleOriginalCleaner::deleteSameStem($disk, $canonicalPath);
             $disk->move($currentPath, $canonicalPath);
             $model->setAttribute($this->imageColumn, $canonicalPath);
             $model->saveQuietly();
         }
 
         GenerateWebpImageJob::dispatch($canonicalPath);
-    }
-
-    private function deleteStaleOriginal(Filesystem $disk, string $canonicalPath): void
-    {
-        $directory = dirname($canonicalPath);
-        $stem = pathinfo($canonicalPath, PATHINFO_FILENAME);
-
-        foreach ($disk->files($directory) as $existing) {
-            if (pathinfo($existing, PATHINFO_FILENAME) === $stem) {
-                $disk->delete($existing);
-            }
-        }
     }
 }

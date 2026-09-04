@@ -10,6 +10,8 @@ use App\Ai\AttachmentEmbeddingsGeneration\Splitter\ChunksSplitterInterface;
 use App\Ai\AttachmentEmbeddingsGeneration\Splitter\MinimalChunksSplitter;
 use App\Ai\DescriptionGeneration\Generator\PrismProductDescriptionGenerator;
 use App\Ai\DescriptionGeneration\Generator\ProductDescriptionGeneratorInterface;
+use App\Ai\ImageGeneration\Generator\PrismProductImageGenerator;
+use App\Ai\ImageGeneration\Generator\ProductImageGeneratorInterface;
 use App\Mcp\Http\EntraTokenAuthenticator;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -29,6 +31,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $this->app->bind(ProductAttachmentEmbedderInterface::class, PrismProductAttachmentEmbedder::class);
         $this->app->bind(ProductDescriptionGeneratorInterface::class, PrismProductDescriptionGenerator::class);
+        $this->app->bind(ProductImageGeneratorInterface::class, PrismProductImageGenerator::class);
         $this->app->bind(ChunksSplitterInterface::class, MinimalChunksSplitter::class);
 
         $this->app->singleton(OpenSearchClient::class, function () {

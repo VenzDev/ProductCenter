@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Filament\Resources\Products\Pages;
 
 use App\Filament\Resources\Products\Actions\GenerateDescriptionAction;
+use App\Filament\Resources\Products\Actions\GenerateImageAction;
 use App\Filament\Resources\Products\ProductResource;
 use Filament\Actions\EditAction;
 use Filament\Resources\Pages\ViewRecord;
@@ -17,6 +18,7 @@ class ViewProduct extends ViewRecord
     {
         return [
             GenerateDescriptionAction::make(),
+            GenerateImageAction::make(),
             EditAction::make(),
         ];
     }
