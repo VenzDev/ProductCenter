@@ -45,22 +45,11 @@ class EntraTokenAuthenticator
             return null;
         }
 
-        $tenant = (string) config('mcp_auth.tenant_id');
-
-        if ($this->claim($claims, 'iss') !== "https://login.microsoftonline.com/{$tenant}/v2.0") {
+        if (! $this->issuerMatches($claims) || ! $this->audienceIsAllowed($claims)) {
             return null;
         }
 
-        /** @var list<string> $allowedAudiences */
-        $allowedAudiences = config('mcp_auth.audiences');
-
-        if (array_intersect($allowedAudiences, (array) ($claims->aud ?? [])) === []) {
-            return null;
-        }
-
-        $scp = $this->claim($claims, 'scp');
-
-        if (! in_array((string) config('mcp_auth.required_scope'), explode(' ', is_string($scp) ? $scp : ''), true)) {
+        if (! $this->hasRequiredScope($claims)) {
             abort(403, 'The access token is missing the required MCP scope.');
         }
 
@@ -83,6 +72,28 @@ class EntraTokenAuthenticator
     private function claim(stdClass $claims, string $name): mixed
     {
         return $claims->{$name} ?? null;
+    }
+
+    private function issuerMatches(stdClass $claims): bool
+    {
+        $tenant = (string) config('mcp_auth.tenant_id');
+
+        return $this->claim($claims, 'iss') === "https://login.microsoftonline.com/{$tenant}/v2.0";
+    }
+
+    private function audienceIsAllowed(stdClass $claims): bool
+    {
+        /** @var list<string> $allowedAudiences */
+        $allowedAudiences = config('mcp_auth.audiences');
+
+        return array_intersect($allowedAudiences, (array) ($claims->aud ?? [])) !== [];
+    }
+
+    private function hasRequiredScope(stdClass $claims): bool
+    {
+        $scp = $this->claim($claims, 'scp');
+
+        return in_array((string) config('mcp_auth.required_scope'), explode(' ', is_string($scp) ? $scp : ''), true);
     }
 
     /**
