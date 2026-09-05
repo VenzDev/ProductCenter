@@ -11,19 +11,12 @@ use App\Product\Request\SearchProductsRequest;
 use App\Product\Resource\ProductResource;
 use App\Product\Search\Formatter\AttributeFacetFormatter;
 use App\Product\Search\Formatter\CategoryFacetFormatter;
-use App\Product\Search\Hydrator\ProductHydrator;
-use App\Product\Search\Search\ProductFilterSearcher;
+use App\Product\Search\ProductSearchOrchestrator;
 use Illuminate\Http\Resources\Json\AnonymousResourceCollection;
-use Illuminate\Pagination\LengthAwarePaginator;
 
 class SearchProductsController extends Controller
 {
-    private const int PER_PAGE = 15;
-
-    public function __construct(
-        private readonly ProductFilterSearcher $searcher,
-        private readonly ProductHydrator $hydrator,
-    ) {}
+    public function __construct(private readonly ProductSearchOrchestrator $orchestrator) {}
 
     /**
      * Full-text product search, optionally narrowed to one category. The categories
@@ -48,46 +41,26 @@ class SearchProductsController extends Controller
             ? Attribute::filterableForCategories($categoryIds)
             : collect();
 
-        /** @var list<string> $filterableKeys */
-        $filterableKeys = $filterableAttributes->pluck('key')->values()->all();
-
-        /** @var array<string, list<string>> $requestedAttributeFilters */
-        $requestedAttributeFilters = $data['attr'] ?? [];
-        $selectedAttributeFilters = array_intersect_key($requestedAttributeFilters, array_flip($filterableKeys));
-
-        $page = max((int) ($data['page'] ?? 1), 1);
-        $from = ($page - 1) * self::PER_PAGE;
-
-        $result = $this->searcher->search(
+        $searchPage = $this->orchestrator->search(
+            request: $request,
             query: $data['q'],
             categoryIds: $categoryIds,
-            filterableAttributeKeys: $filterableKeys,
-            selectedAttributeFilters: $selectedAttributeFilters,
+            filterableAttributes: $filterableAttributes,
+            requestedAttributeFilters: $data['attr'] ?? [],
             priceMin: isset($data['price_min']) ? (int) $data['price_min'] : null,
             priceMax: isset($data['price_max']) ? (int) $data['price_max'] : null,
             sort: $data['sort'] ?? 'relevance',
-            from: $from,
-            size: self::PER_PAGE,
+            page: max((int) ($data['page'] ?? 1), 1),
         );
 
-        $products = $this->hydrator->hydrate($result->ids);
-
-        $paginator = new LengthAwarePaginator(
-            $products,
-            $result->total,
-            self::PER_PAGE,
-            $page,
-            ['path' => $request->url(), 'query' => $request->query()],
-        );
-
-        return ProductResource::collection($paginator)->additional([
+        return ProductResource::collection($searchPage->paginator)->additional([
             'filters' => [
-                'categories' => CategoryFacetFormatter::format($result->categoryBuckets),
-                'price' => $result->priceStats,
+                'categories' => CategoryFacetFormatter::format($searchPage->result->categoryBuckets),
+                'price' => $searchPage->result->priceStats,
                 'attributes' => $filterableAttributes->map(fn (Attribute $attribute) => [
                     'key' => $attribute->key,
                     'name' => $attribute->name,
-                    'options' => AttributeFacetFormatter::format($attribute, $result->attributeBuckets[$attribute->key] ?? []),
+                    'options' => AttributeFacetFormatter::format($attribute, $searchPage->result->attributeBuckets[$attribute->key] ?? []),
                 ])->values(),
             ],
         ]);
