@@ -2,18 +2,14 @@
 
 declare(strict_types=1);
 
-use App\Images\Jobs\RelocateUploadedImageJob;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
 use App\Product\Search\Index\ProductSearchIndexManager;
-use Illuminate\Support\Facades\Bus;
 use OpenSearch\Client;
 use Tests\Factories\ProductFactory;
 
 beforeEach(function () {
-    Bus::fake([RelocateUploadedImageJob::class]);
-
     // Other test files also create products without cleaning up the OpenSearch index
     // afterwards (see SearchProductsControllerTest for the full explanation) — start
     // from a known-good, freshly-mapped index rather than trusting whatever exists.

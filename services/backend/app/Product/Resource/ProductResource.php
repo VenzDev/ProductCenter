@@ -5,10 +5,8 @@ declare(strict_types=1);
 namespace App\Product\Resource;
 
 use App\Images\Support\ImageUrlResolver;
+use App\Models\Asset;
 use App\Models\Product;
-use App\Models\ProductImage;
-use App\Product\Support\ProductImageGalleryPaths;
-use App\Product\Support\ProductImagePaths;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -33,13 +31,9 @@ class ProductResource extends JsonResource
             'price_cents' => $this->price_cents,
             'currency' => $this->currency,
             'attributes' => $this->resolveAttributes($request),
-            'main_image' => $this->main_image
-                ? ImageUrlResolver::resolve(ProductImagePaths::class, $this->id)
-                : null,
-            'gallery' => $this->whenLoaded('images',
-                fn () => $this->images->map(fn (ProductImage $image) => ImageUrlResolver::resolve(
-                    ProductImageGalleryPaths::class, $image->id
-                ))),
+            'main_image' => ImageUrlResolver::resolve($this->mainImage),
+            'gallery' => $this->whenLoaded('galleryImages',
+                fn () => $this->galleryImages->map(fn (Asset $asset) => ImageUrlResolver::resolve($asset))),
         ];
     }
 

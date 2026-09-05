@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Resources\Products\RelationManagers;
 
-use App\Models\ProductImage;
+use App\Models\Asset;
 use App\Storage\StorageDisk;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -16,7 +16,7 @@ use Filament\Tables\Table;
 
 class ImagesRelationManager extends RelationManager
 {
-    protected static string $relationship = 'images';
+    protected static string $relationship = 'galleryImages';
 
     public function form(Schema $schema): Schema
     {
@@ -26,7 +26,7 @@ class ImagesRelationManager extends RelationManager
                     ->label('Image')
                     ->image()
                     ->disk(StorageDisk::S3)
-                    ->directory(fn (?ProductImage $record) => $record ? "product-images/gallery/{$record->id}/uploads" : 'product-images/gallery/tmp')
+                    ->directory(fn (?Asset $record) => $record ? "product-images/gallery/{$record->id}/uploads" : 'product-images/gallery/tmp')
                     ->visibility('public')
                     ->required(),
             ]);

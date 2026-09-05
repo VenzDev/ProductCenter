@@ -7,9 +7,9 @@ namespace App\Ai\ImageGeneration\Job;
 use App\Ai\ImageGeneration\Generator\ProductImageGeneratorInterface;
 use App\Ai\ImageGeneration\Prompt\ProductImagePromptBuilder;
 use App\Images\Jobs\GenerateWebpImageJob;
+use App\Images\Support\AssetPathResolver;
 use App\Images\Support\StaleOriginalCleaner;
 use App\Models\Product;
-use App\Product\Support\ProductImagePaths;
 use App\Storage\StorageDisk;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -43,14 +43,17 @@ class GenerateProductImageJob implements ShouldQueue
 
         $imageBytes = $ai->generate($promptBuilder->build($product));
 
+        $asset = $product->mainImage ?? $product->mainImage()->make();
+
         $disk = Storage::disk(StorageDisk::S3);
-        $canonicalPath = ProductImagePaths::original($this->productId, self::EXTENSION);
+        $canonicalPath = AssetPathResolver::original($asset, self::EXTENSION);
 
         StaleOriginalCleaner::deleteSameStem($disk, $canonicalPath);
         $disk->put($canonicalPath, $imageBytes, ['visibility' => 'public']);
 
-        $product->main_image = $canonicalPath;
-        $product->saveQuietly();
+        $asset->path = $canonicalPath;
+        $asset->sha256 = hash('sha256', $imageBytes);
+        $asset->saveQuietly();
 
         GenerateWebpImageJob::dispatch($canonicalPath);
     }

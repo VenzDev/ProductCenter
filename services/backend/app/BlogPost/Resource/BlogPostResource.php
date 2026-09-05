@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\BlogPost\Resource;
 
-use App\BlogPost\Support\BlogPostImagePaths;
 use App\Images\Support\ImageUrlResolver;
 use App\Models\BlogPost;
 use Illuminate\Http\Request;
@@ -26,9 +25,7 @@ class BlogPostResource extends JsonResource
             'slug' => $this->slug,
             'content' => $this->content,
             'published_at' => $this->published_at?->toIso8601String(),
-            'preview_image' => $this->preview_image
-                ? ImageUrlResolver::resolve(BlogPostImagePaths::class, $this->id)
-                : null,
+            'preview_image' => ImageUrlResolver::resolve($this->previewImage),
         ];
     }
 }

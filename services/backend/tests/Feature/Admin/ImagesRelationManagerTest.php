@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use App\Filament\Resources\Products\Pages\EditProduct;
 use App\Filament\Resources\Products\RelationManagers\ImagesRelationManager;
-use App\Models\ProductImage;
+use App\Models\Asset;
 use App\Storage\StorageDisk;
 use Filament\Actions\Testing\TestAction;
 use Illuminate\Http\UploadedFile;
@@ -30,7 +30,7 @@ test('an admin can upload a gallery image to the s3 disk', function () {
         ])
         ->assertHasNoFormErrors();
 
-    $galleryImage = $product->images()->first();
+    $galleryImage = $product->galleryImages()->first();
     expect($galleryImage)->not->toBeNull();
     expect($galleryImage->path)->toBe("product-images/gallery/{$galleryImage->id}/image.jpg");
     Storage::disk(StorageDisk::S3)->assertExists($galleryImage->path);
@@ -41,10 +41,11 @@ test('an admin can delete a gallery image', function () {
 
     $admin = AdminFactory::new()->create();
     $product = ProductFactory::new()->createQuietly();
-    // saveQuietly avoids the real ProductGalleryObserver dispatch — this test only
-    // cares about the delete action, not relocation/webp generation.
-    $galleryImage = new ProductImage(['product_id' => $product->id, 'path' => 'product-images/gallery/1/image.jpg']);
-    $galleryImage->saveQuietly();
+    // withoutEvents avoids the real AssetObserver dispatch — this test only cares
+    // about the delete action, not relocation/webp generation.
+    $galleryImage = Asset::withoutEvents(fn () => $product->galleryImages()->create([
+        'path' => 'product-images/gallery/1/image.jpg',
+    ]));
     $this->actingAs($admin, 'admin');
 
     Livewire::test(ImagesRelationManager::class, [
@@ -53,5 +54,5 @@ test('an admin can delete a gallery image', function () {
     ])
         ->callAction(TestAction::make('delete')->table($galleryImage));
 
-    expect($product->images()->count())->toBe(0);
+    expect($product->galleryImages()->count())->toBe(0);
 });

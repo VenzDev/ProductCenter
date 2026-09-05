@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Images\Support\AssetPathResolver;
 use App\Mcp\Servers\ProductCenterServer;
 use App\Mcp\Tools\CreateProductTool;
 use App\Models\Category;
 use App\Models\Product;
-use App\Product\Support\ProductImagePaths;
 use App\Storage\StorageDisk;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -36,8 +36,9 @@ test('it creates a product from the tool arguments', function () {
     expect($product->getTranslation('description', 'en', false))->toBe('A comfortable everyday mouse.');
 
     // The main image was staged and the observer pipeline ran (sync queue in tests).
-    expect($product->refresh()->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
-    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::webp($product->id));
+    $asset = $product->refresh()->mainImage;
+    expect($asset->path)->toBe("product-images/{$product->id}/main-image.jpg");
+    Storage::disk(StorageDisk::S3)->assertExists(AssetPathResolver::webp($asset));
 });
 
 test('it reports an error when the category does not exist', function () {

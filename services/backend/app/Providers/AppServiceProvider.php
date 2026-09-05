@@ -13,6 +13,9 @@ use App\Ai\DescriptionGeneration\Generator\ProductDescriptionGeneratorInterface;
 use App\Ai\ImageGeneration\Generator\PrismProductImageGenerator;
 use App\Ai\ImageGeneration\Generator\ProductImageGeneratorInterface;
 use App\Mcp\Http\EntraTokenAuthenticator;
+use App\Models\BlogPost;
+use App\Models\Product;
+use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Event;
@@ -57,6 +60,13 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Asset.owner_type stores this alias instead of the raw class name, so renaming a
+        // model class doesn't orphan existing polymorphic rows.
+        Relation::enforceMorphMap([
+            'product' => Product::class,
+            'blog_post' => BlogPost::class,
+        ]);
+
         Event::listen(SocialiteWasCalled::class, MicrosoftExtendSocialite::class);
 
         // Backs the 'mcp' auth guard used by the web MCP server (routes/ai.php).

@@ -30,7 +30,9 @@ test('handling the job stores the generated image as the product main image and 
 
     $expectedPath = "product-images/{$product->id}/main-image.png";
 
-    expect($product->fresh()->main_image)->toBe($expectedPath);
+    $asset = $product->fresh()->mainImage;
+    expect($asset->path)->toBe($expectedPath);
+    expect($asset->sha256)->toBe(hash('sha256', 'fake-png-bytes'));
     Storage::disk(StorageDisk::S3)->assertExists($expectedPath, 'fake-png-bytes');
     Bus::assertDispatched(GenerateWebpImageJob::class, fn (GenerateWebpImageJob $job) => $job->currentPath === $expectedPath);
 });

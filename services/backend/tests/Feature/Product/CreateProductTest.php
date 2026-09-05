@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use App\Images\Support\AssetPathResolver;
 use App\Models\Category;
 use App\Product\Action\CreateProduct;
 use App\Product\ObjectValue\NewProduct;
-use App\Product\Support\ProductImagePaths;
 use App\Storage\StorageDisk;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -45,7 +45,8 @@ test('it runs the image pipeline via the product observers', function () {
         mainImage: 'product-images/tmp/upload.jpg',
     ));
 
-    // RelocateUploadedImageJob + GenerateWebpImageJob run synchronously (sync queue in tests).
-    expect($product->refresh()->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
-    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::webp($product->id));
+    // RelocateUploadedAssetJob + GenerateWebpImageJob run synchronously (sync queue in tests).
+    $asset = $product->refresh()->mainImage;
+    expect($asset->path)->toBe("product-images/{$product->id}/main-image.jpg");
+    Storage::disk(StorageDisk::S3)->assertExists(AssetPathResolver::webp($asset));
 });

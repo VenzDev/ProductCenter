@@ -55,7 +55,8 @@ class BlogPostForm
                     ->image()
                     ->disk(StorageDisk::S3)
                     ->directory(fn (?BlogPost $record) => $record ? "blog-post-images/{$record->id}/uploads" : 'blog-post-images/tmp')
-                    ->visibility('public'),
+                    ->visibility('public')
+                    ->afterStateHydrated(fn (FileUpload $component, ?BlogPost $record) => $component->state($record?->previewImage?->path)),
                 DateTimePicker::make('published_at')
                     ->helperText('Leave empty to keep this post as a draft.'),
             ]);

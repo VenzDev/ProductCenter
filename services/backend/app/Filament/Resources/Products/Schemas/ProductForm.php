@@ -109,7 +109,8 @@ class ProductForm
                 ->required()
                 ->disk(StorageDisk::S3)
                 ->directory(fn (?Product $record) => $record ? "product-images/{$record->id}/uploads" : 'product-images/tmp')
-                ->visibility('public'),
+                ->visibility('public')
+                ->afterStateHydrated(fn (FileUpload $component, ?Product $record) => $component->state($record?->mainImage?->path)),
         ];
     }
 

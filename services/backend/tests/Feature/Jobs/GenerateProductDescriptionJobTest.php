@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use App\Ai\DescriptionGeneration\Job\GenerateProductDescriptionJob;
+use App\Models\Asset;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
@@ -43,8 +44,10 @@ test('handling the job includes the main image when one is stored on S3', functi
         'name' => 'Widget',
         'price_cents' => 1999,
         'currency' => 'PLN',
-        'main_image' => true,
     ]);
+    // withoutEvents avoids the real AssetObserver dispatch — this test only cares that
+    // a main image asset exists, not about relocation/webp generation.
+    Asset::withoutEvents(fn () => $product->mainImage()->create(['path' => 'product-images/1/main-image.jpg']));
 
     app()->call([new GenerateProductDescriptionJob($product->id, 'en'), 'handle']);
 

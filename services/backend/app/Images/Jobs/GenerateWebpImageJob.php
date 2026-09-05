@@ -17,7 +17,7 @@ use Intervention\Image\ImageManager;
 
 // Turns one image already sitting at its final path into a same-name .webp and
 // a "-thumbnail.webp" sibling. Knows nothing about models, columns, or upload
-// staging — see RelocateUploadedImageJob for that.
+// staging — see RelocateUploadedAssetJob for that.
 class GenerateWebpImageJob implements ShouldQueue
 {
     use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;

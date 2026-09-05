@@ -20,7 +20,7 @@ class ProductController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return ProductResource::collection(
-            Product::query()->with('category')->paginate()
+            Product::query()->with('category', 'mainImage')->paginate()
         );
     }
 
@@ -32,7 +32,7 @@ class ProductController extends Controller
     public function latest(): AnonymousResourceCollection
     {
         return ProductResource::collection(
-            Product::query()->with('category')->orderByDesc('id')->take(4)->get()
+            Product::query()->with('category', 'mainImage')->orderByDesc('id')->take(4)->get()
         );
     }
 
@@ -44,6 +44,6 @@ class ProductController extends Controller
      */
     public function show(Product $product): ProductResource
     {
-        return new ProductResource($product->load('category', 'images'));
+        return new ProductResource($product->load('category', 'mainImage', 'galleryImages'));
     }
 }

@@ -17,7 +17,7 @@ class BlogPostController extends Controller
     public function index(): AnonymousResourceCollection
     {
         return BlogPostResource::collection(
-            BlogPost::query()->published()->orderByDesc('published_at')->paginate()
+            BlogPost::query()->published()->with('previewImage')->orderByDesc('published_at')->paginate()
         );
     }
 
@@ -28,6 +28,6 @@ class BlogPostController extends Controller
     {
         abort_unless((bool) $blogPost->published_at?->isPast(), 404);
 
-        return new BlogPostResource($blogPost);
+        return new BlogPostResource($blogPost->load('previewImage'));
     }
 }

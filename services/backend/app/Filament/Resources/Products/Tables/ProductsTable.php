@@ -28,7 +28,7 @@ class ProductsTable
                     ->sortable(),
                 TextColumn::make('currency')
                     ->searchable(),
-                ImageColumn::make('main_image')
+                ImageColumn::make('mainImage.path')
                     ->disk(StorageDisk::S3)
                     ->visibility('public'),
                 TextColumn::make('created_at')

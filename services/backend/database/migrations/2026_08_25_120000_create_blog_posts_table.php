@@ -18,7 +18,6 @@ return new class extends Migration
             $table->jsonb('title');
             $table->string('slug')->unique();
             $table->jsonb('content');
-            $table->string('preview_image')->nullable();
             $table->timestamp('published_at')->nullable();
             $table->timestamps();
         });

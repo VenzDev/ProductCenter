@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\BlogPost\Observers\BlogPostImageObserver;
+use App\Images\Enums\AssetRole;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
-use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Illuminate\Support\Carbon;
 use Spatie\Translatable\Attributes\Translatable;
 use Spatie\Translatable\HasTranslations;
@@ -21,9 +21,8 @@ use Spatie\Translatable\HasTranslations;
  * @property-read string $content
  * @property-read Carbon|null $published_at
  */
-#[Fillable(['title', 'slug', 'content', 'published_at', 'preview_image'])]
+#[Fillable(['title', 'slug', 'content', 'published_at'])]
 #[Translatable(['title', 'content'])]
-#[ObservedBy(BlogPostImageObserver::class)]
 class BlogPost extends Model
 {
     use HasTranslations;
@@ -45,5 +44,13 @@ class BlogPost extends Model
     public function scopePublished(Builder $query): Builder
     {
         return $query->whereNotNull('published_at')->where('published_at', '<=', now());
+    }
+
+    /**
+     * @return MorphOne<Asset, $this>
+     */
+    public function previewImage(): MorphOne
+    {
+        return $this->morphOne(Asset::class, 'owner')->withAttributes(['role' => AssetRole::PreviewImage]);
     }
 }

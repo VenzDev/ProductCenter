@@ -18,7 +18,7 @@ class BlogPostsTable
     {
         return $table
             ->columns([
-                ImageColumn::make('preview_image')
+                ImageColumn::make('previewImage.path')
                     ->disk(StorageDisk::S3)
                     ->visibility('public'),
                 TextColumn::make('title')

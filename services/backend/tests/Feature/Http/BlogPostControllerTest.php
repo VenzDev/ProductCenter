@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Models\Asset;
 use App\Models\BlogPost;
 
 function createPublishedBlogPost(array $overrides = []): BlogPost
@@ -109,8 +110,11 @@ test('retrieving a non-existent blog post returns 404', function () {
 
 test('a blog post with a preview image exposes the webp and thumbnail URLs', function () {
     $post = createPublishedBlogPost();
-    $post->preview_image = "blog-post-images/{$post->id}/preview-image.jpg";
-    $post->saveQuietly();
+    // withoutEvents avoids the real AssetObserver dispatch — this test only cares
+    // about how the API serializes an already-placed preview image.
+    Asset::withoutEvents(fn () => $post->previewImage()->create([
+        'path' => "blog-post-images/{$post->id}/preview-image.jpg",
+    ]));
 
     $response = $this->getJson('/api/v1/blog-posts/hello-world');
 

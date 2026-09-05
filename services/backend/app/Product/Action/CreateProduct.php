@@ -11,14 +11,17 @@ class CreateProduct
 {
     public function handle(NewProduct $product): Product
     {
-        return Product::create([
+        $created = Product::create([
             'category_id' => $product->categoryId,
             'name' => $product->name,
             'description' => $product->description,
             'price_cents' => $product->priceCents,
             'currency' => $product->currency,
             'attributes' => $product->attributes,
-            'main_image' => $product->mainImage,
         ]);
+
+        $created->mainImage()->create(['path' => $product->mainImage]);
+
+        return $created;
     }
 }

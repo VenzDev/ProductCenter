@@ -197,7 +197,7 @@ class SeedDemoData extends Command
             $imageKey = 'product-images/tmp/'.Str::uuid()->toString().'.jpg';
             Storage::disk(StorageDisk::S3)->put($imageKey, $this->fetchDummyImageBytes());
 
-            Product::query()->create([
+            $product = Product::query()->create([
                 'category_id' => $subcategory['category']->id,
                 'name' => Str::title(implode(' ', $this->fakeWords(rand(2, 4)))),
                 'description' => implode("\n\n", $this->fakeParagraphs(rand(2, 4))),
@@ -205,8 +205,9 @@ class SeedDemoData extends Command
                 'attributes' => $subcategory['attributes']
                     ->mapWithKeys(fn (Attribute $attribute) => [$attribute->key => $this->randomAttributeValue($attribute)])
                     ->all(),
-                'main_image' => $imageKey,
             ]);
+
+            $product->mainImage()->create(['path' => $imageKey]);
 
             $bar->advance();
         }
@@ -227,13 +228,14 @@ class SeedDemoData extends Command
             $imageKey = 'blog-post-images/tmp/'.Str::uuid()->toString().'.jpg';
             Storage::disk(StorageDisk::S3)->put($imageKey, $this->fetchDummyImageBytes());
 
-            BlogPost::query()->create([
+            $post = BlogPost::query()->create([
                 'title' => $title,
                 'slug' => $slug,
                 'content' => collect($this->fakeParagraphs(4))->map(fn (string $paragraph) => "<p>{$paragraph}</p>")->implode(''),
                 'published_at' => now()->subDays(rand(1, 30)),
-                'preview_image' => $imageKey,
             ]);
+
+            $post->previewImage()->create(['path' => $imageKey]);
         }
     }
 

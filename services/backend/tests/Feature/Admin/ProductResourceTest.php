@@ -5,10 +5,10 @@ declare(strict_types=1);
 use App\Enums\AttributeType;
 use App\Filament\Resources\Products\Pages\CreateProduct;
 use App\Filament\Resources\Products\Pages\EditProduct;
+use App\Images\Support\AssetPathResolver;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
-use App\Product\Support\ProductImagePaths;
 use App\Storage\StorageDisk;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -123,14 +123,15 @@ test('an admin can upload a product image to the s3 disk', function () {
         ->assertHasNoFormErrors();
 
     $product = Product::first();
-    expect($product->main_image)->toBe("product-images/{$product->id}/main-image.jpg");
-    Storage::disk(StorageDisk::S3)->assertExists($product->main_image);
+    $asset = $product->mainImage;
+    expect($asset->path)->toBe("product-images/{$product->id}/main-image.jpg");
+    Storage::disk(StorageDisk::S3)->assertExists($asset->path);
 
-    // RelocateUploadedImageJob and the GenerateWebpImageJob it dispatches both run
+    // RelocateUploadedAssetJob and the GenerateWebpImageJob it dispatches both run
     // synchronously (sync queue driver in tests), so their output is already in place
     // once the form submission above returns.
-    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::webp($product->id));
-    Storage::disk(StorageDisk::S3)->assertExists(ProductImagePaths::thumbnailWebp($product->id));
+    Storage::disk(StorageDisk::S3)->assertExists(AssetPathResolver::webp($asset));
+    Storage::disk(StorageDisk::S3)->assertExists(AssetPathResolver::thumbnailWebp($asset));
 });
 
 test('the attributes repeater starts empty on create before a category is chosen', function () {

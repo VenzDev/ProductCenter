@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use App\Enums\AttributeType;
+use App\Models\Asset;
 use App\Models\Attribute;
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\ProductImage;
 use Tests\Factories\ProductFactory;
 
 function createProduct(): Product
@@ -63,8 +63,8 @@ test('a single product can be retrieved', function () {
 
 test('a product with a main image exposes the webp and thumbnail URLs', function () {
     $product = createProduct();
-    $product->main_image = "product-images/{$product->id}/main-image.jpg";
-    $product->saveQuietly();
+    $product->mainImage->path = "product-images/{$product->id}/main-image.jpg";
+    $product->mainImage->saveQuietly();
 
     $response = $this->getJson("/api/v1/products/{$product->id}");
 
@@ -73,14 +73,14 @@ test('a product with a main image exposes the webp and thumbnail URLs', function
     $response->assertJsonPath('data.main_image.thumbnail_webp_url', fn ($url) => str_ends_with($url, "product-images/{$product->id}/main-image-thumbnail.webp"));
 });
 
-function createGalleryImageQuietly(Product $product, string $path, int $order = 0): ProductImage
+function createGalleryImageQuietly(Product $product, string $path, int $order = 0): Asset
 {
-    // saveQuietly avoids the real ProductGalleryObserver dispatch — these tests only
-    // care about how the API serializes an already-placed gallery image.
-    $image = new ProductImage(['product_id' => $product->id, 'path' => $path, 'order' => $order]);
-    $image->saveQuietly();
-
-    return $image;
+    // withoutEvents avoids the real AssetObserver dispatch — these tests only care
+    // about how the API serializes an already-placed gallery image.
+    return Asset::withoutEvents(fn () => $product->galleryImages()->create([
+        'path' => $path,
+        'order' => $order,
+    ]));
 }
 
 test('a single product exposes its gallery images in order, with webp and thumbnail URLs', function () {

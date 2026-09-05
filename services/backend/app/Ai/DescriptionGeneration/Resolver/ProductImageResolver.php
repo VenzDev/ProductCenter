@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Ai\DescriptionGeneration\Resolver;
 
+use App\Images\Support\AssetPathResolver;
 use App\Models\Product;
-use App\Product\Support\ProductImagePaths;
 use App\Storage\StorageDisk;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -15,11 +15,13 @@ class ProductImageResolver
 {
     public function resolve(Product $product): ?Image
     {
-        if (! $product->main_image) {
+        $asset = $product->mainImage;
+
+        if (! $asset) {
             return null;
         }
 
-        $path = ProductImagePaths::webp($product->id);
+        $path = AssetPathResolver::webp($asset);
 
         if (! Storage::disk(StorageDisk::S3)->exists($path)) {
             Log::info("GenerateProductDescriptionJob: product [{$product->id}] main image not yet available on S3, generating description without it");

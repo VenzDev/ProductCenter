@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use App\BlogPost\Support\BlogPostImagePaths;
 use App\Filament\Resources\BlogPosts\Pages\CreateBlogPost;
 use App\Filament\Resources\BlogPosts\Pages\EditBlogPost;
+use App\Images\Support\AssetPathResolver;
 use App\Models\BlogPost;
 use App\Storage\StorageDisk;
 use Illuminate\Http\UploadedFile;
@@ -87,12 +87,13 @@ test('an admin can upload a blog post preview image to the s3 disk', function ()
         ->assertHasNoFormErrors();
 
     $post = BlogPost::where('slug', 'hello-world')->first();
-    expect($post->preview_image)->toBe("blog-post-images/{$post->id}/preview-image.jpg");
-    Storage::disk(StorageDisk::S3)->assertExists($post->preview_image);
+    $asset = $post->previewImage;
+    expect($asset->path)->toBe("blog-post-images/{$post->id}/preview-image.jpg");
+    Storage::disk(StorageDisk::S3)->assertExists($asset->path);
 
-    // RelocateUploadedImageJob and the GenerateWebpImageJob it dispatches both run
+    // RelocateUploadedAssetJob and the GenerateWebpImageJob it dispatches both run
     // synchronously (sync queue driver in tests), so their output is already in place
     // once the form submission above returns.
-    Storage::disk(StorageDisk::S3)->assertExists(BlogPostImagePaths::webp($post->id));
-    Storage::disk(StorageDisk::S3)->assertExists(BlogPostImagePaths::thumbnailWebp($post->id));
+    Storage::disk(StorageDisk::S3)->assertExists(AssetPathResolver::webp($asset));
+    Storage::disk(StorageDisk::S3)->assertExists(AssetPathResolver::thumbnailWebp($asset));
 });

@@ -56,7 +56,7 @@ class ProductInfolist
                             ]),
                         Tab::make('Media')
                             ->schema([
-                                ImageEntry::make('main_image')
+                                ImageEntry::make('mainImage.path')
                                     ->disk(StorageDisk::S3)
                                     ->visibility('public')
                                     ->placeholder('-'),

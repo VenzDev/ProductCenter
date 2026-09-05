@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Images\Enums\AssetRole;
 use App\Product\Collection\ProductAttributeCollection;
-use App\Product\Observers\ProductImageObserver;
 use App\Product\Observers\ProductSearchObserver;
 use Illuminate\Database\Eloquent\Attributes\Fillable;
 use Illuminate\Database\Eloquent\Attributes\ObservedBy;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Illuminate\Database\Eloquent\Relations\MorphOne;
 use Spatie\Translatable\Attributes\Translatable;
 use Spatie\Translatable\HasTranslations;
 
@@ -23,9 +25,9 @@ use Spatie\Translatable\HasTranslations;
  * @property-read string $name
  * @property-read string|null $description
  */
-#[Fillable(['category_id', 'name', 'description', 'price_cents', 'currency', 'attributes', 'main_image'])]
+#[Fillable(['category_id', 'name', 'description', 'price_cents', 'currency', 'attributes'])]
 #[Translatable(['name', 'description'])]
-#[ObservedBy([ProductImageObserver::class, ProductSearchObserver::class])]
+#[ObservedBy(ProductSearchObserver::class)]
 class Product extends Model
 {
     use HasTranslations;
@@ -57,11 +59,19 @@ class Product extends Model
     }
 
     /**
-     * @return HasMany<ProductImage, $this>
+     * @return MorphOne<Asset, $this>
      */
-    public function images(): HasMany
+    public function mainImage(): MorphOne
     {
-        return $this->hasMany(ProductImage::class)->orderBy('order');
+        return $this->morphOne(Asset::class, 'owner')->withAttributes(['role' => AssetRole::MainImage]);
+    }
+
+    /**
+     * @return MorphMany<Asset, $this>
+     */
+    public function galleryImages(): MorphMany
+    {
+        return $this->morphMany(Asset::class, 'owner')->withAttributes(['role' => AssetRole::GalleryImage])->orderBy('order');
     }
 
     public function getAttributeCollection(): ProductAttributeCollection
