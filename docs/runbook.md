@@ -61,6 +61,56 @@ cd infrastructure/ecr
 terraform apply
 cd ..
 
+# 0b. Sekrety/zmienne backendu, OpenSearch i frontendu w SSM Parameter Store — jedno
+#    źródło prawdy dla wszystkich trzech, też osobny root module (własny state), z tego
+#    samego powodu co ECR: te wartości nie zależą od klastra i nie mają powodu znikać
+#    razem z nim. Raz wypełnione (raz na zewnętrzną rejestrację — Entra/Stripe/OpenAI,
+#    nie raz na klaster), przetrwają dowolną liczbę `terraform destroy`/`apply` na
+#    infrastructure/eks. app-key i hasło admina OpenSearch są generowane tu przez
+#    Terraform (random_bytes/random_password) — jedyne bez zewnętrznego źródła. Backend
+#    i OpenSearch trafiają do k8s przez ExternalSecret (IRSA rola,
+#    infrastructure/eks/iam.tf; szablony infrastructure/k8s/backend/templates/
+#    i infrastructure/k8s/opensearch/templates/externalsecret.yaml) — patrz 5, 5a i 7a
+#    niżej. Klucz frontendu NIE trafia do k8s wcale — potrzebny jest wcześniej, przy
+#    `docker build` (patrz krok 0c), więc czyta go stamtąd bezpośrednio rola OIDC GitHub
+#    Actions (infrastructure/ecr/github-oidc.tf), zamiast leżeć jako osobny sekret repo.
+cd infrastructure/ssm
+cp terraform.tfvars.example terraform.tfvars   # wypełnij prawdziwymi wartościami — plik gitignored
+terraform apply
+cd ..
+
+# 0c. Build + push obrazów (dla payment, backend i frontend). Nie zależy od VPC/EKS/RDS,
+#    tylko od ECR (krok 0) — i od SSM (krok 0b) w przypadku frontendu, bo jego build-arg
+#    czyta stamtąd Stripe publishable key. Dlatego robimy to tu, od razu, zamiast czekać
+#    na `terraform apply` w infrastructure/eks (kilka-kilkanaście minut na sam klaster).
+#
+# Alternatywa do komend niżej: workflowy `.github/workflows/build-<serwis>.yaml`
+# (workflow_dispatch, jeden na serwis, plus opensearch) — budują i pushują do ECR z
+# runnera x86_64, uwierzytelnienie przez OIDC (rola `product-center-github-actions-ecr`
+# z `infrastructure/ecr/github-oidc.tf`, ARN w output `github_actions_ecr_role_arn`;
+# jeśli ARN się zmieni, podmień `AWS_ROLE_ARN` w tych plikach). Obraz jest tagowany
+# commit SHA + tagiem z inputu (domyślnie `latest`).
+docker build --platform linux/amd64 --target prod \
+  -t 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest \
+  services/<serwis>
+docker push 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest
+
+# frontend: wyjątek od powyższego — Next.js "zaszywa" NEXT_PUBLIC_* w bundlu JUŻ przy
+# `next build`, więc klucz publikowalny Stripe musi wejść jako --build-arg, nie jako
+# env Deploymentu (na to byłoby za późno, obraz jest już zbudowany). Ten sam klucz co
+# lokalnie w services/frontend/.env, wgrany do SSM w kroku 0b (jedno źródło prawdy —
+# nie leży też jako sekret repo GitHub). Workflow `build-frontend.yaml` czyta go stamtąd tą samą rolą
+# OIDC, co ECR push — jeśli budujesz ręcznie, dopisz do komendy wyżej:
+#   --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=$(aws ssm get-parameter \
+#     --name /product-center/frontend/stripe-publishable-key --query Parameter.Value --output text)
+
+# opensearch: obraz custom (plugin analysis-stempel + słowniki synonimów), nie ma stage'y
+# dev/prod jak reszta serwisów, więc bez --target
+docker build --platform linux/amd64 \
+  -t 222634367938.dkr.ecr.eu-central-1.amazonaws.com/opensearch:latest \
+  services/backend/docker/opensearch
+docker push 222634367938.dkr.ecr.eu-central-1.amazonaws.com/opensearch:latest
+
 cd infrastructure/eks
 
 # 1. Infrastruktura (VPC, EKS, node group, addony, S3, RDS, rola IRSA)
@@ -74,54 +124,20 @@ aws eks update-kubeconfig --name product-center --region eu-central-1
 # (np. `minikube start`) po cichu je nadpisze
 kubectl config current-context   # powinno pokazać arn:aws:eks:...:cluster/product-center
 
-# 3. Build + push obrazów (dla payment, backend i frontend)
-#
-# Alternatywa do komend niżej: workflowy `.github/workflows/build-<serwis>.yaml`
-# (workflow_dispatch, jeden na serwis, plus opensearch) — budują i pushują do ECR z
-# runnera x86_64, uwierzytelnienie przez OIDC (rola `product-center-github-actions-ecr`
-# z `infrastructure/ecr/github-oidc.tf`, ARN w output `github_actions_ecr_role_arn`;
-# jeśli ARN się zmieni, podmień `AWS_ROLE_ARN` w tych plikach). Obraz jest tagowany
-# commit SHA + tagiem z inputu (domyślnie `latest`).
-docker build --platform linux/amd64 --target prod \
-  -t 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest \
-  services/<serwis>
-docker push 222634367938.dkr.ecr.eu-central-1.amazonaws.com/<serwis>:latest
-
-# opensearch: obraz custom (plugin analysis-stempel + słowniki synonimów), nie ma stage'y
-# dev/prod jak reszta serwisów, więc bez --target
-docker build --platform linux/amd64 \
-  -t 222634367938.dkr.ecr.eu-central-1.amazonaws.com/opensearch:latest \
-  services/backend/docker/opensearch
-docker push 222634367938.dkr.ecr.eu-central-1.amazonaws.com/opensearch:latest
-
-# 4. Wypełnij placeholder `<TERRAFORM_OUTPUT:rds_endpoint>` w infrastructure/k8s/backend/values.yaml
-#    (host RDS jest generowany przez AWS, nie da się przewidzieć przed apply — nazwa
-#    bucketu S3 i ARN roli IRSA są deterministyczne, więc są już wpisane na sztywno)
+# 4. Wypełnij placeholdery w infrastructure/k8s/backend/values.yaml — oba znane dopiero
+#    po `terraform apply` (nazwa bucketu S3 i ARN roli IRSA są za to deterministyczne,
+#    więc są już wpisane na sztywno):
+#    - <TERRAFORM_OUTPUT:rds_endpoint>            → DB_HOST
+#    - <TERRAFORM_OUTPUT:rds_master_user_secret_arn> → dbSecretArn
 terraform output rds_endpoint
+terraform output rds_master_user_secret_arn
 
-# 5. Sekrety backendu — NIE są zarządzane przez Terraform (poza samym hasłem RDS
-#    w Secrets Manager), trzeba je stworzyć od nowa po każdym świeżym klastrze.
-#    azure-client-id/tenant-id/client-secret to te same wartości co lokalnie w .env
-#    (AZURE_OPENID_*) — osobna rejestracja aplikacji w Entra, nie generowane tutaj.
-#    azure-redirect-uri wymaga publicznego, HTTPS URL-a backendu — od kroku 6a niżej
-#    to https://admin.bechta.pl/auth/microsoft/callback.
-#    azure-allowed-domain — domena maili, których właściciele mogą się sami
-#    zaprovisionować jako Admin przy pierwszym logowaniu (SSO panelu ORAZ guard MCP).
-#    Puste ⇒ JIT wyłączony i każdego Admina zakłada się ręcznie (patrz niżej).
-#    secretKeyRef jest optional, więc pominięcie klucza nie wywala poda — ale wtedy
-#    JIT nie działa.
-DB_PASSWORD=$(aws secretsmanager get-secret-value \
-  --secret-id "$(terraform output -raw rds_master_user_secret_arn)" \
-  --query SecretString --output text | jq -r .password)
-
-kubectl create secret generic backend-secrets \
-  --from-literal=app-key="base64:$(openssl rand -base64 32)" \
-  --from-literal=db-password="$DB_PASSWORD" \
-  --from-literal=azure-client-id="<z Azure App Registration>" \
-  --from-literal=azure-tenant-id="<z Azure App Registration>" \
-  --from-literal=azure-client-secret="<z Azure App Registration>" \
-  --from-literal=azure-redirect-uri="https://admin.bechta.pl/auth/microsoft/callback" \
-  --from-literal=azure-allowed-domain="<domena tenanta, np. bechta.pl — albo pominąć>"
+# 5. Sekrety backendu — backend-secrets nie jest już tworzony ręcznie wcale. Wszystkie
+#    jego klucze (app-key, azure-*, stripe-* z SSM — krok 0b; db-password z RDS-owego
+#    wpisu w Secrets Manager) syncuje tam External Secrets Operator (krok 7a) z dwóch
+#    ExternalSecret w infrastructure/k8s/backend/templates/externalsecret.yaml, obu z
+#    creationPolicy: Merge — więc Secret powstaje sam przy pierwszym `helm install
+#    backend` (krok 8), nic tu nie trzeba odpalać.
 
 # Konta spoza azure-allowed-domain (np. personal MSA @outlook.com) trzeba dodać ręcznie —
 # świeży RDS ma zero adminów:
@@ -129,13 +145,13 @@ kubectl create secret generic backend-secrets \
 #     App\Models\Admin::firstOrCreate(["microsoft_id"=>"<oid z tokenu / jwt.ms>"],
 #       ["email"=>"<mail>","name"=>"<imię>"]);'
 
-# 5a. Hasło admina OpenSeark — ten sam Secret czytają oba charty: opensearch (ustawia
-#     hasło na starcie, OPENSEARCH_INITIAL_ADMIN_PASSWORD) i backend (loguje się nim jako
-#     admin, OPENSEARCH_PASSWORD). OpenSearch odrzuca słabe hasła (wymaga wielkiej/małej
-#     litery, cyfry, znaku specjalnego i nie może przypominać "admin") — losowe base64
-#     zawsze przechodzi tę walidację.
-kubectl create secret generic opensearch-secrets \
-  --from-literal=admin-password="$(openssl rand -base64 24)"
+# 5a. Hasło admina OpenSearch — jak backend-secrets w kroku 5, opensearch-secrets też
+#     nie jest już tworzony ręcznie: infrastructure/k8s/opensearch/templates/externalsecret.yaml
+#     syncuje je z SSM (krok 0b, hasło wygenerowane tam przez Terraform, spełnia wymogi
+#     OpenSearch — wielka/mała litera, cyfra, znak specjalny, nic zbliżonego do "admin").
+#     Ten sam Secret czytają oba charty: opensearch (ustawia hasło na starcie,
+#     OPENSEARCH_INITIAL_ADMIN_PASSWORD) i backend (loguje się nim jako admin,
+#     OPENSEARCH_PASSWORD).
 
 # 6. Monitoring: Prometheus + Grafana. Musi być PRZED krokiem 8 — każdy serwis ma
 #    metrics.enabled: true domyślnie (values/<serwis>.yaml), czyli renderuje
@@ -163,6 +179,24 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set vpcId=$(terraform output -raw vpc_id) \
   --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$(terraform output -raw aws_load_balancer_controller_irsa_role_arn)
 kubectl wait --for=condition=Available deployment/aws-load-balancer-controller -n kube-system --timeout=120s
+
+# 7a. External Secrets Operator — cluster-wide kontroler, który syncuje sekrety backendu
+#    z SSM Parameter Store (krok 0b) i z RDS-owego wpisu w Secrets Manager do
+#    backend-secrets (krok 5). Musi być zainstalowany PRZED krokiem 8 — chart backendu
+#    renderuje dwie pary SecretStore/ExternalSecret
+#    (infrastructure/k8s/backend/templates/externalsecret.yaml), a te CRD dostarcza
+#    dopiero ten operator, tak samo jak ServiceMonitor w kroku 6. Rola IRSA i jej
+#    uprawnienia (tylko odczyt /product-center/backend/* w SSM + tego jednego sekretu w
+#    Secrets Manager) są zarządzane przez Terraform (infrastructure/eks/iam.tf), sam
+#    kontroler instalowany imperatywnie jak aws-load-balancer-controller wyżej.
+helm repo add external-secrets https://charts.external-secrets.io
+helm repo update external-secrets
+kubectl create namespace external-secrets
+helm install external-secrets external-secrets/external-secrets \
+  -n external-secrets \
+  --set serviceAccount.name=external-secrets \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$(terraform output -raw external_secrets_irsa_role_arn)
+kubectl wait --for=condition=Available deployment/external-secrets -n external-secrets --timeout=120s
 
 # Wypełnij placeholder `<TERRAFORM_OUTPUT:acm_certificate_arn>` w
 # infrastructure/k8s/backend/values.yaml (ARN certu ACM znany dopiero po walidacji DNS,

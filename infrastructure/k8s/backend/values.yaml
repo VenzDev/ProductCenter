@@ -10,6 +10,10 @@ ingress:
   # ACM cert is DNS-validated (see infrastructure/eks/dns.tf), so its ARN isn't
   # predictable in advance the same way the S3 role ARN above is.
   certificateArn: "<TERRAFORM_OUTPUT:acm_certificate_arn>"
+# AWS-generated ARN of RDS's own Secrets Manager entry (manage_master_user_password,
+# infrastructure/eks/rds.tf) — read by templates/externalsecret.yaml to sync db-password
+# into backend-secrets. Fill in from `terraform output rds_master_user_secret_arn`.
+dbSecretArn: "<TERRAFORM_OUTPUT:rds_master_user_secret_arn>"
 env:
   # Explicit, not relied on as Laravel's implicit default (env('APP_ENV', 'production')) —
   # AppServiceProvider branches OpenSearch auth on this (see app()->environment() there).
@@ -88,9 +92,12 @@ env:
         name: backend-secrets
         key: azure-redirect-uri
   # Email domain allowed to self-provision an Admin on first login — the browser SSO
-  # (MicrosoftAdminResolver) and the MCP bearer-token guard both gate JIT on it. Unset
-  # ⇒ JIT is off and every Admin must be created by hand. Not a secret, but kept in
-  # backend-secrets with the rest of the AZURE_OPENID_* group.
+  # (MicrosoftAdminResolver) and the MCP bearer-token guard both gate JIT on it. Empty
+  # ⇒ JIT is off and every Admin must be created by hand — the SSM parameter behind
+  # this key (infrastructure/ssm) must still exist, just with an empty value, since the
+  # ExternalSecret syncing this Secret has no "optional remote key" mode; `optional:
+  # true` here is only a defensive fallback for that key going missing from the Secret
+  # itself. Not a secret, but kept in backend-secrets with the rest of AZURE_OPENID_*.
   - name: AZURE_OPENID_ALLOWED_DOMAIN
     valueFrom:
       secretKeyRef:
@@ -115,3 +122,22 @@ env:
     value: "https://admin.bechta.pl/mcp,60742fc7-7be4-433b-9f05-ac54c34794c5"
   - name: MCP_ENTRA_SCOPE_URI
     value: "https://admin.bechta.pl/mcp/mcp.use"
+  # Checkout payment (App\Payment, App\Checkout) — see infrastructure/ssm and
+  # templates/externalsecret.yaml for how these keys get into backend-secrets, and
+  # CLAUDE.md for the local-dev equivalent.
+  - name: STRIPE_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: stripe-secret
+  - name: STRIPE_WEBHOOK_SECRET
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: stripe-webhook-secret
+  # Used by GenerateAttachmentEmbeddingsJob to embed product manual chunks (docs/design.md)
+  - name: OPENAI_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: backend-secrets
+        key: openai-api-key

@@ -34,7 +34,11 @@ jobs:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           TAG: ${{ inputs.tag }}
         run: |
+          STRIPE_PUBLISHABLE_KEY=$(aws ssm get-parameter \
+            --name /product-center/frontend/stripe-publishable-key \
+            --query Parameter.Value --output text)
           docker build --target prod \
+            --build-arg NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY="$STRIPE_PUBLISHABLE_KEY" \
             -t "$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA" \
             -t "$REGISTRY/$ECR_REPOSITORY:$TAG" \
             services/frontend

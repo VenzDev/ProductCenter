@@ -43,6 +43,11 @@ output "aws_load_balancer_controller_irsa_role_arn" {
   value       = aws_iam_role.aws_load_balancer_controller.arn
 }
 
+output "external_secrets_irsa_role_arn" {
+  description = "IAM role ARN for External Secrets Operator's ServiceAccount — passed to its Helm install (see runbook)"
+  value       = aws_iam_role.external_secrets.arn
+}
+
 output "route53_zone_id" {
   description = "Hosted zone ID for bechta.pl — used when pointing admin.bechta.pl at the backend's ALB (see runbook)"
   value       = data.aws_route53_zone.bechta_pl.zone_id

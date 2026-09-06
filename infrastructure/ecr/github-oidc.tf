@@ -72,7 +72,22 @@ data "aws_iam_policy_document" "github_actions_ecr" {
     ]
     resources = [for repo in aws_ecr_repository.this : repo.arn]
   }
+
+  statement {
+    # Frontend's Stripe publishable key (infrastructure/ssm) — needed as a --build-arg
+    # for `docker build` in build-frontend.yaml, so this workflow reads it directly
+    # instead of it living a second time as a GitHub Actions repo secret. Not a
+    # cross-module reference to infrastructure/ssm's state — same technique as the SSM
+    # statements in infrastructure/eks/iam.tf, just the ARN built from account ID +
+    # literal path, since the path never varies.
+    sid       = "FrontendBuildSecret"
+    effect    = "Allow"
+    actions   = ["ssm:GetParameter"]
+    resources = ["arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/product-center/frontend/*"]
+  }
 }
+
+data "aws_caller_identity" "current" {}
 
 resource "aws_iam_role_policy" "github_actions_ecr" {
   name   = "ecr-push"
