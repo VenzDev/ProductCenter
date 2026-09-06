@@ -1,7 +1,12 @@
 "use client";
 
-import { CreditCardIcon, TruckIcon } from "lucide-react";
+import { useState } from "react";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { CircleAlertIcon, TruckIcon } from "lucide-react";
+import { Elements, PaymentElement, useElements, useStripe } from "@stripe/react-stripe-js";
 
+import { Alert, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -12,6 +17,11 @@ import {
 } from "@/components/ui/card";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import { checkout } from "@/api/checkout";
+import { useCart } from "@/hooks/use-cart";
+import { useCurrentUser } from "@/hooks/use-current-user";
+import { getStripe } from "@/lib/stripe";
+import { localizedHref } from "@/i18n/config";
 
 export type CheckoutFormDict = {
   addressHeading: string;
@@ -25,12 +35,115 @@ export type CheckoutFormDict = {
   courier: string;
   paymentHeading: string;
   paymentDescription: string;
-  paymentPlaceholder: string;
-  paymentNotice: string;
+  loginPrompt: string;
+  loginLink: string;
   placeOrder: string;
+  payButton: string;
+  payingLabel: string;
+  successHeading: string;
+  successMessage: string;
+  genericError: string;
 };
 
+function PaymentStep({
+  dict,
+  onSuccess,
+}: {
+  dict: CheckoutFormDict;
+  onSuccess: () => void;
+}) {
+  const stripe = useStripe();
+  const elements = useElements();
+  const [paying, setPaying] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function handlePay() {
+    if (!stripe || !elements) return;
+    setError(null);
+    setPaying(true);
+
+    const { error: confirmError, paymentIntent } = await stripe.confirmPayment({
+      elements,
+      redirect: "if_required",
+    });
+
+    setPaying(false);
+
+    if (confirmError) {
+      setError(confirmError.message ?? dict.genericError);
+      return;
+    }
+
+    if (paymentIntent?.status === "succeeded") {
+      onSuccess();
+    }
+  }
+
+  return (
+    <div className="flex flex-col gap-3">
+      <PaymentElement />
+      {error && (
+        <Alert variant="destructive">
+          <CircleAlertIcon data-icon="inline-start" />
+          <AlertTitle>{error}</AlertTitle>
+        </Alert>
+      )}
+      <Button type="button" size="lg" disabled={paying} onClick={handlePay}>
+        {paying ? dict.payingLabel : dict.payButton}
+      </Button>
+    </div>
+  );
+}
+
 export function CheckoutForm({ dict }: { dict: CheckoutFormDict }) {
+  const { user, loading } = useCurrentUser();
+  const { items, clear } = useCart();
+  const { lang } = useParams<{ lang: string }>();
+  const [clientSecret, setClientSecret] = useState<string | null>(null);
+  const [placing, setPlacing] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [succeeded, setSucceeded] = useState(false);
+
+  async function handlePlaceOrder() {
+    setError(null);
+    setPlacing(true);
+    try {
+      const { client_secret } = await checkout(
+        items.map((item) => ({ productId: item.productId, quantity: item.quantity })),
+      );
+      setClientSecret(client_secret);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : dict.genericError);
+    } finally {
+      setPlacing(false);
+    }
+  }
+
+  function handlePaymentSuccess() {
+    clear();
+    setSucceeded(true);
+  }
+
+  if (!loading && !user) {
+    return (
+      <div className="flex flex-col items-center gap-4 py-16 text-center">
+        <p className="text-muted-foreground">{dict.loginPrompt}</p>
+        <Button nativeButton={false} render={<Link href={localizedHref(lang, "/login")} />}>
+          {dict.loginLink}
+        </Button>
+      </div>
+    );
+  }
+
+  if (succeeded) {
+    return (
+      <div className="flex flex-col items-center gap-2 py-16 text-center">
+        <h2 className="text-xl font-semibold">{dict.successHeading}</h2>
+        <p className="text-muted-foreground">{dict.successMessage}</p>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-6 lg:grid-cols-2">
       <Card>
@@ -86,16 +199,28 @@ export function CheckoutForm({ dict }: { dict: CheckoutFormDict }) {
             <CardDescription>{dict.paymentDescription}</CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col gap-3">
-            <div className="flex items-center justify-center gap-2 rounded-lg border border-dashed border-input py-8 text-muted-foreground">
-              <CreditCardIcon className="size-5" />
-              <span className="text-sm">{dict.paymentPlaceholder}</span>
-            </div>
-            <Button type="button" size="lg" disabled>
-              {dict.placeOrder}
-            </Button>
-            <p className="text-center text-xs text-muted-foreground">
-              {dict.paymentNotice}
-            </p>
+            {clientSecret ? (
+              <Elements stripe={getStripe()} options={{ clientSecret }}>
+                <PaymentStep dict={dict} onSuccess={handlePaymentSuccess} />
+              </Elements>
+            ) : (
+              <>
+                {error && (
+                  <Alert variant="destructive">
+                    <CircleAlertIcon data-icon="inline-start" />
+                    <AlertTitle>{error}</AlertTitle>
+                  </Alert>
+                )}
+                <Button
+                  type="button"
+                  size="lg"
+                  disabled={placing || items.length === 0}
+                  onClick={handlePlaceOrder}
+                >
+                  {dict.placeOrder}
+                </Button>
+              </>
+            )}
           </CardContent>
         </Card>
       </div>

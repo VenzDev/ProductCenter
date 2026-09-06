@@ -31,9 +31,14 @@
     "courier": "Kurierlieferung",
     "paymentHeading": "Zahlung",
     "paymentDescription": "Sicher bezahlen mit Stripe.",
-    "paymentPlaceholder": "Stripe-Zahlungsformular",
-    "paymentNotice": "Die Stripe-Integration folgt in einem späteren Schritt.",
-    "placeOrder": "Bestellung aufgeben"
+    "loginPrompt": "Bitte melde dich an, um zur Kasse zu gehen.",
+    "loginLink": "Anmelden",
+    "placeOrder": "Bestellung aufgeben",
+    "payButton": "Bezahlen",
+    "payingLabel": "Zahlung läuft...",
+    "successHeading": "Zahlung erfolgreich",
+    "successMessage": "Danke — deine Bestellung wurde aufgegeben.",
+    "genericError": "Etwas ist schiefgelaufen."
   },
   "nav": {
     "products": "Produkte",

@@ -31,9 +31,14 @@
     "courier": "Consegna via corriere",
     "paymentHeading": "Pagamento",
     "paymentDescription": "Paga in sicurezza con Stripe.",
-    "paymentPlaceholder": "Modulo di pagamento Stripe",
-    "paymentNotice": "L'integrazione con Stripe arriverà in un prossimo passaggio.",
-    "placeOrder": "Effettua l'ordine"
+    "loginPrompt": "Accedi per procedere al pagamento.",
+    "loginLink": "Accedi",
+    "placeOrder": "Effettua l'ordine",
+    "payButton": "Paga",
+    "payingLabel": "Pagamento in corso...",
+    "successHeading": "Pagamento riuscito",
+    "successMessage": "Grazie — il tuo ordine è stato effettuato.",
+    "genericError": "Qualcosa è andato storto."
   },
   "nav": {
     "products": "Prodotti",

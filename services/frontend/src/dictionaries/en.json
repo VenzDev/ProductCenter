@@ -31,9 +31,14 @@
     "courier": "Courier delivery",
     "paymentHeading": "Payment",
     "paymentDescription": "Pay securely with Stripe.",
-    "paymentPlaceholder": "Stripe payment form",
-    "paymentNotice": "Stripe integration is coming in a future step.",
-    "placeOrder": "Place order"
+    "loginPrompt": "Please log in to check out.",
+    "loginLink": "Log in",
+    "placeOrder": "Place order",
+    "payButton": "Pay",
+    "payingLabel": "Paying...",
+    "successHeading": "Payment successful",
+    "successMessage": "Thank you — your order has been placed.",
+    "genericError": "Something went wrong."
   },
   "nav": {
     "products": "Products",

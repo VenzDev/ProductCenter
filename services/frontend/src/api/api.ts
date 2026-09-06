@@ -60,10 +60,11 @@ export async function fetchApiItem<T>(path: string): Promise<T | null> {
 export async function postApi<T>(
   path: string,
   body: unknown,
+  headers: HeadersInit = {},
 ): Promise<{ status: number; data: T }> {
   const response = await fetch(`${BASE_URL}${path}`, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: { "Content-Type": "application/json", ...headers },
     body: JSON.stringify(body),
   });
 

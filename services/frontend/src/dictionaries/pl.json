@@ -31,9 +31,14 @@
     "courier": "Dostawa kurierem",
     "paymentHeading": "Płatność",
     "paymentDescription": "Płać bezpiecznie przez Stripe.",
-    "paymentPlaceholder": "Formularz płatności Stripe",
-    "paymentNotice": "Integracja ze Stripe zostanie dodana w kolejnym kroku.",
-    "placeOrder": "Złóż zamówienie"
+    "loginPrompt": "Zaloguj się, aby przejść do kasy.",
+    "loginLink": "Zaloguj się",
+    "placeOrder": "Złóż zamówienie",
+    "payButton": "Zapłać",
+    "payingLabel": "Płacenie...",
+    "successHeading": "Płatność zakończona sukcesem",
+    "successMessage": "Dziękujemy — Twoje zamówienie zostało złożone.",
+    "genericError": "Coś poszło nie tak."
   },
   "nav": {
     "products": "Produkty",

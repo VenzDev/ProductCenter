@@ -15,6 +15,8 @@ use App\Ai\ImageGeneration\Generator\ProductImageGeneratorInterface;
 use App\Mcp\Http\EntraTokenAuthenticator;
 use App\Models\BlogPost;
 use App\Models\Product;
+use App\Payment\Gateway\PaymentGateway;
+use App\Payment\Gateway\StripePaymentGateway;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +26,7 @@ use OpenSearch\Client as OpenSearchClient;
 use OpenSearch\ClientBuilder as OpenSearchClientBuilder;
 use SocialiteProviders\Manager\SocialiteWasCalled;
 use SocialiteProviders\Microsoft\MicrosoftExtendSocialite;
+use Stripe\StripeClient;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -36,6 +39,13 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(ProductDescriptionGeneratorInterface::class, PrismProductDescriptionGenerator::class);
         $this->app->bind(ProductImageGeneratorInterface::class, PrismProductImageGenerator::class);
         $this->app->bind(ChunksSplitterInterface::class, MinimalChunksSplitter::class);
+
+        $this->app->singleton(StripeClient::class, fn () => new StripeClient((string) config('services.stripe.secret')));
+
+        $this->app->bind(PaymentGateway::class, fn ($app) => new StripePaymentGateway(
+            $app->make(StripeClient::class),
+            (string) config('services.stripe.webhook_secret'),
+        ));
 
         $this->app->singleton(OpenSearchClient::class, function () {
             $builder = OpenSearchClientBuilder::create()->setHosts([config('opensearch.host')]);

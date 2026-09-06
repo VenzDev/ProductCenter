@@ -31,9 +31,14 @@
     "courier": "Livraison par coursier",
     "paymentHeading": "Paiement",
     "paymentDescription": "Payez en toute sécurité avec Stripe.",
-    "paymentPlaceholder": "Formulaire de paiement Stripe",
-    "paymentNotice": "L'intégration Stripe arrivera dans une prochaine étape.",
-    "placeOrder": "Passer la commande"
+    "loginPrompt": "Veuillez vous connecter pour passer commande.",
+    "loginLink": "Se connecter",
+    "placeOrder": "Passer la commande",
+    "payButton": "Payer",
+    "payingLabel": "Paiement en cours...",
+    "successHeading": "Paiement réussi",
+    "successMessage": "Merci — votre commande a été passée.",
+    "genericError": "Une erreur s'est produite."
   },
   "nav": {
     "products": "Produits",
