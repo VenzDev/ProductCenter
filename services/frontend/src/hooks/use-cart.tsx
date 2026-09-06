@@ -83,6 +83,15 @@ export function useCart() {
     write(readStorage().filter((entry) => entry.productId !== productId));
   }, []);
 
+  const updateQuantity = useCallback((productId: number, quantity: number) => {
+    const clamped = Math.max(1, quantity);
+    write(
+      readStorage().map((entry) =>
+        entry.productId === productId ? { ...entry, quantity: clamped } : entry,
+      ),
+    );
+  }, []);
+
   const clear = useCallback(() => write([]), []);
 
   return {
@@ -90,6 +99,7 @@ export function useCart() {
     count: items.reduce((sum, entry) => sum + entry.quantity, 0),
     addItem,
     removeItem,
+    updateQuantity,
     clear,
   };
 }
