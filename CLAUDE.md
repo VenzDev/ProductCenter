@@ -31,11 +31,11 @@ Monorepo, one directory per independently deployable service, plus infra:
 services/
   backend/    PHP, Laravel (FrankenPHP) — main business logic / API
   frontend/   TypeScript, Next.js (App Router) + shadcn/ui — skeleton, no pages/features yet
-  payment/    Go, Gin — payment handling
+  notification/  Go, Gin — notification service (skeleton, no functionality yet — was the `payment` service until Stripe moved into backend)
 infrastructure/ecr/  Terraform — ECR repos + GitHub Actions OIDC push role (separate root module, stands up on its own)
 infrastructure/eks/  Terraform — EKS cluster (VPC, node group, addons)
 infrastructure/k8s/backend/  Helm chart for the backend service
-infrastructure/k8s/payment/  Helm chart for the payment service
+infrastructure/k8s/notification/  Helm chart for the notification service
 infrastructure/k8s/monitoring/  Grafana dashboard-as-code (ConfigMap)
 e2e/  Playwright end-to-end tests, driving the frontend against the real stack
 docker-compose.yaml  local dev environment for all services
@@ -53,12 +53,12 @@ Read `docs/design.md` first for architecture/rationale, `docs/runbook.md` for th
 Each service has `dev` and `prod` Docker build targets. `docker-compose.yaml` runs both implemented services in `dev` mode with source bind-mounts (live reload), plus `postgres` and `localstack`:
 
 ```bash
-docker compose up          # frontend:3000, payment:8080, backend:8081(→80), localstack:4566
-docker compose up payment  # single service
+docker compose up          # frontend:3000, notification:8080, backend:8081(→80), localstack:4566
+docker compose up notification  # single service
 ```
 
 - **frontend**: `next dev` (Turbopack, hot reload), full source bind-mounted including `node_modules` — `docker compose exec frontend npm ci` installs straight onto the host, so it's visible to your editor. After changing dependencies, delete `.next` (Turbopack's persistent cache can otherwise keep referencing the old `node_modules` state and throw module-resolution errors like `Cannot find module 'picocolors'`) and restart the container.
-- **payment**: `air` (hot reload via `.air.toml`), full source mounted.
+- **notification**: `air` (hot reload via `.air.toml`), full source mounted.
 - **localstack**: simulates S3 locally; the `product-files` bucket is created automatically on every start via `services/backend/docker/localstack-init-s3.sh` (mounted into LocalStack's init hooks — there's no persistent volume, so it needs recreating each time).
 - **backend**: FrankenPHP dev entrypoint (`docker/dev-entrypoint.sh`) runs `php artisan migrate --force` then starts the server; full source bind-mounted including `vendor` — `docker compose exec backend composer install` installs straight onto the host. Note: the entrypoint ignores any command passed via `docker compose run backend <cmd>` (it always runs migrate + serve) — if the container isn't already running (so `exec` isn't an option), use `docker compose run --rm --entrypoint sh backend -c "<cmd>"` instead. `docker compose exec backend php artisan demo:seed --products=24` populates categories, filterable attributes, products, and blog posts with images fetched from picsum.photos and pushed through the real upload pipeline (`WebpImageObserver` → `RelocateUploadedImageJob` → `GenerateWebpImageJob`) — categories/attributes/blog posts are idempotent (safe to rerun), each run adds `--products` more products. Refuses to run outside `local`/`testing` (`app/Console/Commands/SeedDemoData.php`). Needs the `backend-worker` container running to actually process the queued image jobs in dev (`QUEUE_CONNECTION=database`); under `docker-compose.test.yaml` the queue is `sync` so it's immediate.
 - **Stripe (checkout payment)**: needs your own test-mode keys (dashboard.stripe.com/test/apikeys) — `STRIPE_SECRET`/`STRIPE_WEBHOOK_SECRET` in `services/backend/.env`, `NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY` in `services/frontend/.env` (copy from `.env.example`; docker-compose loads it via `env_file`). Receiving the webhook locally needs `stripe listen --forward-to localhost:8081/api/v1/stripe/webhook` — Stripe's cloud can't reach `localhost` directly. Test card: `4242 4242 4242 4242`, any future expiry, any CVC.
@@ -85,11 +85,11 @@ docker compose -f docker-compose.test.yaml down -v   # tear down when done — d
 
 `phpmd/phpmd` was tried and dropped — `pdepend` (its dependency) only supports `symfony/dependency-injection` up to `^7.0`, while Laravel 13's `symfony/http-kernel` requires `^8.0`; no compatible version combination exists. Larastan (PHPStan + Laravel rules) was added instead, configured via `phpstan.neon`.
 
-**payment** (`services/payment`, Go 1.26 / Gin):
+**notification** (`services/notification`, Go 1.26 / Gin):
 ```bash
-docker compose exec payment go run .
-docker compose exec payment go test ./...
-docker compose exec payment go build -o payment .
+docker compose exec notification go run .
+docker compose exec notification go test ./...
+docker compose exec notification go build -o notification .
 ```
 
 **frontend** (`services/frontend`, Next.js 16 / TypeScript, App Router, shadcn/ui):

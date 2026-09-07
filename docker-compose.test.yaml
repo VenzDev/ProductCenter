@@ -27,12 +27,12 @@ services:
       retries: 10
       start_period: 20s
 
-  payment_test:
+  notification_test:
     build:
-      context: ./services/payment
+      context: ./services/notification
       target: dev
     volumes:
-      - ./services/payment:/app
+      - ./services/notification:/app
 
   backend_test:
     build:

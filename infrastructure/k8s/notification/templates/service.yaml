@@ -1,12 +1,12 @@
 apiVersion: v1
 kind: Service
 metadata:
-  name: payment
+  name: notification
   labels:
-    app: payment
+    app: notification
 spec:
   selector:
-    app: payment
+    app: notification
   ports:
     - name: http
       port: {{ .Values.port }}

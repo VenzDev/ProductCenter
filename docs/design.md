@@ -28,7 +28,7 @@ System składa się z trzech niezależnych mikroserwisów:
 |---|---|---|
 | `backend` | PHP, Laravel | Główna logika biznesowa / API |
 | `frontend` | TypeScript, React.js | Interfejs użytkownika |
-| `payment` | Go, Gin | Obsługa płatności |
+| `notification` | Go, Gin | Powiadomienia (na razie szkielet — patrz niżej) |
 
 Dokładne przypadki użycia i zakres odpowiedzialności poszczególnych serwisów opisane są w sekcji [Use case'y](#use-casey) poniżej.
 
@@ -201,7 +201,7 @@ Monorepo z podziałem na serwisy:
 services/
   backend/    # PHP, Laravel
   frontend/   # TypeScript, React
-  payment/    # Go, Gin
+  notification/ # Go, Gin
 infrastructure/ # Terraform (EKS/ECS)
 .github/        # CI/CD workflows
 ```

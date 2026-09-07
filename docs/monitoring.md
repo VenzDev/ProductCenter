@@ -55,7 +55,7 @@ Potem: http://localhost:3000, login `admin` + hasło z komendy wyżej. Gotowe da
 kubectl port-forward -n monitoring svc/kube-prometheus-stack-prometheus 9090:9090
 ```
 
-http://localhost:9090 — przydatne do sprawdzenia np. **Status → Targets**, czyli co Prometheus faktycznie scrapuje (na razie tylko komponenty samego stacku + node-exporter/kube-state-metrics — nasze `payment`/`backend` pojawią się tam dopiero po dodaniu `/metrics` + `ServiceMonitor`, kolejny krok).
+http://localhost:9090 — przydatne do sprawdzenia np. **Status → Targets**, czyli co Prometheus faktycznie scrapuje (na razie tylko komponenty samego stacku + node-exporter/kube-state-metrics — nasze `notification`/`backend` pojawią się tam dopiero po dodaniu `/metrics` + `ServiceMonitor`, kolejny krok).
 
 ## 5. Sprzątanie — WAŻNE: CRD-y nie znikają same
 
@@ -86,7 +86,7 @@ Jeśli planujesz zainstalować stack ponownie wkrótce, można spokojnie zostawi
 
 Dwie rzeczy per serwis:
 1. Endpoint `/metrics` w kodzie serwisu — biblioteka inna per stack:
-   - `payment` (Go/Gin): `prometheus/client_golang` → `r.GET("/metrics", gin.WrapH(promhttp.Handler()))`
+   - `notification` (Go/Gin): `prometheus/client_golang` → `r.GET("/metrics", gin.WrapH(promhttp.Handler()))`
    - `backend` (Laravel/FrankenPHP): `promphp/prometheus_client_php` + rozszerzenie PHP `apcu` (dodane w Dockerfile: `install-php-extensions apcu`) — liczniki trzymane w APCu, żeby przetrwały między requestami
 2. Zasób `ServiceMonitor` (szablon `infrastructure/k8s/<serwis>/templates/servicemonitor.yaml`) — mówi Prometheusowi, żeby scrapował dany Service.
 
@@ -97,7 +97,7 @@ kubectl get prometheus -n monitoring -o jsonpath='{.items[0].spec.serviceMonitor
 
 ### Napotkany błąd: `ServiceMonitor` bez trafień, zero błędów
 
-Po dodaniu `ServiceMonitor` z poprawną etykietą `release`, Prometheus **nie zgłaszał żadnego błędu**, ale target po prostu nie istniał (`/api/v1/targets` — brak `payment`/`backend`, nawet wśród `dropped`). Przyczyna: `ServiceMonitor.spec.selector.matchLabels: {app: <serwis>}` dopasowuje się do **etykiet samego obiektu Service** (`metadata.labels`), a nie do jego `spec.selector` (to, czego Service używa do znalezienia swoich podów — zupełnie inne pole). Nasz szablon `service.yaml` ustawiał `spec.selector.app`, ale nigdy `metadata.labels.app` — więc `ServiceMonitor` szukał etykiety, której obiekt Service nigdy nie miał.
+Po dodaniu `ServiceMonitor` z poprawną etykietą `release`, Prometheus **nie zgłaszał żadnego błędu**, ale target po prostu nie istniał (`/api/v1/targets` — brak `notification`/`backend`, nawet wśród `dropped`). Przyczyna: `ServiceMonitor.spec.selector.matchLabels: {app: <serwis>}` dopasowuje się do **etykiet samego obiektu Service** (`metadata.labels`), a nie do jego `spec.selector` (to, czego Service używa do znalezienia swoich podów — zupełnie inne pole). Nasz szablon `service.yaml` ustawiał `spec.selector.app`, ale nigdy `metadata.labels.app` — więc `ServiceMonitor` szukał etykiety, której obiekt Service nigdy nie miał.
 
 Fix: dodać `labels: app: <serwis>` do `metadata` w `infrastructure/k8s/<serwis>/templates/service.yaml`, obok `spec.selector`.
 
@@ -111,7 +111,7 @@ import json,sys
 data = json.load(sys.stdin)
 for t in data['data']['activeTargets']:
     j = t['labels'].get('job','?')
-    if j in ('payment','backend'):
+    if j in ('notification','backend'):
         print(j, t['scrapeUrl'], t['health'])
 "
 ```
@@ -123,8 +123,8 @@ kubectl get svc <serwis> -n product-center --show-labels
 
 ### RED metrics (rate/errors/duration) per serwis
 
-`payment` i `backend` liczą RED metrics własnym middleware:
-- `payment`: middleware Gin w `main.go` (`metricsMiddleware`, rejestrowane przez `r.Use(...)`)
+`notification` i `backend` liczą RED metrics własnym middleware:
+- `notification`: middleware Gin w `main.go` (`metricsMiddleware`, rejestrowane przez `r.Use(...)`)
 - `backend`: `app/Http/Middleware/PrometheusMetrics.php`, rejestrowane globalnie w `bootstrap/app.php` (`$middleware->append(...)`), liczniki w APCu (ta sama biblioteka/storage co endpoint `/metrics`)
 
 ## 7. Dashboard jako kod
@@ -135,7 +135,7 @@ Dashboard **nie** budujemy ręcznie w UI Grafany — nie przetrwałby kolejnego 
 kubectl apply -f infrastructure/k8s/monitoring/dashboard-services.yaml -n monitoring
 ```
 
-Dashboard `product-center services (RED)` (`infrastructure/k8s/monitoring/dashboard-services.yaml`) ma trzy panele — Request rate, Error rate (5xx), Latency p95 — oraz zmienną `$service` (z `label_values(http_requests_total, job)`) do filtrowania między `payment`/`backend`.
+Dashboard `product-center services (RED)` (`infrastructure/k8s/monitoring/dashboard-services.yaml`) ma trzy panele — Request rate, Error rate (5xx), Latency p95 — oraz zmienną `$service` (z `label_values(http_requests_total, job)`) do filtrowania między `notification`/`backend`.
 
 Weryfikacja, że sidecar podłapał plik:
 ```bash

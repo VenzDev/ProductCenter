@@ -31,7 +31,7 @@ Node Minikube (na Macu z Apple Silicon) jest `arm64`, czyli tej samej architektu
 ```bash
 eval $(minikube docker-env)
 
-for svc in payment backend; do
+for svc in notification backend; do
   docker build --target prod -t ${svc}:local services/${svc}
 done
 ```
@@ -54,7 +54,7 @@ kubectl create secret generic backend-secrets -n product-center \
 Te same charty co na EKS, ale z nadpisanym `image` (lokalny tag zamiast adresu ECR):
 
 ```bash
-helm install payment infrastructure/k8s/payment -n product-center --set image=payment:local
+helm install notification infrastructure/k8s/notification -n product-center --set image=notification:local
 helm install redis infrastructure/k8s/redis -n product-center
 helm install backend infrastructure/k8s/backend -n product-center --set image=backend:local
 ```
@@ -65,7 +65,7 @@ helm install backend infrastructure/k8s/backend -n product-center --set image=ba
 kubectl get pods -n product-center -o wide
 
 kubectl run curl-test -n product-center --image=curlimages/curl --rm -i --restart=Never -- sh -c '
-  curl -s http://payment:8080/health; echo
+  curl -s http://notification:8080/health; echo
   curl -s http://backend:80/health; echo
 '
 ```
@@ -74,7 +74,7 @@ kubectl run curl-test -n product-center --image=curlimages/curl --rm -i --restar
 
 ```bash
 # Usunąć tylko nasze release'y i namespace (zostawia resztę Minikube nietkniętą)
-helm uninstall payment redis backend -n product-center
+helm uninstall notification redis backend -n product-center
 kubectl delete namespace product-center
 
 # Zatrzymać całego Minikube (zwalnia zasoby hosta, zachowuje stan)

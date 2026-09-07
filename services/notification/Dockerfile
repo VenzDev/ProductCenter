@@ -18,14 +18,14 @@ CMD ["air"]
 FROM base AS build
 
 COPY . .
-RUN go build -o payment .
+RUN go build -o notification .
 
 FROM alpine AS prod
 
 WORKDIR /app
 
-COPY --from=build /app/payment .
+COPY --from=build /app/notification .
 
 EXPOSE 8080
 
-CMD ["./payment"]
+CMD ["./notification"]

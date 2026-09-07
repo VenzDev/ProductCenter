@@ -1,19 +1,19 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: payment
+  name: notification
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: payment
+      app: notification
   template:
     metadata:
       labels:
-        app: payment
+        app: notification
     spec:
       containers:
-        - name: payment
+        - name: notification
           image: {{ .Values.image }}
           ports:
             - containerPort: {{ .Values.port }}

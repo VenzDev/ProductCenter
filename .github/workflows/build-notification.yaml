@@ -1,4 +1,4 @@
-name: build · payment
+name: build · notification
 
 on:
   workflow_dispatch:
@@ -17,7 +17,7 @@ jobs:
     env:
       AWS_REGION: eu-central-1
       AWS_ROLE_ARN: arn:aws:iam::222634367938:role/product-center-github-actions-ecr
-      ECR_REPOSITORY: payment
+      ECR_REPOSITORY: notification
     steps:
       - uses: actions/checkout@v7
 
@@ -37,6 +37,6 @@ jobs:
           docker build --target prod \
             -t "$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA" \
             -t "$REGISTRY/$ECR_REPOSITORY:$TAG" \
-            services/payment
+            services/notification
           docker push "$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
           docker push "$REGISTRY/$ECR_REPOSITORY:$TAG"

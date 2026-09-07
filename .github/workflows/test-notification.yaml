@@ -1,21 +1,21 @@
-name: test · payment
+name: test · notification
 
 on:
   pull_request:
     paths:
-      - "services/payment/**"
+      - "services/notification/**"
 
 jobs:
   test:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: services/payment
+        working-directory: services/notification
     steps:
       - uses: actions/checkout@v7
 
       - uses: actions/setup-go@v5
         with:
-          go-version-file: services/payment/go.mod
+          go-version-file: services/notification/go.mod
 
       - run: go test ./...

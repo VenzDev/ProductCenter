@@ -17,7 +17,7 @@ infrastructure/k8s/backend/
     servicemonitor.yaml  # scrape dla Prometheusa
     migrate-job.yaml     # Helm hook, patrz błąd #10
     ingress.yaml         # ALB przez AWS Load Balancer Controller
-infrastructure/k8s/payment/
+infrastructure/k8s/notification/
   Chart.yaml
   values.yaml            # obraz, port
   templates/
@@ -79,7 +79,7 @@ cp terraform.tfvars.example terraform.tfvars   # wypełnij prawdziwymi wartości
 terraform apply
 cd ..
 
-# 0c. Build + push obrazów (dla payment, backend i frontend). Nie zależy od VPC/EKS/RDS,
+# 0c. Build + push obrazów (dla notification, backend i frontend). Nie zależy od VPC/EKS/RDS,
 #    tylko od ECR (krok 0) — i od SSM (krok 0b) w przypadku frontendu, bo jego build-arg
 #    czyta stamtąd Stripe publishable key. Dlatego robimy to tu, od razu, zamiast czekać
 #    na `terraform apply` w infrastructure/eks (kilka-kilkanaście minut na sam klaster).
@@ -212,7 +212,7 @@ terraform output frontend_acm_certificate_arn
 # 8. Zainstaluj serwisy (osobny chart per serwis). redis i opensearch przed backend —
 #    backend cache'uje przez redis lookup attribute-definitions (CACHE_STORE=redis) i
 #    indeksuje produkty w opensearch przy każdym zapisie (ProductSearchObserver).
-helm install payment infrastructure/k8s/payment
+helm install notification infrastructure/k8s/notification
 helm install redis infrastructure/k8s/redis
 helm install opensearch infrastructure/k8s/opensearch
 helm install backend infrastructure/k8s/backend
@@ -270,7 +270,7 @@ aws route53 change-resource-record-sets \
 
 Przy zmianie w templatce/values (bez nowego klastra): `helm upgrade <nazwa> infrastructure/k8s/<nazwa>`. Renderowanie manifestów do podglądu bez dotykania klastra: `helm template <nazwa> infrastructure/k8s/<nazwa>`.
 
-**Uwaga:** `--platform linux/amd64` jest obowiązkowe przy buildzie na Macu z Apple Silicon — node'y EKS to x86_64 (`ami_type = AL2023_x86_64_STANDARD`). Domyślny `node_instance_type` to `t3.xlarge` (4 vCPU/16GB) — `t3.large` starczał na payment+backend+frontend+redis, ale OpenSearch (JVM heap `-Xms512m -Xmx512m` + narzut poza-sterty) już się na nim ciasno mieścił, stąd bump zamiast dokładania drugiego node'a.
+**Uwaga:** `--platform linux/amd64` jest obowiązkowe przy buildzie na Macu z Apple Silicon — node'y EKS to x86_64 (`ami_type = AL2023_x86_64_STANDARD`). Domyślny `node_instance_type` to `t3.xlarge` (4 vCPU/16GB) — `t3.large` starczał na notification+backend+frontend+redis, ale OpenSearch (JVM heap `-Xms512m -Xmx512m` + narzut poza-sterty) już się na nim ciasno mieścił, stąd bump zamiast dokładania drugiego node'a.
 
 Dostęp do Grafany:
 
@@ -310,7 +310,7 @@ kubectl get pods -o wide
 
 # Test /health przez Service (DNS + routing wewnątrz klastra, nie tylko sam pod)
 kubectl run curl-test --image=curlimages/curl --rm -i --restart=Never -- sh -c '
-  curl -s http://payment:8080/health; echo
+  curl -s http://notification:8080/health; echo
   curl -s http://backend:80/health; echo
   curl -s http://frontend:3000/health; echo
 '
@@ -333,7 +333,7 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 | 9 | Kubernetes 1.33 zbliżało się do końca standard support (koszt x6 na extended support) | — | Wersja `1.35` | `infrastructure/eks/eks.tf` |
 | 10 | `backend` restart w pętli na świeżym RDS, `HTTP probe failed with statuscode: 500` na `/health` mimo że handler nic nie robi z DB | Obraz `prod` nigdy nie uruchamia migracji (tylko `dev-entrypoint.sh` to robi, i to tylko w `dev`) — świeża baza nie ma tabeli `sessions`, a domyślna grupa middleware `web` (którą dostaje KAŻDA trasa, łącznie z `/health`) startuje sesję, więc wywala się na każdym requeście | Helm hook `pre-install,pre-upgrade` (`Job` uruchamiający `php artisan migrate --force` przed rollout Deployment) | `infrastructure/k8s/backend/templates/migrate-job.yaml` |
 | 11 | (przy naprawianiu #10) Świeży `helm install` wisi, `job-controller` event: `serviceaccount "backend" not found` | Hooki (`pre-install`) wykonują się PRZED zwykłymi zasobami release'u — `ServiceAccount` (`serviceaccount.yaml`, zwykły szablon, nie hook) jeszcze nie istnieje, gdy Job próbuje go użyć | Job migracji nie ustawia `serviceAccountName` — używa domyślnego SA namespace'u; i tak nie potrzebuje uprawnień S3/IRSA, tylko łączności z DB | `infrastructure/k8s/backend/templates/migrate-job.yaml` |
-| 12 | `helm install payment/backend` wywala się od razu: `no matches for kind "ServiceMonitor" in version "monitoring.coreos.com/v1"` | Każdy chart zawsze renderuje `ServiceMonitor` — ten CRD dostarcza dopiero `kube-prometheus-stack` | Monitoring instalowany PRZED serwisami w kolejności runbooka (krok 6 przed 7), nie jako osobny opcjonalny dodatek na końcu | `docs/runbook.md` |
+| 12 | `helm install notification/backend` wywala się od razu: `no matches for kind "ServiceMonitor" in version "monitoring.coreos.com/v1"` | Każdy chart zawsze renderuje `ServiceMonitor` — ten CRD dostarcza dopiero `kube-prometheus-stack` | Monitoring instalowany PRZED serwisami w kolejności runbooka (krok 6 przed 7), nie jako osobny opcjonalny dodatek na końcu | `docs/runbook.md` |
 | 13 | `terraform destroy` wywala się na `DependencyViolation` przy subnetach/IGW i `ResourceInUseException` przy certyfikacie ACM | Klaster (a razem z nim AWS Load Balancer Controller) zniknął, zanim kontroler zdążył usunąć ALB, który sam utworzył dla Ingressu — ALB (z ENI trzymającymi publiczne IP w subnetach publicznych) i jego security groupy nie są zarządzane przez Terraform, więc `destroy` o nich nie wie i nie potrafi ich sprzątnąć | Przed `terraform destroy`: `helm uninstall backend` (albo `kubectl delete ingress backend`), poczekać aż kontroler usunie ALB, dopiero potem `destroy`. Jeśli już się wywaliło: ręcznie `aws elbv2 delete-load-balancer` + `delete-target-group`, poczekać aż znikną ENI, usunąć osierocone security groupy (`aws ec2 delete-security-group`), potem ponowić `terraform destroy` | `docs/runbook.md` |
 | 14 | `terraform apply` (SSM) pada: `ValidationException: Value at 'value' failed to satisfy constraint: Member must have length greater than or equal to 1` na `azure_allowed_domain`. Osobno: `backend-migrate`/`opensearch` pody wiszą w `CreateContainerConfigError: secret "backend-secrets"/"opensearch-secrets" not found`, `kubectl describe externalsecret` pokazuje `Reason: SecretMissing, Message: secret will not be created due to CreationPolicy=Merge` | Dwa niezależne błędy tej samej rodziny: (a) AWS SSM nigdy nie przyjmuje pustej wartości Parametru, a `azure_allowed_domain` miał `default = ""` jako sposób na "wyłącz JIT" — nie da się tego tak wyrazić; (b) `creationPolicy: Merge` w ExternalSecret **nie tworzy** Secretu, tylko dopisuje klucze do już istniejącego — użyty samodzielnie (opensearch) albo na obu ExternalSecret celujących w ten sam Secret (backend) nigdy go nie stworzy | (a) `azure_allowed_domain` bez defaultu, zawsze wymagana realna wartość w `terraform.tfvars`; (b) dokładnie jeden ExternalSecret na dany Secret musi mieć (domyślne) `creationPolicy: Owner`, reszta zostaje `Merge` | `infrastructure/ssm/variables.tf`, `infrastructure/k8s/backend/templates/externalsecret.yaml`, `infrastructure/k8s/opensearch/templates/externalsecret.yaml` |
 | 15 | Po naprawieniu #14(b), `helm install backend` wciąż wisi w nieskończoność: release zostaje w `pending-install`, `backend-migrate` Job w `Running 0/1`, jego pod w `CreateContainerConfigError`, a `kubectl get externalsecret` w ogóle nie pokazuje `backend-app-secrets`/`backend-db-secret` — czyli nie zostały jeszcze zaaplikowane | Zakleszczenie kolejności Helma: `migrate-job.yaml` to hook `pre-install` (waga `-5`), a Helm najpierw uruchamia i czeka na WSZYSTKIE hooki, dopiero potem aplikuje zwykłe zasoby release'u (Deployment, Service, **ExternalSecret**...). Job (hook) potrzebuje `backend-secrets`, ale ten Secret tworzy `ExternalSecret` (zwykły zasób), który Helm zaaplikuje dopiero PO zakończeniu Joba — Job nigdy się nie kończy | `SecretStore`/`ExternalSecret` w `backend/templates/externalsecret.yaml` też oznaczone jako `pre-install,pre-upgrade` hook, z wagą `-10` (wcześniej niż migracja) — tak trafiają do tej samej fazy co Job, ale przed nim | `infrastructure/k8s/backend/templates/externalsecret.yaml` |
@@ -343,7 +343,7 @@ Jeśli pod restartuje się w pętli: `kubectl describe pod <pod>` (sekcja `Event
 
 - **Wszystko w klastrze** (pody, Service'y, Secrets) — Kubernetes żyje tylko wewnątrz klastra, destroy usuwa cały klaster.
 - **`backend-secrets`** i **`opensearch-secrets`** — muszą być stworzone ręcznie na nowo po każdym świeżym `terraform apply` (kroki 5 i 5a w sekcji 1). Nie są zarządzane przez Terraform ani przez pliki w `infrastructure/k8s/`.
-- **Obrazy w ECR** — same repozytoria (`payment`, `backend`, `frontend`, `opensearch`) i rola OIDC GitHub Actions to osobny root module (`infrastructure/ecr`, własny state), więc `terraform destroy` w `infrastructure/eks` ich NIE rusza — przeżywają teardown klastra. Jeśli chcesz je też skasować: osobny `terraform destroy` w `infrastructure/ecr` (`force_delete = true` usunie repo mimo obrazów w środku).
+- **Obrazy w ECR** — same repozytoria (`notification`, `backend`, `frontend`, `opensearch`) i rola OIDC GitHub Actions to osobny root module (`infrastructure/ecr`, własny state), więc `terraform destroy` w `infrastructure/eks` ich NIE rusza — przeżywają teardown klastra. Jeśli chcesz je też skasować: osobny `terraform destroy` w `infrastructure/ecr` (`force_delete = true` usunie repo mimo obrazów w środku).
 - **Pliki w S3** (`product-files`) — bucket ma `force_destroy = true`, więc `terraform destroy` kasuje go razem z zawartością (uploadowane zdjęcia produktów). Nie ma osobnego backupu.
 - **Baza RDS** (`skip_final_snapshot = true`) i jej hasło w Secrets Manager (`manage_master_user_password`, zarządzane przez `aws_db_instance`) — obie znikają bez śladu przy `destroy`, żadnego snapshotu na wyjściu.
 - **Rekordy Route53 `admin.bechta.pl` i `shop.bechta.pl`** — tworzone imperatywnie (krok 9), nie przez Terraform, więc `terraform destroy` ich nie usuwa; wskazują na ALB, które znikną razem z klastrem, więc zostają jako martwe aliasy dopóki nie zrobi się `aws route53 change-resource-record-sets` z `"Action": "DELETE"` ręcznie dla każdego.

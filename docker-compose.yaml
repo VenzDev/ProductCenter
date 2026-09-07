@@ -22,14 +22,14 @@ services:
       retries: 10
       start_period: 20s
 
-  payment:
+  notification:
     build:
-      context: ./services/payment
+      context: ./services/notification
       target: dev
     ports:
       - "8080:8080"
     volumes:
-      - ./services/payment:/app
+      - ./services/notification:/app
 
   backend:
     build:
