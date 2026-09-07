@@ -187,7 +187,7 @@ CREATE INDEX order_items_order_id_idx ON order_items (order_id);
 
 - **Środowisko docelowe:** AWS, wdrożenie na **EKS** lub **ECS** — obie opcje przygotowane równolegle jako alternatywne konfiguracje Terraform.
 - **Infrastructure as Code:** Terraform.
-- **CI/CD:** GitHub Actions (workflows w `.github/`).
+- **CI/CD:** GitHub Actions (workflows w `.github/`). Workflowy `build · *` skanują zbudowany obraz **Trivy** przed pushem do ECR — znaleziona podatność CRITICAL/HIGH (z dostępną poprawką) blokuje push.
 - **Usługi AWS wykorzystywane przez system:**
   - DynamoDB
   - S3

@@ -6,5 +6,8 @@
       "Bash(terraform fmt *)",
       "Bash(terraform validate *)"
     ]
-  }
+  },
+  "enabledMcpjsonServers": [
+    "phpstorm"
+  ]
 }

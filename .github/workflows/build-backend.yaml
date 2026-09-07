@@ -29,7 +29,8 @@ jobs:
       - id: login-ecr
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build and push
+      # Build, then scan, then push — a CRITICAL/HIGH finding blocks the push.
+      - name: Build
         env:
           REGISTRY: ${{ steps.login-ecr.outputs.registry }}
           TAG: ${{ inputs.tag }}
@@ -38,5 +39,19 @@ jobs:
             -t "$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA" \
             -t "$REGISTRY/$ECR_REPOSITORY:$TAG" \
             services/backend
+
+      - name: Scan image for vulnerabilities
+        uses: aquasecurity/trivy-action@0.36.0
+        with:
+          image-ref: ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
+          severity: CRITICAL,HIGH
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Push
+        env:
+          REGISTRY: ${{ steps.login-ecr.outputs.registry }}
+          TAG: ${{ inputs.tag }}
+        run: |
           docker push "$REGISTRY/$ECR_REPOSITORY:$GITHUB_SHA"
           docker push "$REGISTRY/$ECR_REPOSITORY:$TAG"
