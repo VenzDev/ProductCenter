@@ -92,12 +92,11 @@ env:
         name: backend-secrets
         key: azure-redirect-uri
   # Email domain allowed to self-provision an Admin on first login — the browser SSO
-  # (MicrosoftAdminResolver) and the MCP bearer-token guard both gate JIT on it. Empty
-  # ⇒ JIT is off and every Admin must be created by hand — the SSM parameter behind
-  # this key (infrastructure/ssm) must still exist, just with an empty value, since the
-  # ExternalSecret syncing this Secret has no "optional remote key" mode; `optional:
-  # true` here is only a defensive fallback for that key going missing from the Secret
-  # itself. Not a secret, but kept in backend-secrets with the rest of AZURE_OPENID_*.
+  # (MicrosoftAdminResolver) and the MCP bearer-token guard both gate JIT on it. AWS SSM
+  # rejects a zero-length Parameter value, so there's no way to represent "JIT off" here —
+  # the SSM parameter (infrastructure/ssm) always carries a real domain. `optional: true`
+  # is only a defensive fallback for this key going missing from the Secret itself. Not a
+  # secret, but kept in backend-secrets with the rest of AZURE_OPENID_*.
   - name: AZURE_OPENID_ALLOWED_DOMAIN
     valueFrom:
       secretKeyRef:

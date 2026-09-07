@@ -43,9 +43,11 @@ variable "azure_redirect_uri" {
 }
 
 variable "azure_allowed_domain" {
-  description = "Email domain allowed to self-provision as Admin on first SSO login (JIT) — empty string disables JIT"
+  # No default — unlike azure_redirect_uri, an empty string can't be stored (AWS SSM
+  # rejects a Parameter value of length 0), so there is no way to represent "JIT
+  # disabled" here; a real domain is always required.
+  description = "Email domain allowed to self-provision as Admin on first SSO login (JIT) — same value as AZURE_OPENID_ALLOWED_DOMAIN in services/backend/.env"
   type        = string
-  default     = ""
 }
 
 variable "stripe_secret" {

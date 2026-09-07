@@ -1,13 +1,12 @@
 # cp terraform.tfvars.example terraform.tfvars, fill in real values, then `terraform apply`.
 # terraform.tfvars is gitignored — same treatment as services/backend/.env.
 
-azure_client_id     = "<z Azure App Registration>"
-azure_tenant_id     = "<z Azure App Registration>"
-azure_client_secret = "<z Azure App Registration>"
-# azure_redirect_uri i azure_allowed_domain mają sensowne default'y (patrz variables.tf) —
-# odkomentuj tylko jeśli trzeba je zmienić.
+azure_client_id      = "<z Azure App Registration>"
+azure_tenant_id      = "<z Azure App Registration>"
+azure_client_secret  = "<z Azure App Registration>"
+azure_allowed_domain = "<domena e-mail dopuszczona do JIT — ta sama wartość co AZURE_OPENID_ALLOWED_DOMAIN w services/backend/.env>"
+# azure_redirect_uri ma sensowny default (patrz variables.tf) — odkomentuj tylko jeśli trzeba go zmienić.
 # azure_redirect_uri    = "https://admin.bechta.pl/auth/microsoft/callback"
-# azure_allowed_domain  = "bechta.pl"
 
 stripe_secret          = "<z dashboard.stripe.com/apikeys>"
 stripe_webhook_secret  = "<signing secret endpointu Stripe Dashboard>"
