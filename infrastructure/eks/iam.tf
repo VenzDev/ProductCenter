@@ -138,11 +138,13 @@ resource "aws_iam_role_policy_attachment" "cloudwatch_observability" {
 }
 
 # IRSA for External Secrets Operator — a cluster-wide k8s controller that reads backend
-# app secrets (app-key, azure-*, stripe-*) and the OpenSearch admin password from SSM
-# Parameter Store, plus db-password from RDS's own Secrets Manager entry, syncing all of
-# it into the `backend-secrets` and `opensearch-secrets` k8s Secrets
-# (SecretStore/ExternalSecret pairs shipped in infrastructure/k8s/backend/templates and
-# infrastructure/k8s/opensearch/templates). Installed via `helm install`
+# app secrets (app-key, azure-*, stripe-*), the OpenSearch admin password, and
+# notification's Mailgun credentials from SSM Parameter Store, plus db-password from
+# RDS's own Secrets Manager entry, syncing all of it into the `backend-secrets`,
+# `opensearch-secrets` and `notification-secrets` k8s Secrets (SecretStore/ExternalSecret
+# pairs shipped in infrastructure/k8s/backend/templates,
+# infrastructure/k8s/opensearch/templates and infrastructure/k8s/notification/templates).
+# Installed via `helm install`
 # (docs/runbook.md), not by this Terraform — same split as the AWS Load Balancer
 # Controller above. No per-SecretStore auth is configured — each SecretStore relies on
 # the controller pod's own IRSA identity, so this one role covers all of them, scoped
@@ -188,7 +190,8 @@ data "aws_iam_policy_document" "external_secrets_access" {
     actions = ["ssm:GetParameter", "ssm:GetParameters", "ssm:GetParametersByPath", "ssm:DescribeParameters"]
     resources = [
       "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/product-center/backend/*",
-      "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/product-center/opensearch/*"
+      "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/product-center/opensearch/*",
+      "arn:aws:ssm:${var.region}:${data.aws_caller_identity.current.account_id}:parameter/product-center/notification/*"
     ]
   }
 

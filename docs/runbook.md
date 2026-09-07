@@ -19,11 +19,12 @@ infrastructure/k8s/backend/
     ingress.yaml         # ALB przez AWS Load Balancer Controller
 infrastructure/k8s/notification/
   Chart.yaml
-  values.yaml            # obraz, port
+  values.yaml            # obraz, port, env (Mailgun z notification-secrets)
   templates/
     deployment.yaml
     service.yaml
     servicemonitor.yaml
+    externalsecret.yaml  # sync z SSM (Mailgun), analogicznie do opensearch — patrz 5b
 infrastructure/k8s/redis/
   Chart.yaml
   values.yaml            # obraz, port — bez PVC, to tylko cache backendu, strata przy restarcie jest OK
@@ -61,17 +62,18 @@ cd infrastructure/ecr
 terraform apply
 cd ..
 
-# 0b. Sekrety/zmienne backendu, OpenSearch i frontendu w SSM Parameter Store — jedno
-#    źródło prawdy dla wszystkich trzech, też osobny root module (własny state), z tego
-#    samego powodu co ECR: te wartości nie zależą od klastra i nie mają powodu znikać
-#    razem z nim. Raz wypełnione (raz na zewnętrzną rejestrację — Entra/Stripe/OpenAI,
-#    nie raz na klaster), przetrwają dowolną liczbę `terraform destroy`/`apply` na
-#    infrastructure/eks. app-key i hasło admina OpenSearch są generowane tu przez
-#    Terraform (random_bytes/random_password) — jedyne bez zewnętrznego źródła. Backend
-#    i OpenSearch trafiają do k8s przez ExternalSecret (IRSA rola,
-#    infrastructure/eks/iam.tf; szablony infrastructure/k8s/backend/templates/
-#    i infrastructure/k8s/opensearch/templates/externalsecret.yaml) — patrz 5, 5a i 7a
-#    niżej. Klucz frontendu NIE trafia do k8s wcale — potrzebny jest wcześniej, przy
+# 0b. Sekrety/zmienne backendu, OpenSearch, notification i frontendu w SSM Parameter
+#    Store — jedno źródło prawdy dla wszystkich czterech, też osobny root module (własny
+#    state), z tego samego powodu co ECR: te wartości nie zależą od klastra i nie mają
+#    powodu znikać razem z nim. Raz wypełnione (raz na zewnętrzną rejestrację —
+#    Entra/Stripe/OpenAI/Mailgun, nie raz na klaster), przetrwają dowolną liczbę
+#    `terraform destroy`/`apply` na infrastructure/eks. app-key i hasło admina OpenSearch
+#    są generowane tu przez Terraform (random_bytes/random_password) — jedyne bez
+#    zewnętrznego źródła. Backend, OpenSearch i notification trafiają do k8s przez
+#    ExternalSecret (IRSA rola, infrastructure/eks/iam.tf; szablony
+#    infrastructure/k8s/backend/templates/, infrastructure/k8s/opensearch/templates/
+#    i infrastructure/k8s/notification/templates/externalsecret.yaml) — patrz 5, 5a, 5b i
+#    7a niżej. Klucz frontendu NIE trafia do k8s wcale — potrzebny jest wcześniej, przy
 #    `docker build` (patrz krok 0c), więc czyta go stamtąd bezpośrednio rola OIDC GitHub
 #    Actions (infrastructure/ecr/github-oidc.tf), zamiast leżeć jako osobny sekret repo.
 cd infrastructure/ssm
@@ -155,6 +157,11 @@ terraform output rds_master_user_secret_arn
 #     OPENSEARCH_INITIAL_ADMIN_PASSWORD) i backend (loguje się nim jako admin,
 #     OPENSEARCH_PASSWORD).
 
+# 5b. Mailgun (notification) — tak samo jak 5a: notification-secrets nie jest tworzony
+#     ręcznie, infrastructure/k8s/notification/templates/externalsecret.yaml syncuje
+#     MAILGUN_DOMAIN/MAILGUN_API_KEY/MAILGUN_SENDER z SSM (krok 0b) przy pierwszym
+#     `helm install notification` (krok 8).
+
 # 6. Monitoring: Prometheus + Grafana. Musi być PRZED krokiem 8 — każdy serwis ma
 #    metrics.enabled: true domyślnie (values/<serwis>.yaml), czyli renderuje
 #    ServiceMonitor; bez wcześniej zainstalowanego kube-prometheus-stack (które
@@ -182,15 +189,16 @@ helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
   --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=$(terraform output -raw aws_load_balancer_controller_irsa_role_arn)
 kubectl wait --for=condition=Available deployment/aws-load-balancer-controller -n kube-system --timeout=120s
 
-# 7a. External Secrets Operator — cluster-wide kontroler, który syncuje sekrety backendu
-#    z SSM Parameter Store (krok 0b) i z RDS-owego wpisu w Secrets Manager do
-#    backend-secrets (krok 5). Musi być zainstalowany PRZED krokiem 8 — chart backendu
-#    renderuje dwie pary SecretStore/ExternalSecret
-#    (infrastructure/k8s/backend/templates/externalsecret.yaml), a te CRD dostarcza
-#    dopiero ten operator, tak samo jak ServiceMonitor w kroku 6. Rola IRSA i jej
-#    uprawnienia (tylko odczyt /product-center/backend/* w SSM + tego jednego sekretu w
-#    Secrets Manager) są zarządzane przez Terraform (infrastructure/eks/iam.tf), sam
-#    kontroler instalowany imperatywnie jak aws-load-balancer-controller wyżej.
+# 7a. External Secrets Operator — cluster-wide kontroler, który syncuje sekrety backendu,
+#    OpenSearch i notification z SSM Parameter Store (krok 0b) i z RDS-owego wpisu w
+#    Secrets Manager do backend-secrets (krok 5). Musi być zainstalowany PRZED krokiem 8 —
+#    charty backendu, opensearch i notification renderują pary SecretStore/ExternalSecret
+#    (infrastructure/k8s/{backend,opensearch,notification}/templates/externalsecret.yaml),
+#    a te CRD dostarcza dopiero ten operator, tak samo jak ServiceMonitor w kroku 6. Rola
+#    IRSA i jej uprawnienia (tylko odczyt /product-center/{backend,opensearch,notification}/*
+#    w SSM + tego jednego sekretu w Secrets Manager) są zarządzane przez Terraform
+#    (infrastructure/eks/iam.tf), sam kontroler instalowany imperatywnie jak
+#    aws-load-balancer-controller wyżej.
 helm repo add external-secrets https://charts.external-secrets.io
 helm repo update external-secrets
 kubectl create namespace external-secrets

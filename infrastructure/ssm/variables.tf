@@ -72,3 +72,21 @@ variable "openai_api_key" {
   type        = string
   sensitive   = true
 }
+
+variable "mailgun_domain" {
+  description = "Mailgun sending domain (app.mailgun.com/app/sending/domains) — same value as MAILGUN_DOMAIN in services/notification/.env"
+  type        = string
+  sensitive   = true
+}
+
+variable "mailgun_api_key" {
+  description = "Mailgun private API key (app.mailgun.com/app/account/security/api_keys) — same value as MAILGUN_API_KEY in services/notification/.env"
+  type        = string
+  sensitive   = true
+}
+
+variable "mailgun_sender" {
+  description = "\"From\" address for notification's test email — same value as MAILGUN_SENDER in services/notification/.env"
+  type        = string
+  sensitive   = true
+}

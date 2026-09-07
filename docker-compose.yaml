@@ -26,6 +26,9 @@ services:
     build:
       context: ./services/notification
       target: dev
+    env_file:
+      - path: ./services/notification/.env
+        required: false
     ports:
       - "8080:8080"
     volumes:

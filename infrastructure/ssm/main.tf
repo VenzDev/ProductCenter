@@ -1,8 +1,9 @@
 # Read by infrastructure/eks's External Secrets Operator IRSA role (iam.tf, scoped to
 # these exact paths) and synced into k8s Secrets by each service chart's own
-# ExternalSecret (infrastructure/k8s/backend and infrastructure/k8s/opensearch). Path
-# prefixes are literals here, not var.cluster_name — the IAM policy and the Helm charts
-# all hardcode them the same way, and none ever need to vary.
+# ExternalSecret (infrastructure/k8s/backend, infrastructure/k8s/opensearch and
+# infrastructure/k8s/notification). Path prefixes are literals here, not
+# var.cluster_name — the IAM policy and the Helm charts all hardcode them the same way,
+# and none ever need to vary.
 
 resource "random_bytes" "app_key" {
   length = 32
@@ -85,6 +86,24 @@ resource "aws_ssm_parameter" "opensearch_admin_password" {
   name  = "/product-center/opensearch/admin-password"
   type  = "SecureString"
   value = random_password.opensearch_admin_password.result
+}
+
+resource "aws_ssm_parameter" "mailgun_domain" {
+  name  = "/product-center/notification/mailgun-domain"
+  type  = "SecureString"
+  value = var.mailgun_domain
+}
+
+resource "aws_ssm_parameter" "mailgun_api_key" {
+  name  = "/product-center/notification/mailgun-api-key"
+  type  = "SecureString"
+  value = var.mailgun_api_key
+}
+
+resource "aws_ssm_parameter" "mailgun_sender" {
+  name  = "/product-center/notification/mailgun-sender"
+  type  = "SecureString"
+  value = var.mailgun_sender
 }
 
 # Frontend's Stripe publishable key — needed at `docker build` time (Next.js inlines

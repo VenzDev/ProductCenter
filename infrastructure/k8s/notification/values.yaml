@@ -1,2 +1,20 @@
 image: 222634367938.dkr.ecr.eu-central-1.amazonaws.com/notification:latest
 port: 8080
+env:
+  # Synced from SSM (infrastructure/ssm) into notification-secrets by
+  # templates/externalsecret.yaml.
+  - name: MAILGUN_DOMAIN
+    valueFrom:
+      secretKeyRef:
+        name: notification-secrets
+        key: mailgun-domain
+  - name: MAILGUN_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: notification-secrets
+        key: mailgun-api-key
+  - name: MAILGUN_SENDER
+    valueFrom:
+      secretKeyRef:
+        name: notification-secrets
+        key: mailgun-sender

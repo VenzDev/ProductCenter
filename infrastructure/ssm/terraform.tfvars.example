@@ -13,3 +13,7 @@ stripe_webhook_secret  = "<signing secret endpointu Stripe Dashboard>"
 stripe_publishable_key = "<pk_test_... z dashboard.stripe.com/apikeys>"
 
 openai_api_key = "<z platform.openai.com/api-keys>"
+
+mailgun_domain  = "<z app.mailgun.com/app/sending/domains>"
+mailgun_api_key = "<klucz prywatny z app.mailgun.com/app/account/security/api_keys>"
+mailgun_sender  = "<adres 'From', np. postmaster@twoja-domena.mailgun.org>"

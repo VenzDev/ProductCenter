@@ -40,13 +40,18 @@ Tag `:local` (nie `:latest`) jest ważny — dla dowolnego tagu innego niż `lat
 
 **Uwaga:** `eval $(minikube docker-env)` działa tylko w bieżącej sesji shella. Nowy terminal/sesja = trzeba powtórzyć.
 
-## 3. Sekret backendu — osobny per klaster
+## 3. Sekrety — osobne per klaster
 
-`backend-secrets` z EKS nie istnieje w Minikube (to zupełnie inny klaster, inny etcd) — trzeba go stworzyć od nowa, w namespace `product-center`:
+Na EKS `backend-secrets`/`notification-secrets` syncuje External Secrets Operator z SSM (`runbook.md`, kroki 5/5b/7a) — na Minikube tego operatora nie ma (nic go tu nie instaluje), więc `externalsecret.yaml` obu chartów by się nie zaaplikował (CRD `ExternalSecret` dostarcza dopiero ten operator). Zamiast tego oba Secrety trzeba stworzyć ręcznie, w namespace `product-center` — wystarczą do samego zbootowania poda, nie do realnej funkcjonalności (bez prawdziwego Mailguna e-mail i tak nie wyjdzie):
 
 ```bash
 kubectl create secret generic backend-secrets -n product-center \
   --from-literal=app-key="base64:$(openssl rand -base64 32)"
+
+kubectl create secret generic notification-secrets -n product-center \
+  --from-literal=mailgun-domain="localhost" \
+  --from-literal=mailgun-api-key="dummy" \
+  --from-literal=mailgun-sender="test@localhost"
 ```
 
 ## 4. Instalacja serwisów

@@ -1,6 +1,8 @@
 package main
 
 import (
+	"net/mail"
+	"os"
 	"strconv"
 	"time"
 
@@ -40,7 +42,7 @@ func metricsMiddleware(c *gin.Context) {
 	httpRequestDuration.WithLabelValues(c.Request.Method, path).Observe(time.Since(start).Seconds())
 }
 
-func setupRouter() *gin.Engine {
+func setupRouter(mailer Mailer) *gin.Engine {
 	r := gin.Default()
 	r.Use(metricsMiddleware)
 
@@ -54,9 +56,32 @@ func setupRouter() *gin.Engine {
 		c.JSON(200, gin.H{"message": "hello world"})
 	})
 
+	r.POST("/api/v1/notifications/test-email", func(c *gin.Context) {
+		var body struct {
+			To string `json:"to"`
+		}
+		if err := c.ShouldBindJSON(&body); err != nil || body.To == "" {
+			c.JSON(400, gin.H{"error": "\"to\" is required"})
+			return
+		}
+		if _, err := mail.ParseAddress(body.To); err != nil {
+			c.JSON(400, gin.H{"error": "\"to\" must be a valid email address"})
+			return
+		}
+
+		id, err := mailer.Send(body.To, "Hello from notification service", "This is a test email sent via Mailgun.")
+		if err != nil {
+			c.JSON(502, gin.H{"error": err.Error()})
+			return
+		}
+
+		c.JSON(200, gin.H{"id": id})
+	})
+
 	return r
 }
 
 func main() {
-	setupRouter().Run(":8080")
+	mailer := NewMailgunMailer(os.Getenv("MAILGUN_DOMAIN"), os.Getenv("MAILGUN_API_KEY"), os.Getenv("MAILGUN_SENDER"))
+	setupRouter(mailer).Run(":8080")
 }
